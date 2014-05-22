@@ -1,0 +1,18 @@
+;; -*- mode: outline; outline-regexp: " *[-\+]"; indent-tabs-mode: nil; fill-column: 120 -*-
+
+^c^d hide subtree
+^c^s show subtree
+
+- docs
+ - doxygen
+
+
+- optimize writer
+ - alternate type for _Str of 1K or 4K string blocks reused
+
+- multiple threads
+ - could have free thread to put nodes back in cache
+ - could have parsing in background
+  - block if node has not been read yet
+   - need flag indicating still being read
+ - could parse in one thread and have callback build nodes

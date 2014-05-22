@@ -1,0 +1,165 @@
+
+/*! \file ut.h
+    \brief Unit test support module.
+
+    The unit test module is intended for simplify unit test setup and
+    recording. It is has functions that make it easier to identify problems in
+    the test results.
+
+    Test are identified in an array of struct _Test with the last item set to
+    have a null name and function.
+
+    Some helper functions are included to help format output.
+
+    \b Usage:
+\code
+#include <stdio.h>
+#include "ut/ut.h"
+
+static void     firstTest(void);
+static void     secondTest(void);
+
+static struct _Test     tests[] = { { "first",  firstTest },
+                                    { "second", secondTest },
+                                    { 0,        0 } };
+
+int
+main(int argc, char **argv) {
+    ut_init(argc, argv, "sample", tests);
+    ut_done();
+    return 0;
+}
+
+static void
+firstTest() {
+    char buf[32];
+
+    sprintf(buf, "We want %d items", 5 / 3);
+    ut_same("We want $ items", buf);
+}
+
+static void
+secondTest() {
+    ut_true(3 > 5);
+}
+\endcode
+ */
+
+/*! \struct _Test
+    \brief Struct for storing information about tests to run.
+
+    \typedef Test
+    A pointer to a struct _Test.
+ */
+/*! \var const char* _Test::name
+    The name of the test. */
+/*! \var const char* _Test::func
+    The function to execute to run the test. */
+/*! \var int _Test::pass
+    The result of the test run. */
+/*! \var int _Test::run
+    Flag indicating if the test should be run. */
+
+
+/*! \fn void ut_init(int argc, char **argv, const char *groupName, Test allTests)
+    \brief Initializes the unit test module.
+
+    Initialization takes an array of struct _Test as an argument as well as
+    the arguments passed to main(). This is intended to simplify the use of
+    the unit test module. The arguments supported are
+    \li -m validate memory use
+    \li -v verbose output
+    \li -o \<file\> file to append output to
+    \li -c \<file\> file to create and write output to
+    \li \<test ...\> the names of tests to run (default runs all)
+
+    \param argc the number of arguments in the argv array
+    \param argv string arguments from main()
+    \param groupName the name for the group of tests to be run
+    \param allTests an array of tests to run
+ */
+
+/*! \fn void ut_print(const char *format, ...)
+    \brief Prints output to the ut_out file using printf formatting rules.
+    \param format printf format
+    \param ... additional arguments to printf
+ */
+
+/*! \fn void ut_done()
+    \brief Called to indicate tests are complete and a summary should be generated.
+ */
+
+/*! \fn int ut_same(const char *expected, const char *actual)
+    \brief Compares an expected string with actual string.
+
+    If the two strings are the same then the test passes. If not the current
+    test is marked as failing. The \em expected string can contain special
+    wild card characters that match specific patterns in the \em actual. The
+    wild card characters are:
+
+    \li ? - match exactly one character, any character
+    \li $ - match a decimal number
+    \li # - match a hexidecimal number (0-9,a-f,A-F)
+    \li * - match any number of characters, any characters
+
+    \param expected the expected string which can contain wild cards
+    \param actual the actual test output
+    \return Returns 1 if the test has passed or 0 for failure.
+ */
+
+/*! \fn int ut_true(bool condition)
+    \brief Indicates a test has passed if a true (non zero)value is provided as the condition.
+    \param condition the truth value
+    \return Returns 1 if the test has passed or 0 for failure.
+ */
+
+/*! \fn int ut_false(bool condition)
+    \brief Indicates a test has passed if a false (zero)value is provided as the condition.
+    \param condition the truth value
+    \return Returns 1 if the test has passed or 0 for failure.
+ */
+
+/*! \fn void ut_fail(void)
+    \brief Marks the current test as having failed.
+ */
+
+/*! \fn char* ut_loadFile(const char *filename)
+    \brief Reads a file and returns the content as a string.
+
+    The caller is responsible for freeing the string when it is no longer needed.
+
+    \param filename name of file to read
+    \return Returns the contents of the file as a string.
+ */
+
+/*! \fn void ut_reportTest(const char *testName)
+    \brief Force the generation of a test report for a specific test.
+    \param testName test name to print the report for
+ */
+
+/*! \fn void ut_resetTest(const char *testName)
+    \brief Resets the test, erasing any pass or failed status of the test.
+    \param testName name of test to reset
+ */
+
+/*! \fn void ut_hexDump(const unsigned char *data, int len)
+    \brief Prints out a hex dump of a byte array in hex and ascii format.
+    \param data bytes to print
+    \param len number of bytes to print.
+ */
+
+/*! \fn char* ut_toCodeStr(const unsigned char *data, int len)
+    \brief Returns a string suitable for placing in C code.
+
+    \param data bytes to translate
+    \param len number of bytes to translate
+ */
+
+/*! \var FILE* ut_out
+    \brief The file that test results and message are written to.
+ */
+
+/*! \var int ut_verbose
+    \brief A flag indicating haw verbose output should be.
+ */
+
