@@ -4,6 +4,8 @@
 ^c^s show subtree
 
 - optimize write and add benchmark
+ - buffer
+  - maybe add fd to buf as an option to dump when full
  
 - have skip white ignore ANSI/VT100 escape sequences
  - will need to parse each code to determine length

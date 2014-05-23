@@ -433,6 +433,9 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
 	// Previous call must have failed or err was not initialized.
 	return;
     }
+    if (0 >= klen) {
+	klen = strlen(key);
+    }
     if (0 == object || OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
