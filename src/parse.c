@@ -1,5 +1,5 @@
 /* parse.c
- * Copyright (c) 2013, Peter Ohler
+ * Copyright (c) 2014, Peter Ohler
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -319,10 +319,10 @@ read_escaped_str(ParseInfo pi) {
     uint32_t	code;
 
     buf_init(&buf);
-    if (pi->rd.str < pi->rd.tail) {
-	buf_append_string(&buf, pi->rd.str, pi->rd.tail - pi->rd.str);
+    if (pi->rd.start < pi->rd.tail) {
+	buf_append_string(&buf, pi->rd.start, pi->rd.tail - pi->rd.start);
     }
-    while ('\"' != (c = reader_get(&pi->err, &pi->rd))) {
+    while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
 	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    buf_cleanup(&buf);
@@ -386,7 +386,7 @@ read_str(ParseInfo pi) {
     char	c;
 
     reader_protect(&pi->rd);
-    while ('\"' != (c = reader_get(&pi->err, &pi->rd))) {
+    while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
 	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    return;

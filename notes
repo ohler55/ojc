@@ -3,12 +3,17 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- optimize write and add benchmark
+ 
+- have skip white ignore ANSI/VT100 escape sequences
+ - will need to parse each code to determine length
+
 - docs
  - doxygen
 
+- alternate type for _Str of 1K or 4K string blocks reused
 
-- optimize writer
- - alternate type for _Str of 1K or 4K string blocks reused
+
 
 - multiple threads
  - could have free thread to put nodes back in cache

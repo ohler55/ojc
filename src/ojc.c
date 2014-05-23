@@ -1,5 +1,5 @@
 /* ojc.c
- * Copyright (c) 2011, Peter Ohler
+ * Copyright (c) 2014, Peter Ohler
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,23 @@
 
 #define MAX_INDEX	200000000
 
+static const char	hex_chars[17] = "0123456789abcdef";
+
+static char	hibit_friendly_chars[256] = "\
+66666666222622666666666666666666\
+11211111111111111111111111111111\
+11111111111111111111111111112111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111";
+
+const char*
+ojc_version() {
+    return OJC_VERSION;
+}
+
 void
 ojc_destroy(ojcVal val) {
     _ojc_destroy(val);
@@ -48,6 +65,10 @@ ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;
 
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
     parse_init(&pi.err, &pi, cb, ctx);
     reader_init_str(&pi.err, &pi.rd, json);
     if (OJC_OK != pi.err.code) {
@@ -69,6 +90,10 @@ ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;
 
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
     parse_init(&pi.err, &pi, cb, ctx);
     reader_init_stream(err, &pi.rd, file);
     if (OJC_OK != err->code) {
@@ -90,6 +115,10 @@ ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;
 
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
     parse_init(&pi.err, &pi, cb, ctx);
     reader_init_socket(err, &pi.rd, socket);
     if (OJC_OK != err->code) {
@@ -236,7 +265,11 @@ ojc_type(ojcVal val) {
 
 int64_t
 ojc_int(ojcErr err, ojcVal val) {
-    if (OJC_FIXNUM != val->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || OJC_FIXNUM != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not get and int64_t from a %s", ojc_type_str(val->type));
@@ -248,7 +281,11 @@ ojc_int(ojcErr err, ojcVal val) {
 
 double
 ojc_double(ojcErr err, ojcVal val) {
-    if (OJC_DECIMAL != val->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0.0;
+    }
+    if (0 == val || OJC_DECIMAL != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not get and double from a %s", ojc_type_str(val->type));
@@ -260,7 +297,11 @@ ojc_double(ojcErr err, ojcVal val) {
 
 ojcVal
 ojc_members(ojcErr err, ojcVal val) {
-    if (OJC_ARRAY != val->type && OJC_OBJECT != val->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || (OJC_ARRAY != val->type && OJC_OBJECT != val->type)) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not get members from a %s", ojc_type_str(val->type));
@@ -280,7 +321,11 @@ ojc_member_count(ojcErr err, ojcVal val) {
     ojcVal	m;
     int		cnt = 0;
 
-    if (OJC_ARRAY != val->type && OJC_OBJECT != val->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || (OJC_ARRAY != val->type && OJC_OBJECT != val->type)) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "No members in a %s", ojc_type_str(val->type));
@@ -325,14 +370,13 @@ ojc_create_str(const char *str, size_t len) {
     if (0 >= len) {
 	len = strlen(str);
     }
-    if (sizeof(val->str.ca) - 1 <= len) {
+    if (sizeof(val->str.ca) <= len) {
 	val->str_type = STR_PTR;
 	val->str.str = strndup(str, len);
 	val->str.len = len;
     } else {
 	val->str_type = STR_ARRAY;
-	*val->str.ca = (char)len;
-	strncpy(val->str.ca + 1, str, len);
+	strncpy(val->str.ca, str, len);
     }
     return val;
 }
@@ -362,14 +406,13 @@ ojc_create_number(const char *num, size_t len) {
     if (0 >= len) {
 	len = strlen(num);
     }
-    if (sizeof(val->str.ca) - 1 <= len) {
+    if (sizeof(val->str.ca) <= len) {
 	val->str_type = STR_PTR;
 	val->str.str = strndup(num, len);
 	val->str.len = len;
     } else {
 	val->str_type = STR_ARRAY;
-	*val->str.ca = (char)len;
-	strncpy(val->str.ca + 1, num, len);
+	strncpy(val->str.ca, num, len);
     }
     return val;
 }
@@ -386,7 +429,11 @@ ojc_create_bool(bool boo) {
 
 void
 ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal val) {
-    if (OJC_OBJECT != object->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return;
+    }
+    if (0 == object || OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not object append to a %s", ojc_type_str(object->type));
@@ -417,7 +464,11 @@ ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val) {
 
 void
 ojc_array_append(ojcErr err, ojcVal array, ojcVal val) {
-    if (OJC_ARRAY != array->type) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return;
+    }
+    if (0 == array || OJC_ARRAY != array->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not array append to a %s", ojc_type_str(array->type));
@@ -458,6 +509,109 @@ fixnum_fill(Buf bb, int64_t num) {
 	*b = '0';
     }
     buf_append_string(bb, b, end - b);
+}
+
+const char*
+buf_unicode(Buf buf, const char *str) {
+    uint32_t	code = 0;
+    uint8_t	b = *(uint8_t*)str;
+    int		i, cnt;
+    
+    if (0xC0 == (0xE0 & b)) {
+	cnt = 1;
+	code = b & 0x0000001F;
+    } else if (0xE0 == (0xF0 & b)) {
+	cnt = 2;
+	code = b & 0x0000000F;
+    } else if (0xF0 == (0xF8 & b)) {
+	cnt = 3;
+	code = b & 0x00000007;
+    } else if (0xF8 == (0xFC & b)) {
+	cnt = 4;
+	code = b & 0x00000003;
+    } else if (0xFC == (0xFE & b)) {
+	cnt = 5;
+	code = b & 0x00000001;
+    } else {
+	cnt = 0;
+	// TBD Invalid Unicode
+	return 0;
+    }
+    str++;
+    for (; 0 < cnt; cnt--, str++) {
+	b = *(uint8_t*)str;
+	if (0 == b || 0x80 != (0xC0 & b)) {
+	    // TBD Invalid Unicode
+	    return 0;
+	}
+	code = (code << 6) | (b & 0x0000003F);
+    }
+    if (0x0000FFFF < code) {
+	uint32_t	c1;
+
+	code -= 0x00010000;
+	c1 = ((code >> 10) & 0x000003FF) + 0x0000D800;
+	code = (code & 0x000003FF) + 0x0000DC00;
+	buf_append(buf, '\\');
+	buf_append(buf, 'u');
+	for (i = 3; 0 <= i; i--) {
+	    buf_append(buf, hex_chars[(uint8_t)(c1 >> (i * 4)) & 0x0F]);
+	}
+    }
+    buf_append(buf, '\\');
+    buf_append(buf, 'u');
+    for (i = 3; 0 <= i; i--) {
+	buf_append(buf, hex_chars[(uint8_t)(code >> (i * 4)) & 0x0F]);
+    }	
+    return str - 1;
+}
+
+static void
+fill_hex(uint8_t c, char *buf) {
+    uint8_t	d = (c >> 4) & 0x0F;
+
+    *buf++ = hex_chars[d];
+    d = c & 0x0F;
+    *buf++ = hex_chars[d];
+}
+
+static const char*
+buf_append_chars(Buf buf, const char *str) {
+    switch (hibit_friendly_chars[(uint8_t)*str]) {
+    case '1':
+	buf_append(buf, *str);
+	str++;
+	break;
+    case '2':
+	buf_append(buf, '\\');
+	switch (*str) {
+	case '\b':	buf_append(buf, 'b');	break;
+	case '\t':	buf_append(buf, 't');	break;
+	case '\n':	buf_append(buf, 'n');	break;
+	case '\f':	buf_append(buf, 'f');	break;
+	case '\r':	buf_append(buf, 'r');	break;
+	default:	buf_append(buf, *str);	break;
+	}
+	str++;
+	break;
+    case '3': // Unicode
+	str = buf_unicode(buf, str);
+	break;
+    case '6': // control characters
+	{
+	    char	hex[4];
+
+	    buf_append_string(buf, "\\u00", 4);
+	    fill_hex((uint8_t)*str, hex);
+	    buf_append_string(buf, hex, 2);
+	    str++;
+	}
+	break;
+    default:
+	str++;
+	break; // ignore, should never happen if the table is correct
+    }
+    return str;
 }
 
 static void
@@ -507,6 +661,7 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	    int		d2 = depth + 1;
 	    size_t	icnt = indent * d2;
 	    char	in[256];
+	    const char	*key;
 
 	    if (0 < indent) {
 		if (sizeof(in) <= icnt - 2) {
@@ -527,9 +682,12 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 		}
 		buf_append(buf, '"');
 		if (STR_PTR == m->key_type) {
-		    buf_append_string(buf, m->key.str, m->key.len);
+		    key = m->key.str;
 		} else {
-		    buf_append_string(buf, m->key.ca, strlen(m->key.ca));
+		    key = m->key.ca;
+		}
+		while ('\0' != *key) {
+		    key = buf_append_chars(buf, key);
 		}
 		buf_append(buf, '"');
 		buf_append(buf, ':');
@@ -554,13 +712,20 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	buf_append_string(buf, "false", 5);
 	break;
     case OJC_STRING:
-	buf_append(buf, '"');
-	if (STR_PTR == val->str_type) {
-	    buf_append_string(buf, val->str.str, val->str.len);
-	} else {
-	    buf_append_string(buf, val->str.ca + 1, *val->str.ca);
+	{
+	    const char	*str;
+
+	    buf_append(buf, '"');
+	    if (STR_PTR == val->str_type) {
+		str = val->str.str;
+	    } else {
+		str = val->str.ca;
+	    }
+	    while ('\0' != *str) {
+		str = buf_append_chars(buf, str);
+	    }
+	    buf_append(buf, '"');
 	}
-	buf_append(buf, '"');
 	break;
     case OJC_FIXNUM:
 	fixnum_fill(buf, val->fixnum);
@@ -582,7 +747,7 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	if (STR_PTR == val->str_type) {
 	    buf_append_string(buf, val->str.str, val->str.len);
 	} else {
-	    buf_append_string(buf, val->str.ca + 1, *val->str.ca);
+	    buf_append_string(buf, val->str.ca, strlen(val->str.ca));
 	}
 	break;
     default:
@@ -607,6 +772,10 @@ int
 ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len) {
     struct _Buf	b;
     
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
     buf_finit(&b, buf, len);
     fill_buf(&b, val, indent, 0);
     if (b.overflow) {
@@ -688,11 +857,14 @@ write_val(int fd, ojcVal val, int indent, int depth) {
 	break;
     case OJC_OBJECT:
 	{
+	    struct _Buf	buf;
 	    ojcVal	m;
 	    int		d2 = depth + 1;
 	    size_t	icnt = indent * d2;
 	    char	in[256];
+	    const char	*key;
 
+	    buf_init(&buf);
 	    if (0 < indent) {
 		if (sizeof(in) <= icnt - 2) {
 		    icnt = sizeof(in) - 2;
@@ -704,19 +876,25 @@ write_val(int fd, ojcVal val, int indent, int depth) {
 	    }
 	    write(fd, "{", 1);
 	    for (m = val->members.head; 0 != m; m = m->next) {
+		buf_reset(&buf);
 		if (m != val->members.head) {
-		    write(fd, ",", 1);
+		    buf_append(&buf, ',');
 		}
 		if (0 < indent) {
-		    write(fd, in, icnt);
+		    buf_append_string(&buf, in, icnt);
 		}
-		write(fd, "\"", 1);
 		if (STR_PTR == m->key_type) {
-		    write(fd, m->key.str, m->key.len);
+		    key = m->key.str;
 		} else {
-		    write(fd, m->key.ca, strlen(m->key.ca));
+		    key = m->key.ca;
 		}
-		write(fd, "\":", 2);
+		buf_append(&buf, '"');
+		while ('\0' != *key) {
+		    key = buf_append_chars(&buf, key);
+		}
+		buf_append(&buf, '"');
+		buf_append(&buf, ':');
+		write(fd, buf.head, buf_len(&buf));
 		write_val(fd, m, indent, d2);
 	    }
 	    if (0 < indent) {
@@ -735,13 +913,24 @@ write_val(int fd, ojcVal val, int indent, int depth) {
 	write(fd, "false", 5);
 	break;
     case OJC_STRING:
-	write(fd, "\"", 1);
-	if (STR_PTR == val->str_type) {
-	    write(fd, val->str.str, val->str.len);
-	} else {
-	    write(fd, val->str.ca + 1, *val->str.ca);
+	{
+	    struct _Buf	buf;
+	    const char	*str;
+
+	    buf_init(&buf);
+	    buf_append(&buf, '"');
+	    if (STR_PTR == val->str_type) {
+		str = val->str.str;
+	    } else {
+		str = val->str.ca;
+	    }
+	    while ('\0' != *str) {
+		str = buf_append_chars(&buf, str);
+	    }
+	    buf_append(&buf, '"');
+	    write(fd, buf.head, buf_len(&buf));
+	    buf_cleanup(&buf);
 	}
-	write(fd, "\"", 1);
 	break;
     case OJC_FIXNUM:
 	write_fixnum(fd, val->fixnum);
@@ -763,7 +952,7 @@ write_val(int fd, ojcVal val, int indent, int depth) {
 	if (STR_PTR == val->str_type) {
 	    write(fd, val->str.str, val->str.len);
 	} else {
-	    write(fd, val->str.ca + 1, *val->str.ca);
+	    write(fd, val->str.ca, strlen(val->str.ca));
 	}
 	break;
     default:
@@ -773,6 +962,10 @@ write_val(int fd, ojcVal val, int indent, int depth) {
 
 void
 ojc_write(ojcErr err, ojcVal val, int indent, int socket) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return;
+    }
     write_val(socket, val, indent, 0);
 }
 

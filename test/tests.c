@@ -88,7 +88,7 @@ string_test() {
     const char	*jsons[] = {
 	"\"hello\"",
 	"\"This is a longer string.\"",
-	"\"hello\nthere\"",
+	"\"hello\\nthere\"",
 	"\"ぴーたー\"",
 	"[\"hello\"]",
 	0 };
@@ -120,6 +120,7 @@ object_test() {
 	"{\"one\":null}",
 	"{\"one\":null,\"a key longer than sixteen characters\":true}",
 	"{\"one\":{}}",
+	"{\"o\\ne\":true}",
 	0 };
 
     in_and_out(jsons);
@@ -360,6 +361,7 @@ bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
     ojcVal		val;
 
+    ojc_err_init(&err);
     for (; 0 < iter; iter--) {
 	val = ojc_parse_str(&err, (const char*)ctx, 0, 0);
 	ojc_destroy(val);
@@ -380,6 +382,7 @@ static void
 each_bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
 
+    ojc_err_init(&err);
     iter /= 1000LL;
     for (; 0 < iter; iter--) {
 	ojc_parse_str(&err, (const char*)ctx, each_benchmark_callback, 0);

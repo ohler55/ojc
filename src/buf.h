@@ -1,5 +1,5 @@
 /* buf.h
- * Copyright (c) 2011, Peter Ohler
+ * Copyright (c) 2014, Peter Ohler
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,12 @@ buf_finit(Buf buf, char *str, size_t slen) {
     buf->tail = buf->head;
     buf->realloc_ok = false;
     buf->overflow = false;
+}
+
+inline static void
+buf_reset(Buf buf) {
+    buf->head = buf->base;
+    buf->tail = buf->head;
 }
 
 inline static void
@@ -118,9 +124,8 @@ buf_append(Buf buf, char c) {
 	    return;
 	}
     }
-    *buf->tail = c;
-    buf->tail++;
-    *buf->tail = '\0'; // for debugging
+    *buf->tail++ = c;
+    //*buf->tail = '\0'; // for debugging
 }
 
 #endif /* __OJC_BUF_H__ */

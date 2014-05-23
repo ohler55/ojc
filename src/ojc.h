@@ -1,5 +1,5 @@
 /* ojc.h
- * Copyright (c) 2011, Peter Ohler
+ * Copyright (c) 2014, Peter Ohler
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define OJC_VERSION	"1.0.0"
+
 typedef enum {
     OJC_NULL	= 0,
     OJC_STRING	= 's',
@@ -64,6 +66,8 @@ typedef struct _ojcVal	*ojcVal;
 // If true is returned val should be freed. If false then let the caller or
 // callback deal with it.
 typedef bool	(*ojcParseCallback)(ojcVal val, void *ctx);
+
+extern const char*	ojc_version(void);
 
 extern ojcVal		ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx);
 extern ojcVal		ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx);
