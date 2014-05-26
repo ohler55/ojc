@@ -46,6 +46,7 @@ typedef struct _ParseInfo {
     ojcParseCallback	each_cb;
     void		*each_ctx;
     struct _List	free_vals;
+    struct _MList	free_bstrs;
     char		*key;
     char		karray[256];
     size_t		klen;
@@ -61,6 +62,8 @@ parse_init(ojcErr err, ParseInfo pi, ojcParseCallback cb, void *ctx) {
     pi->each_ctx = ctx;
     pi->free_vals.head = 0;
     pi->free_vals.tail = 0;
+    pi->free_bstrs.head = 0;
+    pi->free_bstrs.tail = 0;
     pi->key = 0;
     pi->klen = 0;
     pi->kalloc = false;
@@ -72,7 +75,7 @@ inline static void
 parse_cleanup(ParseInfo pi) {
     reader_cleanup(&pi->rd);
     stack_cleanup(&pi->stack);
-    _ojc_val_return(&pi->free_vals);
+    _ojc_val_return(&pi->free_vals, &pi->free_bstrs);
 }
 
 #endif /* __OJC_PARSE_H__ */

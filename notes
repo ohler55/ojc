@@ -3,23 +3,15 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- optimize write and add benchmark
- - buffer
-  - maybe add fd to buf as an option to dump when full
- 
-- have skip white ignore ANSI/VT100 escape sequences
- - will need to parse each code to determine length
 
-- docs
- - doxygen
-
-- alternate type for _Str of 1K or 4K string blocks reused
+- reader_next_non_white(ojcErr err, Reader reader) 
+ - ignore ANSI/VT100 escape sequences
+  - will need to parse each code to determine length
 
 
 
 - multiple threads
  - could have free thread to put nodes back in cache
- - could have parsing in background
-  - block if node has not been read yet
-   - need flag indicating still being read
- - could parse in one thread and have callback build nodes
+
+- TBD stream write functions someday
+

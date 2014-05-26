@@ -38,8 +38,7 @@
 #define STR_NONE	'\0'
 #define STR_PTR		'p'
 #define STR_ARRAY	'a'
-#define STR_1K		'1'
-#define STR_4K		'4'
+#define STR_BLOCK	'b'
 
 typedef enum {
     NEXT_NONE		= 0,
@@ -53,28 +52,32 @@ typedef enum {
     NEXT_OBJECT_COMMA	= 'n',
 } ValNext;
 
+typedef union _Bstr {
+    union _Bstr	*next;
+    char	ca[256];
+} *Bstr;
+
 union _Key {
-    struct {
-	char	*str;
-	size_t	len;
-    };
-    // first char is the length
-    char	ca[16];
+    char	*str;
+    Bstr	bstr;
+    char	ca[8];
 };
 
 union _Str {
-    struct {
-	char	*str;
-	size_t	len;
-    };
-    // first char is the length
-    char	ca[32];
+    char	*str;
+    Bstr	bstr;
+    char	ca[16]; // members has head and tail
 };
 
 typedef struct _List {
     struct _ojcVal	*head;
     struct _ojcVal	*tail;
 } *List;
+
+typedef struct _MList {
+    union _Bstr	*head;
+    union _Bstr	*tail;
+} *MList;
 
 struct _ojcVal {
     struct _ojcVal	*next;
@@ -85,16 +88,20 @@ struct _ojcVal {
 	int64_t		fixnum;
 	double		dub;
     };
+    uint8_t		type;	// ojcValType
     uint8_t		key_type;
     uint8_t		str_type;
-    uint8_t		type;	// ojcValType
     uint8_t		expect; // ValNext
 };
 
 extern ojcVal	_ojc_val_create(ojcValType type);
 extern void	_ojc_destroy(ojcVal val);
-extern void	_ojc_val_return(List freed);
-extern void	_ojc_val_destroy(ojcVal val, List freed);
+extern void	_ojc_val_return(List freed, MList freed_bstrs);
+extern void	_ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs);
 extern void	_ojc_val_create_batch(size_t cnt, List vals);
+
+extern Bstr	_ojc_bstr_create(void);
+extern void	_ojc_bstr_create_batch(size_t cnt, MList list);
+extern void	_ojc_bstr_return(MList freed);
 
 #endif /* __OJC_VAL_H__ */

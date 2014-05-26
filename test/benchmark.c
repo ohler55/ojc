@@ -26,7 +26,6 @@ each_cb(ojcVal val, void *ctx) {
 
 static int
 bench_write(const char *filename, int64_t iter) {
-    char		msg[256];
     FILE		*f;
     struct _ojcErr	err;
     int64_t		i;
@@ -34,7 +33,6 @@ bench_write(const char *filename, int64_t iter) {
     int64_t		start = clock_micro();
     ojcVal		obj;
     int			fd;
-    int			len;
 
     obj = ojc_create_object();
     ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
@@ -51,12 +49,8 @@ bench_write(const char *filename, int64_t iter) {
     f = fopen(filename, "w");
     fd = fileno(f);
     for (i = 0; i < iter; i++) {
-	len = ojc_fill(&err, obj, 0, msg, sizeof(msg));
-	msg[len] = '\n';
-	msg[len + 1] = '\0';
-	write(fd, msg, len + 1);
-	//ojc_write(&err, obj, 0, fd);
-	//write(fd, "\n", 1);
+	ojc_write(&err, obj, 0, fd);
+	write(fd, "\n", 1);
     }
     fclose(f);
     dt = clock_micro() - start;
@@ -95,7 +89,7 @@ bench_read(const char *filename) {
 int
 main(int argc, char **argv) {
     const char	*filename = "log.json";
-    int64_t	iter = 10000LL;
+    int64_t	iter = 100000LL;
 
     bench_write(filename, iter);
     bench_read(filename);

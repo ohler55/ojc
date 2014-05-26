@@ -404,6 +404,38 @@ each_benchmark_test() {
     ut_benchmark("each callback", 100000LL, each_bench, json);
 }
 
+static void
+each_str255_benchmark_test() {
+    int		cnt = 1000;
+    char	js[] = "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"";
+    char	*json = (char*)malloc(sizeof(js) * cnt + 1);
+    char	*s = json;
+
+    for (; 0 < cnt; cnt--) {
+	memcpy(s, js, sizeof(js));
+	s += sizeof(js) - 1;
+	*s++ = '\n';
+    }
+    *s = '\0';
+    ut_benchmark("each str255 callback", 100000LL, each_bench, json);
+}
+
+static void
+each_str257_benchmark_test() {
+    int		cnt = 1000;
+    char	js[] = "\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxzz\"";
+    char	*json = (char*)malloc(sizeof(js) * cnt + 1);
+    char	*s = json;
+
+    for (; 0 < cnt; cnt--) {
+	memcpy(s, js, sizeof(js));
+	s += sizeof(js) - 1;
+	*s++ = '\n';
+    }
+    *s = '\0';
+    ut_benchmark("each str257 callback", 100000LL, each_bench, json);
+}
+
 static struct _Test	tests[] = {
     { "array",		array_test },
     { "null",		null_test },
@@ -422,6 +454,8 @@ static struct _Test	tests[] = {
     { "object_aget",	object_aget_test },
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
+    { "each_str255_benchmark",	each_str255_benchmark_test },
+    { "each_str257_benchmark",	each_str257_benchmark_test },
     { 0, 0 } };
 
 int

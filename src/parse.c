@@ -104,6 +104,49 @@ get_val(ParseInfo pi, ojcValType type) {
     return v;
 }
 
+static Bstr
+get_bstr(ParseInfo pi) {
+    Bstr	v;
+
+    if (0 == pi->free_bstrs.head) {
+	_ojc_bstr_create_batch(16, &pi->free_bstrs);
+    }
+    v = pi->free_bstrs.head;
+    pi->free_bstrs.head = v->next;
+    if (0 == pi->free_bstrs.head) {
+	pi->free_bstrs.tail = 0;
+    }
+    return v;
+}
+
+static void
+pi_object_nappend(ParseInfo pi, ojcVal object, ojcVal val) {
+    const char	*key = pi->key;
+    int		klen = pi->klen;
+
+    val->next = 0;
+    if (sizeof(union _Bstr) <= klen) {
+	val->key_type = STR_PTR;
+	val->key.str = strndup(key, klen);
+	val->key.str[klen] = '\0';
+    } else if (sizeof(val->key.ca) <= klen) {
+	val->key_type = STR_BLOCK;
+	val->key.bstr = get_bstr(pi);
+	memcpy(val->key.bstr->ca, key, klen);
+	val->key.bstr->ca[klen] = '\0';
+    } else {
+	val->key_type = STR_ARRAY;
+	memcpy(val->key.ca, key, klen);
+	val->key.ca[klen] = '\0';
+    }
+    if (0 == object->members.head) {
+	object->members.head = val;
+    } else {
+	object->members.tail->next = val;
+    }
+    object->members.tail = val;
+}
+
 static void
 add_value(ParseInfo pi, ojcVal val) {
     ojcVal	parent = stack_peek(&pi->stack);
@@ -118,7 +161,7 @@ add_value(ParseInfo pi, ojcVal val) {
 	    parent->expect = NEXT_ARRAY_COMMA;
 	    break;
 	case NEXT_OBJECT_VALUE:
-	    ojc_object_nappend(&pi->err, parent, pi->key, pi->klen, val);
+	    pi_object_nappend(pi, parent, val);
 	    if (pi->kalloc) {
 		free(pi->key);
 	    }
@@ -140,17 +183,38 @@ add_value(ParseInfo pi, ojcVal val) {
     }
 }
 
+static ojcVal
+get_str_val(ParseInfo pi, const char *str, int len) {
+    ojcVal	val = get_val(pi, OJC_STRING);
+
+    if (sizeof(union _Bstr) <= len) {
+	val->str_type = STR_PTR;
+	val->str.str = strndup(str, len);
+	val->str.str[len] = '\0';
+    } else if (sizeof(val->str.ca) <= len) {
+	val->str_type = STR_BLOCK;
+	val->str.bstr = get_bstr(pi);
+	memcpy(val->str.bstr->ca, str, len);
+	val->str.bstr->ca[len] = '\0';
+    } else {
+	val->str_type = STR_ARRAY;
+	memcpy(val->str.ca, str, len);
+	val->str.ca[len] = '\0';
+    }
+    return val;
+}
+
 static void
 add_str(ParseInfo pi, const char *str, int len) {
     ojcVal	parent = stack_peek(&pi->stack);
 
     if (0 == parent) { // simple add
-	*pi->stack.head = ojc_create_str(str, len);
+	*pi->stack.head = get_str_val(pi, str, len);
     } else {
 	switch (parent->expect) {
 	case NEXT_ARRAY_NEW:
 	case NEXT_ARRAY_ELEMENT:
-	    ojc_array_append(&pi->err, parent, ojc_create_str(str, len));
+	    ojc_array_append(&pi->err, parent, get_str_val(pi, str, len));
 	    parent->expect = NEXT_ARRAY_COMMA;
 	    break;
 	case NEXT_OBJECT_NEW:
@@ -168,7 +232,7 @@ add_str(ParseInfo pi, const char *str, int len) {
 	    parent->expect = NEXT_OBJECT_COLON;
 	    break;
 	case NEXT_OBJECT_VALUE:
-	    ojc_object_nappend(&pi->err, parent, pi->key, pi->klen, ojc_create_str(str, len));
+	    pi_object_nappend(pi, parent, get_str_val(pi, str, len));
 	    if (pi->kalloc) {
 		free(pi->key);
 	    }
@@ -318,7 +382,7 @@ read_escaped_str(ParseInfo pi) {
     char	c;
     uint32_t	code;
 
-    buf_init(&buf);
+    buf_init(&buf, 0);
     if (pi->rd.start < pi->rd.tail) {
 	buf_append_string(&buf, pi->rd.start, pi->rd.tail - pi->rd.start);
     }
@@ -535,6 +599,28 @@ colon(ParseInfo pi) {
     }
 }
 
+static void
+pi_val_destroy(ParseInfo pi, ojcVal val) {
+    struct _List	freed = { 0, 0 };
+    struct _MList	freed_bstrs = { 0, 0 };
+
+    _ojc_val_destroy(val, &freed, &freed_bstrs);
+    if (0 == pi->free_vals.head) {
+	pi->free_vals.head = freed.head;
+	pi->free_vals.tail = freed.tail;
+    } else {
+	freed.tail->next = pi->free_vals.head;
+	pi->free_vals.head = freed.head;
+    }
+    if (0 == pi->free_bstrs.head) {
+	pi->free_bstrs.head = freed_bstrs.head;
+	pi->free_bstrs.tail = freed_bstrs.tail;
+    } else {
+	freed_bstrs.tail->next = pi->free_bstrs.head;
+	pi->free_bstrs.head = freed_bstrs.head;
+    }
+}
+
 void
 ojc_parse(ParseInfo pi) {
     char	c;
@@ -606,16 +692,7 @@ ojc_parse(ParseInfo pi) {
 
 	    if (0 != val) {
 		if (pi->each_cb(val, pi->each_ctx)) {
-		    struct _List	freed = { 0, 0 };
-
-		    _ojc_val_destroy(val, &freed);
-		    if (0 == pi->free_vals.head) {
-			pi->free_vals.head = freed.head;
-			pi->free_vals.tail = freed.tail;
-		    } else {
-			freed.tail->next = pi->free_vals.head;
-			pi->free_vals.head = freed.head;
-		    }
+		    pi_val_destroy(pi, val);
 		}
 		*pi->stack.head = 0;
 	    }

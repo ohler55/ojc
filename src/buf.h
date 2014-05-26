@@ -35,18 +35,22 @@ typedef struct _Buf {
     char	*head;
     char	*end;
     char	*tail;
+    int		fd;
     bool	realloc_ok;
     bool	overflow;
-    char	base[4040];
+    char	err;
+    char	base[4096];
 } *Buf;
 
 inline static void
-buf_init(Buf buf) {
+buf_init(Buf buf, int fd) {
     buf->head = buf->base;
     buf->end = buf->base + sizeof(buf->base) - 1;
     buf->tail = buf->head;
-    buf->realloc_ok = true;
+    buf->fd = fd;
+    buf->realloc_ok = (0 == fd);
     buf->overflow = false;
+    buf->err = OJC_OK;
 }
 
 inline static void
@@ -54,8 +58,10 @@ buf_finit(Buf buf, char *str, size_t slen) {
     buf->head = str;
     buf->end = str + slen;
     buf->tail = buf->head;
+    buf->fd = 0;
     buf->realloc_ok = false;
     buf->overflow = false;
+    buf->err = OJC_OK;
 }
 
 inline static void
@@ -78,8 +84,17 @@ buf_len(Buf buf) {
 
 inline static void
 buf_append_string(Buf buf, const char *s, size_t slen) {
+    if (buf->err) {
+	return;
+    }
     if (buf->end <= buf->tail + slen) {
-	if (buf->realloc_ok) {
+	if (0 != buf->fd) {
+	    size_t	len = buf->tail - buf->head;
+	    if (len != write(buf->fd, buf->head, len)) {
+		buf->err = OJC_WRITE_ERR;
+	    }
+	    buf->tail = buf->head;
+	} else if (buf->realloc_ok) {
 	    size_t	len = buf->end - buf->head;
 	    size_t	toff = buf->tail - buf->head;
 	    size_t	new_len = len + slen + len / 2;
@@ -105,8 +120,17 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
     
 inline static void
 buf_append(Buf buf, char c) {
+    if (buf->err) {
+	return;
+    }
     if (buf->end <= buf->tail) {
-	if (buf->realloc_ok) {
+	if (0 != buf->fd) {
+	    size_t	len = buf->tail - buf->head;
+	    if (len != write(buf->fd, buf->head, len)) {
+		buf->err = OJC_WRITE_ERR;
+	    }
+	    buf->tail = buf->head;
+	} else if (buf->realloc_ok) {
 	    size_t	len = buf->end - buf->head;
 	    size_t	toff = buf->tail - buf->head;
 	    size_t	new_len = len + len / 2;
@@ -126,6 +150,21 @@ buf_append(Buf buf, char c) {
     }
     *buf->tail++ = c;
     //*buf->tail = '\0'; // for debugging
+}
+
+inline static void
+buf_finish(Buf buf) {
+    if (buf->err) {
+	return;
+    }
+    if (0 != buf->fd) {
+	size_t	len = buf->tail - buf->head;
+
+	if (0 < len && len != write(buf->fd, buf->head, len)) {
+	    buf->err = OJC_WRITE_ERR;
+	}
+	buf->tail = buf->head;
+    }
 }
 
 #endif /* __OJC_BUF_H__ */

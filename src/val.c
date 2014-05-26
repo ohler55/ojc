@@ -34,7 +34,8 @@
 #include "val.h"
 
 static struct _List	free_vals = { 0, 0 };
-static pthread_mutex_t	free_val_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct _MList	free_bstrs = { 0, 0 };
+static pthread_mutex_t	free_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 ojcVal
 _ojc_val_create(ojcValType type) {
@@ -43,14 +44,14 @@ _ojc_val_create(ojcValType type) {
     if (free_vals.head == free_vals.tail) {
 	val = (ojcVal)malloc(sizeof(struct _ojcVal));
     } else {
-	pthread_mutex_lock(&free_val_mutex);
+	pthread_mutex_lock(&free_mutex);
 	if (free_vals.head == free_vals.tail) {
 	    val = (ojcVal)malloc(sizeof(struct _ojcVal));
 	} else {
 	    val = free_vals.head;
 	    free_vals.head = free_vals.head->next;
 	}
-	pthread_mutex_unlock(&free_val_mutex);
+	pthread_mutex_unlock(&free_mutex);
     }
     val->next = 0;
     val->key_type = STR_NONE;
@@ -68,7 +69,7 @@ _ojc_val_create_batch(size_t cnt, List vals) {
     ojcVal	v;
 
     if (free_vals.head != free_vals.tail) {
-	pthread_mutex_lock(&free_val_mutex);
+	pthread_mutex_lock(&free_mutex);
 	if (free_vals.head != free_vals.tail) {
 	    ojcVal	prev = free_vals.head;
 
@@ -80,7 +81,7 @@ _ojc_val_create_batch(size_t cnt, List vals) {
 	    vals->tail = prev;
 	    vals->tail->next = 0;
 	}
-	pthread_mutex_unlock(&free_val_mutex);
+	pthread_mutex_unlock(&free_mutex);
     }
     for (; 0 < cnt; cnt--) {
 	v = _ojc_val_create(OJC_NULL);
@@ -94,12 +95,40 @@ _ojc_val_create_batch(size_t cnt, List vals) {
 }
 
 void
-_ojc_val_destroy(ojcVal val, List freed) {
-    if (STR_PTR == val->key_type) {
+_ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
+    switch (val->key_type) {
+    case STR_PTR:
 	free(val->key.str);
+	break;
+    case STR_BLOCK:
+	if (0 == freed_bstrs->head) {
+	    freed_bstrs->head = val->key.bstr;
+	} else {
+	    freed_bstrs->tail->next = val->key.bstr;
+	}
+	val->key.bstr->next = 0;
+	freed_bstrs->tail = val->key.bstr;
+	break;
+    default:
+	break;
     }
-    if (OJC_STRING == val->type && STR_PTR == val->str_type) {
-	free(val->str.str);
+    if (OJC_STRING == val->type) {
+	switch (val->str_type) {
+	case STR_PTR:
+	    free(val->str.str);
+	    break;
+	case STR_BLOCK:
+	    if (0 == freed_bstrs->head) {
+		freed_bstrs->head = val->str.bstr;
+	    } else {
+		freed_bstrs->tail->next = val->str.bstr;
+	    }
+	    val->str.bstr->next = 0;
+	    freed_bstrs->tail = val->str.bstr;
+	    break;
+	default:
+	    break;
+	}
     }
     if (OJC_ARRAY == val->type || OJC_OBJECT == val->type) {
 	ojcVal	m;
@@ -107,7 +136,7 @@ _ojc_val_destroy(ojcVal val, List freed) {
 
 	for (m = val->members.head; 0 != m; m = next) {
 	    next = m->next;
-	    _ojc_val_destroy(m, freed);
+	    _ojc_val_destroy(m, freed, freed_bstrs);
 	}
     }
     if (0 == freed->head) {
@@ -116,36 +145,124 @@ _ojc_val_destroy(ojcVal val, List freed) {
 	freed->tail->next = val;
     }
     val->next = 0;
+    val->type = OJC_NULL;
+    val->str_type = STR_NONE;
+    val->key_type = STR_NONE;
     freed->tail = val;
 }
 
 void
 _ojc_destroy(ojcVal val) {
     struct _List	freed = { 0, 0 };
+    struct _MList	freed_bstrs = { 0, 0 };
 
-    _ojc_val_destroy(val, &freed);
+    _ojc_val_destroy(val, &freed, &freed_bstrs);
 
-    pthread_mutex_lock(&free_val_mutex);
+    pthread_mutex_lock(&free_mutex);
     if (0 == free_vals.head) {
 	free_vals.head = freed.head;
     } else {
 	free_vals.tail->next = freed.head;
     }
     free_vals.tail = freed.tail;
-    pthread_mutex_unlock(&free_val_mutex);
+
+    if (0 != freed_bstrs.head) {
+	if (0 == free_bstrs.head) {
+	    free_bstrs.head = freed_bstrs.head;
+	} else {
+	    free_bstrs.tail->next = freed_bstrs.head;
+	}
+	free_bstrs.tail = freed_bstrs.tail;
+    }
+    pthread_mutex_unlock(&free_mutex);
 }
 
 void
-_ojc_val_return(List freed) {
+_ojc_val_return(List freed, MList freed_bstrs) {
     if (0 == freed->head) {
 	return;
     }
-    pthread_mutex_lock(&free_val_mutex);
+    pthread_mutex_lock(&free_mutex);
     if (0 == free_vals.head) {
 	free_vals.head = freed->head;
     } else {
 	free_vals.tail->next = freed->head;
     }
     free_vals.tail = freed->tail;
-    pthread_mutex_unlock(&free_val_mutex);
+
+    if (0 != freed_bstrs->head) {
+	if (0 == free_bstrs.head) {
+	    free_bstrs.head = freed_bstrs->head;
+	} else {
+	    free_bstrs.tail->next = freed_bstrs->head;
+	}
+	free_bstrs.tail = freed_bstrs->tail;
+    }
+    pthread_mutex_unlock(&free_mutex);
+}
+
+Bstr
+_ojc_bstr_create() {
+    Bstr	bstr;
+
+    if (free_bstrs.head == free_bstrs.tail) {
+	bstr = (Bstr)malloc(sizeof(union _Bstr));
+    } else {
+	pthread_mutex_lock(&free_mutex);
+	if (free_bstrs.head == free_bstrs.tail) {
+	    bstr = (Bstr)malloc(sizeof(union _Bstr));
+	} else {
+	    bstr = free_bstrs.head;
+	    free_bstrs.head = free_bstrs.head->next;
+	}
+	pthread_mutex_unlock(&free_mutex);
+    }
+    *bstr->ca = '\0';
+
+    return bstr;
+}
+
+void
+_ojc_bstr_create_batch(size_t cnt, MList list) {
+    Bstr	v;
+
+    if (free_bstrs.head != free_bstrs.tail) {
+	pthread_mutex_lock(&free_mutex);
+	if (free_bstrs.head != free_bstrs.tail) {
+	    Bstr	prev = free_bstrs.head;
+
+	    list->head = prev;
+	    for (v = prev; 0 < cnt && v != free_bstrs.tail; cnt--, v = v->next) {
+		prev = v;
+	    }
+	    free_bstrs.head = v;
+	    list->tail = prev;
+	    list->tail->next = 0;
+	}
+	pthread_mutex_unlock(&free_mutex);
+    }
+    for (; 0 < cnt; cnt--) {
+	v = _ojc_bstr_create();
+	if (0 == list->head) {
+	    list->head = v;
+	} else {
+	    list->tail->next = v;
+	}
+	list->tail = v;
+    }
+}
+
+void
+_ojc_bstr_return(MList freed) {
+    if (0 == freed->head) {
+	return;
+    }
+    pthread_mutex_lock(&free_mutex);
+    if (0 == free_bstrs.head) {
+	free_bstrs.head = freed->head;
+    } else {
+	free_bstrs.tail->next = freed->head;
+    }
+    free_bstrs.tail = freed->tail;
+    pthread_mutex_unlock(&free_mutex);
 }
