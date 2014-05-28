@@ -694,7 +694,7 @@ ojc_parse(ParseInfo pi) {
 	    ojcVal	val = stack_head(&pi->stack);
 
 	    if (0 != val) {
-		if (pi->each_cb(val, pi->each_ctx)) {
+		if (pi->each_cb(&pi->err, val, pi->each_ctx)) {
 		    pi_val_destroy(pi, val);
 		}
 		*pi->stack.head = 0;

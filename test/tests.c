@@ -136,15 +136,13 @@ mix_test() {
 }
 
 static bool
-each_callback(ojcVal val, void *ctx) {
+each_callback(ojcErr err, ojcVal val, void *ctx) {
     char		*result = (char*)ctx;
-    struct _ojcErr	err;
     int			cnt;
 
-    ojc_err_init(&err);
     for (; '\0' != *result; result++) {
     }
-    cnt = ojc_fill(&err, val, 0, result, 32);
+    cnt = ojc_fill(err, val, 0, result, 32);
     result[cnt] = '\n';
     result[cnt + 1] = '\0';
 
@@ -374,7 +372,7 @@ benchmark_test() {
 }
 
 static bool
-each_benchmark_callback(ojcVal val, void *ctx) {
+each_benchmark_callback(ojcErr err, ojcVal val, void *ctx) {
     return true;
 }
 
@@ -405,7 +403,7 @@ each_benchmark_test() {
 }
 
 static bool
-free_benchmark_callback(ojcVal val, void *ctx) {
+free_benchmark_callback(ojcErr err, ojcVal val, void *ctx) {
     ojc_destroy(val);
     return false;
 }

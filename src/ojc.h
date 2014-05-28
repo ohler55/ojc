@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.0.2"
+#define OJC_VERSION	"1.1.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -90,6 +90,8 @@ typedef enum {
     OJC_MEMORY_ERR	= 'm',
     /** unicode error */
     OJC_UNICODE_ERR	= 'u',
+    /** abort callback parsing */
+    OJC_ABORT_ERR	= 'a',
 } ojcErrCode;
 
 /**
@@ -124,7 +126,7 @@ typedef struct _ojcVal	*ojcVal;
  *
  * @see ojc_parse_str, ojc_parse_stream, ojc_parse_socket
  */
-typedef bool	(*ojcParseCallback)(ojcVal val, void *ctx);
+typedef bool	(*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);
 
 /**
  * @return version of OjC.
