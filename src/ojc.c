@@ -243,6 +243,7 @@ ojc_aget(ojcVal val, const char **path) {
 		switch (m->key_type) {
 		case STR_PTR:	key = m->key.str;	break;
 		case STR_ARRAY:	key = m->key.ca;	break;
+		case STR_BLOCK:	key = m->key.bstr->ca;	break;
 		case STR_NONE:
 		default:	key = 0;		break;
 		}
@@ -272,7 +273,7 @@ ojc_int(ojcErr err, ojcVal val) {
     if (0 == val || OJC_FIXNUM != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not get and int64_t from a %s", ojc_type_str((ojcValType)val->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not get an int64_t from a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
@@ -288,11 +289,33 @@ ojc_double(ojcErr err, ojcVal val) {
     if (0 == val || OJC_DECIMAL != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not get and double from a %s", ojc_type_str((ojcValType)val->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not get a double from a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
     return val->dub;
+}
+
+const char*
+ojc_str(ojcErr err, ojcVal val) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || OJC_STRING != val->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not get a string from a %s", ojc_type_str((ojcValType)val->type));
+	}
+	return 0;
+    }
+    switch (val->str_type) {
+    case STR_PTR:	return val->str.str;
+    case STR_ARRAY:	return val->str.ca;
+    case STR_BLOCK:	return val->str.bstr->ca;
+    case STR_NONE:
+    default:		return 0;
+    }
 }
 
 ojcVal
@@ -348,6 +371,7 @@ ojc_key(ojcVal val) {
     switch (val->key_type) {
     case STR_PTR:	return val->key.str;
     case STR_ARRAY:	return val->key.ca;
+    case STR_BLOCK:	return val->key.bstr->ca;
     case STR_NONE:
     default:		return 0;
     }

@@ -12,11 +12,17 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.0.1
+### Current Release 1.0.2 - May 28, 2014
+
+ - Added static initializer for ojcErr.
+
+ - Added ojc_str().
+
+### Release 1.0.1 - May 27, 2014
 
  - Corrected compile errors with clang and made ojc.h C++ compatible.
 
-### Release 1.0.0
+### Release 1.0.0 - May 26, 2014
 
  - Initial release.
 

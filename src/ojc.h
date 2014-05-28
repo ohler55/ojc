@@ -42,7 +42,9 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.0.1"
+#define OJC_VERSION	"1.0.2"
+
+#define OJC_ERR_INIT	{ 0, { 0 } }
 
 /**
  * The value types found in JSON documents and in the __ojcVal__ type.
@@ -230,6 +232,16 @@ extern int64_t		ojc_int(ojcErr err, ojcVal val);
  * @return the C double value of the __val__ argument.
  */
 extern double		ojc_double(ojcErr err, ojcVal val);
+
+/**
+ * Get the string value of a __ojcVal__ if it is of type __OJC_STRING__. If it
+ * is not the correct type a type error is returned in the __err__ value.
+ *
+ * @param err structure to pass the status or an error back in
+ * @param val __ojcVal__ to get the C int64_t from
+ * @return the C integer value of the __val__ argument.
+ */
+extern const char*	ojc_str(ojcErr err, ojcVal val);
 
 /**
  * Get the first child value of a __ojcVal__ if it is of type __OJC_OBJECT__ or
