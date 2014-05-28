@@ -12,7 +12,13 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.0.2 - May 28, 2014
+### Current Release 1.1.0 - May 28, 2014
+
+ - Fixed ubuntu compilation.
+
+ - Changed callback for parsing to allow the parsing to be aborted by the callback.
+
+### Release 1.0.2 - May 28, 2014
 
  - Added static initializer for ojcErr.
 
