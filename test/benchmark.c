@@ -19,7 +19,7 @@ clock_micro() {
 }
 
 static bool
-each_cb(ojcVal val, void *ctx) {
+each_cb(ojcErr err, ojcVal val, void *ctx) {
     *((int64_t*)ctx) = *((int64_t*)ctx) + 1;
     return true;
 }
@@ -59,7 +59,7 @@ bench_write(const char *filename, int64_t iter) {
 	return -1;
     }
     printf("wrote %lld entries in %0.3f msecs. (%g iterations/msec)\n",
-	   iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
+	   (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
     return 0;
 }
 
@@ -81,7 +81,7 @@ bench_read(const char *filename) {
 	return -1;
     }
     printf("%lld entries in %0.3f msecs. (%g iterations/msec)\n",
-	   cnt, (double)dt / 1000.0, (double)cnt * 1000.0 / (double)dt);
+	   (long long)cnt, (double)dt / 1000.0, (double)cnt * 1000.0 / (double)dt);
 
     return 0;
 }

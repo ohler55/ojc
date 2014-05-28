@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <strings.h>
 #include <sys/types.h>
 #if NEEDS_UIO

@@ -496,6 +496,6 @@ ut_benchmark(const char *label, int64_t iter, void (*func)(int64_t iter, void *c
     ut_pass();
 
     printf("%s: %lld iterations in %0.3f msecs. (%g iterations/msec)\n",
-	   label, iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
+	   label, (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
 }
 
