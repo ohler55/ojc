@@ -97,7 +97,7 @@ void
 ut_done(void) {
     char	nameFormat[32];
     Test	t;
-    char	*result = "Skipped";
+    const char	*result = "Skipped";
     time_t	tt;
     int		cnt = 0;
     int		fail = 0;
@@ -306,7 +306,7 @@ ut_loadFile(const char *filename) {
     }
     fseek(f, 0, SEEK_END);
     len = ftell(f);
-    if (0 == (buf = malloc(len + 1))) {
+    if (0 == (buf = (char*)malloc(len + 1))) {
 	ut_print("Error: failed to allocate %ld bytes for file %s.\n", len, filename);
 	return 0;
     }

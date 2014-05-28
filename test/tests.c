@@ -404,6 +404,38 @@ each_benchmark_test() {
     ut_benchmark("each callback", 100000LL, each_bench, json);
 }
 
+static bool
+free_benchmark_callback(ojcVal val, void *ctx) {
+    ojc_destroy(val);
+    return false;
+}
+
+static void
+free_bench(int64_t iter, void *ctx) {
+    struct _ojcErr	err;
+
+    ojc_err_init(&err);
+    iter /= 1000LL;
+    for (; 0 < iter; iter--) {
+	ojc_parse_str(&err, (const char*)ctx, free_benchmark_callback, 0);
+    }
+}
+
+static void
+free_benchmark_test() {
+    int		cnt = 1000;
+    char	*json = (char*)malloc(sizeof(bench_json) * cnt + 1);
+    char	*s = json;
+
+    for (; 0 < cnt; cnt--) {
+	memcpy(s, bench_json, sizeof(bench_json));
+	s += sizeof(bench_json) - 1;
+	*s++ = '\n';
+    }
+    *s = '\0';
+    ut_benchmark("free callback", 100000LL, free_bench, json);
+}
+
 static void
 each_str255_benchmark_test() {
     int		cnt = 1000;
@@ -454,6 +486,7 @@ static struct _Test	tests[] = {
     { "object_aget",	object_aget_test },
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
+    { "free_benchmark",	free_benchmark_test },
     { "each_str255_benchmark",	each_str255_benchmark_test },
     { "each_str257_benchmark",	each_str257_benchmark_test },
     { 0, 0 } };

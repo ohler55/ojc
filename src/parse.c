@@ -177,7 +177,7 @@ add_value(ParseInfo pi, ojcVal val) {
 	case NEXT_ARRAY_COMMA:
 	case NEXT_OBJECT_COLON:
 	default:
-	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected %s", _ojc_stack_next_str(parent->expect));
+	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected %s", _ojc_stack_next_str((ValNext)parent->expect));
 	    break;
 	}
     }
@@ -246,7 +246,8 @@ add_str(ParseInfo pi, const char *str, int len) {
 	case NEXT_ARRAY_COMMA:
 	case NEXT_OBJECT_COLON:
 	default:
-	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected %s, not a string", _ojc_stack_next_str(parent->expect));
+	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__,
+			     "expected %s, not a string", _ojc_stack_next_str((ValNext)parent->expect));
 	    break;
 	}
     }
@@ -268,7 +269,8 @@ object_end(ParseInfo pi) {
     if (0 == obj) {
 	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "unexpected object close");
     } else if (NEXT_OBJECT_COMMA != obj->expect && NEXT_OBJECT_NEW != obj->expect) {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected %s, not a hash close", _ojc_stack_next_str(obj->expect));
+	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__,
+			 "expected %s, not a hash close", _ojc_stack_next_str((ValNext)obj->expect));
     }
 }
 
@@ -287,7 +289,8 @@ array_end(ParseInfo pi) {
     if (0 == array) {
 	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "unexpected array close");
     } else if (NEXT_ARRAY_COMMA != array->expect && NEXT_ARRAY_NEW != array->expect) {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected %s, not an array close", _ojc_stack_next_str(array->expect));
+	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__,
+			 "expected %s, not an array close", _ojc_stack_next_str((ValNext)array->expect));
     }
 }
 

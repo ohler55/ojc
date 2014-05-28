@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.0.0
+### Current Release 1.0.1
+
+ - Corrected compile errors with clang and made ojc.h C++ compatible.
+
+### Release 1.0.0
 
  - Initial release.
 

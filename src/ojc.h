@@ -31,6 +31,10 @@
 #ifndef __OJC_H__
 #define __OJC_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -38,7 +42,7 @@
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.0.0"
+#define OJC_VERSION	"1.0.1"
 
 /**
  * The value types found in JSON documents and in the __ojcVal__ type.
@@ -443,4 +447,7 @@ ojc_err_init(ojcErr err) {
     *err->msg = '\0';
 }
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* __OJC_H__ */

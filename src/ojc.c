@@ -40,7 +40,7 @@
 
 static const char	hex_chars[17] = "0123456789abcdef";
 
-static char	hibit_friendly_chars[256] = "\
+static char	hibit_friendly_chars[257] = "\
 66666666222622666666666666666666\
 11211111111111111111111111111111\
 11111111111111111111111111112111\
@@ -260,7 +260,7 @@ ojc_aget(ojcVal val, const char **path) {
 
 ojcValType
 ojc_type(ojcVal val) {
-    return val->type;
+    return (ojcValType)val->type;
 }
 
 int64_t
@@ -272,7 +272,7 @@ ojc_int(ojcErr err, ojcVal val) {
     if (0 == val || OJC_FIXNUM != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not get and int64_t from a %s", ojc_type_str(val->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not get and int64_t from a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
@@ -288,7 +288,7 @@ ojc_double(ojcErr err, ojcVal val) {
     if (0 == val || OJC_DECIMAL != val->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not get and double from a %s", ojc_type_str(val->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not get and double from a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
@@ -304,7 +304,7 @@ ojc_members(ojcErr err, ojcVal val) {
     if (0 == val || (OJC_ARRAY != val->type && OJC_OBJECT != val->type)) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not get members from a %s", ojc_type_str(val->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not get members from a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
@@ -328,7 +328,7 @@ ojc_member_count(ojcErr err, ojcVal val) {
     if (0 == val || (OJC_ARRAY != val->type && OJC_OBJECT != val->type)) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "No members in a %s", ojc_type_str(val->type));
+	    snprintf(err->msg, sizeof(err->msg), "No members in a %s", ojc_type_str((ojcValType)val->type));
 	}
 	return 0;
     }
@@ -451,7 +451,7 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
     if (0 == object || OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not object append to a %s", ojc_type_str(object->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not object append to a %s", ojc_type_str((ojcValType)object->type));
 	}
 	return;
     }
@@ -492,7 +492,7 @@ ojc_array_append(ojcErr err, ojcVal array, ojcVal val) {
     if (0 == array || OJC_ARRAY != array->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not array append to a %s", ojc_type_str(array->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not array append to a %s", ojc_type_str((ojcValType)array->type));
 	}
 	return;
     }
@@ -822,11 +822,14 @@ ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len) {
 	return -1;
     }
     if (OJC_OK != b.err) {
-	err->code = b.err;
-	strcpy(err->msg, ojc_error_str(b.err));
+	if (0 != err) {
+	    err->code = b.err;
+	    strcpy(err->msg, ojc_error_str((ojcErrCode)b.err));
+	}
 	return -1;
     }
     *b.tail = '\0';
+
     return buf_len(&b);
 }
 
@@ -843,7 +846,7 @@ ojc_write(ojcErr err, ojcVal val, int indent, int socket) {
     buf_finish(&b);
     if (OJC_OK != b.err) {
 	err->code = b.err;
-	strcpy(err->msg, ojc_error_str(b.err));
+	strcpy(err->msg, ojc_error_str((ojcErrCode)b.err));
     }
 }
 

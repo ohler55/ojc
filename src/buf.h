@@ -103,7 +103,7 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 		buf->head = (char*)malloc(new_len);
 		memcpy(buf->head, buf->base, len);
 	    } else {
-		buf->head = realloc(buf->head, new_len);
+		buf->head = (char*)realloc(buf->head, new_len);
 	    }
 	    buf->tail = buf->head + toff;
 	    buf->end = buf->head + new_len - 1;
