@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.1.0"
+#define OJC_VERSION	"1.2.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -387,6 +387,26 @@ extern void		ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int 
  * @param val value to append
  */
 extern void		ojc_array_append(ojcErr err, ojcVal array, ojcVal val);
+
+/**
+ * Pushes a __val__ to the front of a JSON array. The __err__ struct is set if
+ * the __object__ is not an __OJC__ARRAY__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param array array to append __val__ to
+ * @param val value to push
+ */
+extern void		ojc_array_push(ojcErr err, ojcVal array, ojcVal val);
+
+/**
+ * Removes and returns a __val__ from the front of a JSON array. The __err__
+ * struct is set if the __object__ is not an __OJC__ARRAY__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param array array to append __val__ to
+ * @return the first element in an array.
+ */
+extern ojcVal		ojc_array_pop(ojcErr err, ojcVal array);
 
 /**
  * Converts __val__ to a JSON formated string. The __indent__ argument is used

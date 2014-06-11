@@ -529,6 +529,53 @@ ojc_array_append(ojcErr err, ojcVal array, ojcVal val) {
     array->members.tail = val;
 }
 
+void
+ojc_array_push(ojcErr err, ojcVal array, ojcVal val) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return;
+    }
+    if (0 == array || OJC_ARRAY != array->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not array append to a %s", ojc_type_str((ojcValType)array->type));
+	}
+	return;
+    }
+    val->next = array->members.head;
+    array->members.head = val;
+    if (0 == array->members.tail) {
+	array->members.tail = val;
+    }
+}
+
+ojcVal
+ojc_array_pop(ojcErr err, ojcVal array) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == array || OJC_ARRAY != array->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not array append to a %s", ojc_type_str((ojcValType)array->type));
+	}
+	return 0;
+    }
+    if (0 != array->members.head) {
+	ojcVal	val = array->members.head;
+
+	array->members.head = val->next;
+	if (0 == array->members.head) {
+	    array->members.tail = 0;
+	}
+	val->next = 0;
+
+	return val;
+    }
+    return 0;
+}
+
 static void
 fixnum_fill(Buf bb, int64_t num) {
     char	buf[32];
