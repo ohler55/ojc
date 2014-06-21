@@ -88,7 +88,7 @@ string_test() {
     const char	*jsons[] = {
 	"\"hello\"",
 	"\"This is a longer string.\"",
-	"\"hello\\nthere\"",
+	"\"hello\nthere\"",
 	"\"ぴーたー\"",
 	"[\"hello\"]",
 	0 };
@@ -120,7 +120,7 @@ object_test() {
 	"{\"one\":null}",
 	"{\"one\":null,\"a key longer than sixteen characters\":true}",
 	"{\"one\":{}}",
-	"{\"o\\ne\":true}",
+	"{\"o\ne\":true}",
 	0 };
 
     in_and_out(jsons);
