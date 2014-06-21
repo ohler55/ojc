@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.2.0 -June 10, 2014
+### Current Release 1.2.1 -June 20, 2014
+
+ - Allow raw \n in output.
+
+### Release 1.2.0 -June 10, 2014
 
  - Added push and pop to array values.
 
