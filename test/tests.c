@@ -242,6 +242,24 @@ file_write_test() {
     free(result);
 }
 
+static void
+fill_too_big_test() {
+    ojcVal		val;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "[0,1,2,3,4,5,6,7,8,9]";
+    char		result[16];
+
+    memset(result, '\0', sizeof(result));
+    val = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_fill(&err, val, 0, result, 10);
+    printf("*** result: '%s'\n", result);
+    printf("*** error: %d = %s\n", err.code, err.msg);
+    ojc_destroy(val);
+}
+
 typedef struct _PathExp {
     const char	*path;
     const char	*expect;
@@ -508,6 +526,7 @@ static struct _Test	tests[] = {
     { "each",		each_test },
     { "file_parse",	file_parse_test },
     { "file_write",	file_write_test },
+    { "fill_too_big",	fill_too_big_test },
     { "array_get",	array_get_test },
     { "object_get",	object_get_test },
     { "array_aget",	array_aget_test },

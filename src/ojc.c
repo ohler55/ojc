@@ -750,7 +750,7 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 		    buf_append_string(buf, in, icnt);
 		}
 		fill_buf(buf, m, indent, d2);
-		if (buf->overflow) {
+		if (OJC_OK != buf->err) {
 		    break;
 		}
 	    }
@@ -800,7 +800,7 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 		buf_append(buf, '"');
 		buf_append(buf, ':');
 		fill_buf(buf, m, indent, d2);
-		if (buf->overflow) {
+		if (OJC_OK != buf->err) {
 		    break;
 		}
 	    }
@@ -898,13 +898,6 @@ ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len) {
     }
     buf_finit(&b, buf, len);
     fill_buf(&b, val, indent, 0);
-    if (b.overflow) {
-	if (0 != err) {
-	    err->code = OJC_OVERFLOW_ERR;
-	    strcpy(err->msg, "buffer not large enough for output");
-	}
-	return -1;
-    }
     if (OJC_OK != b.err) {
 	if (0 != err) {
 	    err->code = b.err;

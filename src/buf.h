@@ -37,7 +37,6 @@ typedef struct _Buf {
     char	*tail;
     int		fd;
     bool	realloc_ok;
-    bool	overflow;
     char	err;
     char	base[4096];
 } *Buf;
@@ -49,7 +48,6 @@ buf_init(Buf buf, int fd) {
     buf->tail = buf->head;
     buf->fd = fd;
     buf->realloc_ok = (0 == fd);
-    buf->overflow = false;
     buf->err = OJC_OK;
 }
 
@@ -60,7 +58,6 @@ buf_finit(Buf buf, char *str, size_t slen) {
     buf->tail = buf->head;
     buf->fd = 0;
     buf->realloc_ok = false;
-    buf->overflow = false;
     buf->err = OJC_OK;
 }
 
@@ -84,12 +81,13 @@ buf_len(Buf buf) {
 
 inline static void
 buf_append_string(Buf buf, const char *s, size_t slen) {
-    if (buf->err) {
+    if (OJC_OK != buf->err) {
 	return;
     }
     if (buf->end <= buf->tail + slen) {
 	if (0 != buf->fd) {
 	    size_t	len = buf->tail - buf->head;
+
 	    if (len != write(buf->fd, buf->head, len)) {
 		buf->err = OJC_WRITE_ERR;
 	    }
@@ -109,7 +107,8 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 	    buf->end = buf->head + new_len - 1;
 	} else {
 	    slen = buf->end - buf->tail - 1;
-	    buf->overflow = true;
+	    buf->err = OJC_OVERFLOW_ERR;
+	    return;
 	}
     }
     if (0 < slen) {
@@ -120,12 +119,13 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
     
 inline static void
 buf_append(Buf buf, char c) {
-    if (buf->err) {
+    if (OJC_OK != buf->err) {
 	return;
     }
     if (buf->end <= buf->tail) {
 	if (0 != buf->fd) {
 	    size_t	len = buf->tail - buf->head;
+
 	    if (len != write(buf->fd, buf->head, len)) {
 		buf->err = OJC_WRITE_ERR;
 	    }
@@ -144,7 +144,7 @@ buf_append(Buf buf, char c) {
 	    buf->tail = buf->head + toff;
 	    buf->end = buf->head + new_len - 1;
 	} else {
-	    buf->overflow = true;
+	    buf->err = OJC_OVERFLOW_ERR;
 	    return;
 	}
     }
@@ -154,7 +154,7 @@ buf_append(Buf buf, char c) {
 
 inline static void
 buf_finish(Buf buf) {
-    if (buf->err) {
+    if (OJC_OK != buf->err) {
 	return;
     }
     if (0 != buf->fd) {

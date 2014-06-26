@@ -12,11 +12,15 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.2.2 -June 25, 2014
+### Current Release 1.2.3 -June 26, 2014
+
+ - Fixed buffer overflow by 1 error.
+
+### Release 1.2.2 -June 25, 2014
 
  - Allow raw \n in output when ojc newline ok is true.
 
-### Current Release 1.2.1 -June 20, 2014
+### Release 1.2.1 -June 20, 2014
 
  - Allow raw \n in output.
 
