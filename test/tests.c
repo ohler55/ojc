@@ -88,12 +88,18 @@ string_test() {
     const char	*jsons[] = {
 	"\"hello\"",
 	"\"This is a longer string.\"",
-	"\"hello\nthere\"",
+	"\"hello\\nthere\"",
 	"\"ぴーたー\"",
 	"[\"hello\"]",
 	0 };
+    const char	*newline_jsons[] = {
+	"\"hello\nthere\"",
+	0 };
 
     in_and_out(jsons);
+    ojc_newline_ok = true;
+    in_and_out(newline_jsons);
+    ojc_newline_ok = false;
 }
 
 static void
@@ -120,7 +126,7 @@ object_test() {
 	"{\"one\":null}",
 	"{\"one\":null,\"a key longer than sixteen characters\":true}",
 	"{\"one\":{}}",
-	"{\"o\ne\":true}",
+	"{\"o\\ne\":true}",
 	0 };
 
     in_and_out(jsons);

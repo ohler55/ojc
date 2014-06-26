@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.2.1"
+#define OJC_VERSION	"1.2.2"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -132,6 +132,11 @@ typedef bool	(*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);
  * @return version of OjC.
  */
 extern const char*	ojc_version(void);
+
+/**
+ * If true new lines will not be escaped in the output.
+ */
+extern bool		ojc_newline_ok;
 
 /**
  * Parses a string. An error will result in the __err__ argument being set with

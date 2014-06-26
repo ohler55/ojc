@@ -40,7 +40,7 @@
 
 static const char	hex_chars[17] = "0123456789abcdef";
 
-static char		hibit_friendly_chars[257] = "\
+static char		newline_friendly_chars[257] = "\
 66666666221622666666666666666666\
 11211111111111111111111111111111\
 11111111111111111111111111112111\
@@ -49,6 +49,18 @@ static char		hibit_friendly_chars[257] = "\
 11111111111111111111111111111111\
 11111111111111111111111111111111\
 11111111111111111111111111111111";
+
+static char		hibit_friendly_chars[257] = "\
+66666666222622666666666666666666\
+11211111111111111111111111111111\
+11111111111111111111111111112111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111\
+11111111111111111111111111111111";
+
+bool		ojc_newline_ok = false;
 
 const char*
 ojc_version() {
@@ -669,7 +681,8 @@ fill_hex(uint8_t c, char *buf) {
 
 static const char*
 buf_append_chars(Buf buf, const char *str) {
-    switch (hibit_friendly_chars[(uint8_t)*str]) {
+    int	cnt = ojc_newline_ok ? newline_friendly_chars[(uint8_t)*str] : hibit_friendly_chars[(uint8_t)*str];
+    switch (cnt) {
     case '1':
 	buf_append(buf, *str);
 	str++;
