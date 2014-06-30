@@ -104,7 +104,7 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 		buf->head = (char*)realloc(buf->head, new_len);
 	    }
 	    buf->tail = buf->head + toff;
-	    buf->end = buf->head + new_len - 1;
+	    buf->end = buf->head + new_len - 2;
 	} else {
 	    slen = buf->end - buf->tail - 1;
 	    buf->err = OJC_OVERFLOW_ERR;
@@ -142,7 +142,7 @@ buf_append(Buf buf, char c) {
 		buf->head = (char*)realloc(buf->head, new_len);
 	    }
 	    buf->tail = buf->head + toff;
-	    buf->end = buf->head + new_len - 1;
+	    buf->end = buf->head + new_len - 2;
 	} else {
 	    buf->err = OJC_OVERFLOW_ERR;
 	    return;
