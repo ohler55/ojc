@@ -389,6 +389,12 @@ ojc_key(ojcVal val) {
     }
 }
 
+void
+ojc_set_key(ojcVal val, const char *key) {
+    _ojc_set_key(val, key, 0);
+}
+
+
 ojcVal
 ojc_create_object() {
     return _ojc_val_create(OJC_OBJECT);
@@ -481,9 +487,6 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
 	// Previous call must have failed or err was not initialized.
 	return;
     }
-    if (0 >= klen) {
-	klen = strlen(key);
-    }
     if (0 == object || OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
@@ -492,20 +495,7 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
 	return;
     }
     val->next = 0;
-    if (sizeof(union _Bstr) <= klen) {
-	val->key_type = STR_PTR;
-	val->key.str = strndup(key, klen);
-	val->key.str[klen] = '\0';
-    } else if (sizeof(val->key.ca) <= klen) {
-	val->key_type = STR_BLOCK;
-	val->key.bstr = _ojc_bstr_create();
-	memcpy(val->key.bstr->ca, key, klen);
-	val->key.bstr->ca[klen] = '\0';
-    } else {
-	val->key_type = STR_ARRAY;
-	memcpy(val->key.ca, key, klen);
-	val->key.ca[klen] = '\0';
-    }
+    _ojc_set_key(val, key, klen);
     if (0 == object->members.head) {
 	object->members.head = val;
     } else {

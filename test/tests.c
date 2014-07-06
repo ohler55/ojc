@@ -255,8 +255,7 @@ fill_too_big_test() {
 	return;
     }
     ojc_fill(&err, val, 0, result, 10);
-    printf("*** result: '%s'\n", result);
-    printf("*** error: %d = %s\n", err.code, err.msg);
+    ut_same_int(OJC_OVERFLOW_ERR, err.code);
     ojc_destroy(val);
 }
 

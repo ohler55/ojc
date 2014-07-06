@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.2.3"
+#define OJC_VERSION	"1.2.4"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -298,6 +298,14 @@ extern bool		ojc_has_key(ojcVal val);
  * @return the key associated with the __val__.
  */
 extern const char*	ojc_key(ojcVal val);
+
+/**
+ * Sets the __ojcVal__ key.
+ *
+ * @param val __ojcVal__ to set the key on.
+ * @param key value to set as the key
+ */
+extern void		ojc_set_key(ojcVal val, const char *key);
 
 /**
  * Creates a JSON object value.
