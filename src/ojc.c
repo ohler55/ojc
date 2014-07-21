@@ -481,17 +481,26 @@ ojc_create_bool(bool boo) {
     return _ojc_val_create(boo ? OJC_TRUE : OJC_FALSE);
 }
 
-void
-ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal val) {
+// returns false if okay, true if there is an error
+static bool
+bad_object(ojcErr err, ojcVal object) {
     if (0 != err && OJC_OK != err->code) {
 	// Previous call must have failed or err was not initialized.
-	return;
+	return true;
     }
     if (0 == object || OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Can not object append to a %s", ojc_type_str((ojcValType)object->type));
 	}
+	return true;
+    }
+    return false;
+}
+
+void
+ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal val) {
+    if (bad_object(err, object)) {
 	return;
     }
     val->next = 0;
@@ -508,6 +517,124 @@ void
 ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val) {
     return ojc_object_nappend(err, object, key, strlen(key), val);
 }
+
+void
+ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+
+    if (bad_object(err, object)) {
+	return;
+    }
+    _ojc_set_key(val, key, 0);
+    for (m = object->members.head; 0 != m; m = m->next) {
+	if (0 == strcmp(key, ojc_key(m))) {
+	    val->next = m->next;
+	    if (0 == prev) {
+		object->members.head = val;
+	    } else {
+		prev->next = val;
+	    }
+	    if (0 == val->next) {
+		object->members.tail = val;
+	    }
+	    m->next = 0;
+	    ojc_destroy(m);
+	    break;
+	}
+	prev = m;
+    }
+}
+
+void
+ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal val) {
+    if (bad_object(err, object)) {
+	return;
+    }
+    _ojc_set_key(val, key, 0);
+    val->next = 0;
+    if (0 >= before || 0 == object->members.head) {
+	val->next = object->members.head;
+	object->members.head = val;
+    } else {
+	ojcVal	m;
+
+	before--;
+	for (m = object->members.head; 0 != m; m = m->next, before--) {
+	    if (0 >= before) {
+		val->next = m->next;
+		m->next = val;
+		break;
+	    }
+	}
+	if (0 == m) {
+	    object->members.tail->next = val;
+	}
+    }
+    if (0 == val->next) {
+	object->members.tail = val;
+    }
+}
+
+void
+ojc_object_remove_by_pos(ojcErr err, ojcVal object, int pos) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+    int		p = pos;
+
+    if (bad_object(err, object)) {
+	return;
+    }
+    for (m = object->members.head; 0 != m && 0 < pos; m = m->next, p--) {
+	prev = m;
+    }
+    if (0 != p || 0 == object->members.head || 0 == m) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos);
+	}
+	return;
+    }
+    if (0 == prev) {
+	object->members.head = m->next;
+    } else {
+	prev->next = m->next;
+    }
+    if (0 == prev->next) {
+	object->members.tail = prev;
+    }
+    m->next = 0;
+    ojc_destroy(m);
+}
+
+void
+ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+    ojcVal	next;
+
+    if (bad_object(err, object)) {
+	return;
+    }
+    for (m = object->members.head; 0 != m; m = next) {
+	next = m->next;
+	if (0 == strcmp(key, ojc_key(m))) {
+	    if (0 == prev) {
+		object->members.head = m->next;
+	    } else {
+		prev->next = m->next;
+	    }
+	    if (m == object->members.tail) {
+		object->members.tail = prev;
+	    }
+	    m->next = 0;
+	    ojc_destroy(m);
+	    break;
+	}
+	prev = m;
+    }
+}
+
 
 void
 ojc_array_append(ojcErr err, ojcVal array, ojcVal val) {

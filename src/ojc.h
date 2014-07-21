@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.2.4"
+#define OJC_VERSION	"1.2.5"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -91,7 +91,9 @@ typedef enum {
     /** unicode error */
     OJC_UNICODE_ERR	= 'u',
     /** abort callback parsing */
-    OJC_ABORT_ERR	= 'a',
+    OJC_ABORT_ERR	= 'A',
+    /** argument error */
+    OJC_ARG_ERR		= 'a',
 } ojcErrCode;
 
 /**
@@ -324,6 +326,8 @@ extern ojcVal		ojc_create_array(void);
 /**
  * Creates a string value.
  *
+ * @param str value of the new instance
+ * @param len length of str or <0 to calculate
  * @return the new value.
  */
 extern ojcVal		ojc_create_str(const char *str, size_t len);
@@ -331,6 +335,7 @@ extern ojcVal		ojc_create_str(const char *str, size_t len);
 /**
  * Creates a integer value.
  *
+ * @param num value of the new instance
  * @return the new value.
  */
 extern ojcVal		ojc_create_int(int64_t num);
@@ -338,6 +343,7 @@ extern ojcVal		ojc_create_int(int64_t num);
 /**
  * Creates a double value.
  *
+ * @param num value of the new instance
  * @return the new value.
  */
 extern ojcVal		ojc_create_double(double num);
@@ -347,6 +353,8 @@ extern ojcVal		ojc_create_double(double num);
  * created when a number is encountered in a JSON document that is too large for
  * an int64_t or for a double.
  *
+ * @param num value of the new instance
+ * @param len length of str or <0 to calculate
  * @return the new value.
  */
 extern ojcVal		ojc_create_number(const char *num, size_t len);
@@ -361,6 +369,7 @@ extern ojcVal		ojc_create_null(void);
 /**
  * Creates a boolean value or either __true__ or __false__.
  *
+ * @param num value of the new instance
  * @return the new value.
  */
 extern ojcVal		ojc_create_bool(bool boo);
@@ -390,6 +399,52 @@ extern void		ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVa
  * @param val value to append
  */
 extern void		ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal val);
+
+/**
+ * Replaces a __val__ in a JSON object for the specified __key__. Only the first
+ * matching member is replaced. The __err__ struct is set if the __object__ is
+ * not an __OJC__OBJECT__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to append __val__ to
+ * @param key the key to use in the key-value pair
+ * @param val new value
+ */
+extern void		ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val);
+
+/**
+ * Inserts a __val__ in a JSON object with the specified __key__. The insert is
+ * before the position specified. The __err__ struct is set if the __object__ is
+ * not an __OJC__OBJECT__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to append __val__ to
+ * @param before position to insert the new value
+ * @param key the key to use in the key-value pair
+ * @param val new value
+ */
+extern void		ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal val);
+
+/**
+ * Removes a __val__ in a JSON object at the specified __pos__. The __err__
+ * struct is set if the __object__ is not an __OJC__OBJECT__ type or if there is
+ * no member at the position specified.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to append __val__ to
+ * @param pos zero based position of the member to remove
+ */
+extern void		ojc_object_remove_by_pos(ojcErr err, ojcVal object, int pos);
+
+/**
+ * Removes all __val__ in a JSON object with the specified __key__. The __err__
+ * struct is set if the __object__ is not an __OJC__OBJECT__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to append __val__ to
+ * @param key the key to use in the key-value pair
+ */
+extern void		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);
 
 /**
  * Appends a __val__ to a JSON array. The __err__ struct is set if the
