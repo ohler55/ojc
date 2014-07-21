@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.2.4 -July 6, 2014
+### Current Release 1.2.5 -July 21, 2014
+
+ - Added object functions for changing the members of the object.
+
+### Release 1.2.4 -July 6, 2014
 
  - Added function to set the key of a value.
 
