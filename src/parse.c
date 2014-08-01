@@ -204,6 +204,15 @@ get_str_val(ParseInfo pi, const char *str, int len) {
     return val;
 }
 
+static ojcVal
+get_word_val(ParseInfo pi, const char *str, int len) {
+    ojcVal	val = get_val(pi, OJC_WORD);
+
+    memcpy(val->str.ca, str, len);
+
+    return val;
+}
+
 static void
 add_str(ParseInfo pi, const char *str, int len) {
     ojcVal	parent = stack_peek(&pi->stack);
@@ -255,6 +264,44 @@ add_str(ParseInfo pi, const char *str, int len) {
 }
 
 static void
+add_word(ParseInfo pi, const char *str, int len) {
+    ojcVal	parent = stack_peek(&pi->stack);
+
+    if (0 == parent) { // simple add
+	*pi->stack.head = get_word_val(pi, str, len);
+    } else {
+	switch (parent->expect) {
+	case NEXT_ARRAY_NEW:
+	case NEXT_ARRAY_ELEMENT:
+	    ojc_array_append(&pi->err, parent, get_word_val(pi, str, len));
+	    parent->expect = NEXT_ARRAY_COMMA;
+	    break;
+	case NEXT_OBJECT_VALUE:
+	    pi_object_nappend(pi, parent, get_word_val(pi, str, len));
+	    if (pi->kalloc) {
+		free(pi->key);
+	    }
+	    pi->key = 0;
+	    pi->klen = 0;
+	    pi->kalloc = false;
+	    parent->expect = NEXT_OBJECT_COMMA;
+	    break;
+	case NEXT_OBJECT_NEW:
+	case NEXT_OBJECT_KEY:
+	case NEXT_OBJECT_COMMA:
+	case NEXT_NONE:
+	case NEXT_ARRAY_COMMA:
+	case NEXT_OBJECT_COLON:
+	default:
+	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__,
+			     "expected %s, not a word", _ojc_stack_next_str((ValNext)parent->expect));
+	    break;
+	}
+    }
+    reader_release(&pi->rd);
+}
+
+static void
 object_start(ParseInfo pi) {
     ojcVal	obj = get_val(pi, OJC_OBJECT);
 
@@ -295,30 +342,47 @@ array_end(ParseInfo pi) {
 }
 
 static void
-read_null(ParseInfo pi) {
-    if (0 == reader_expect(&pi->err, &pi->rd, "ull")) {
-	add_value(pi, get_val(pi, OJC_NULL));
-    } else {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected null");
-    }
-}
+read_word(ParseInfo pi) {
+    char	c;
+    bool	reading = true;
 
-static void
-read_true(ParseInfo pi) {
-    if (0 == reader_expect(&pi->err, &pi->rd, "rue")) {
+    reader_backup(&pi->rd);
+    reader_protect(&pi->rd);
+    while (reading) {
+	c = reader_get(&pi->err, &pi->rd);
+	switch (c) {
+	case ',': 
+	case ']': 
+	case '}': 
+	case ' ':
+	case '\t':
+	case '\f':
+	case '\n':
+	case '\r':
+	    reader_backup(&pi->rd);
+	    reading = false;
+	    break;
+	case '\0':
+	    reading = false;
+	    break;
+	default:
+	    break;
+	}
+    }
+    if (16 <= pi->rd.tail - pi->rd.start) { // TBD sizeof _Str.ca
+	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
+    } else if (0 == strncmp("true", pi->rd.start, 4)) {
 	add_value(pi, get_val(pi, OJC_TRUE));
-    } else {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected true");
-    }
-}
-
-static void
-read_false(ParseInfo pi) {
-    if (0 == reader_expect(&pi->err, &pi->rd, "alse")) {
+    } else if (0 == strncmp("false", pi->rd.start, 5)) {
 	add_value(pi, get_val(pi, OJC_FALSE));
+    } else if (0 == strncmp("null", pi->rd.start, 4)) {
+	add_value(pi, get_val(pi, OJC_NULL));
+    } else if (ojc_word_ok) {
+	add_word(pi, pi->rd.start, pi->rd.tail - pi->rd.start);
     } else {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "expected false");
+	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
     }
+    reader_release(&pi->rd);
 }
 
 static uint32_t
@@ -669,23 +733,18 @@ ojc_parse(ParseInfo pi) {
 	    reader_backup(&pi->rd);
 	    read_num(pi);
 	    break;
-	case 't':
-	    read_true(pi);
-	    break;
-	case 'f':
-	    read_false(pi);
-	    break;
-	case 'n':
-	    read_null(pi);
-	    break;
 	case '/':
 	    skip_comment(pi);
 	    break;
 	case '\0':
 	    return;
 	default:
-	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "unexpected character");
-	    return;
+	    read_word(pi);
+	    break;
+	    // TBD read token
+	    // if true, false, or null then make those callbacks, otherwise toekn callback
+	    //ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "unexpected character");
+	    //return;
 	}
 	if (OJC_OK != pi->err.code) {
 	    return;

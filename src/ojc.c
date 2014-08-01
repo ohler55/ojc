@@ -61,6 +61,7 @@ static char		hibit_friendly_chars[257] = "\
 11111111111111111111111111111111";
 
 bool		ojc_newline_ok = false;
+bool		ojc_word_ok = false;
 
 const char*
 ojc_version() {
@@ -330,6 +331,22 @@ ojc_str(ojcErr err, ojcVal val) {
     }
 }
 
+const char*
+ojc_word(ojcErr err, ojcVal val) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || OJC_WORD != val->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not get a word from a %s", ojc_type_str((ojcValType)val->type));
+	}
+	return 0;
+    }
+    return val->str.ca;
+}
+
 ojcVal
 ojc_members(ojcErr err, ojcVal val) {
     if (0 != err && OJC_OK != err->code) {
@@ -426,6 +443,19 @@ ojc_create_str(const char *str, size_t len) {
 	memcpy(val->str.ca, str, len);
 	val->str.ca[len] = '\0';
     }
+    return val;
+}
+
+ojcVal
+ojc_create_word(const char *str, size_t len) {
+    ojcVal	val = _ojc_val_create(OJC_WORD);
+    
+    if (0 >= len) {
+	len = strlen(str);
+    }
+    memcpy(val->str.ca, str, len);
+    val->str.ca[len] = '\0';
+
     return val;
 }
 
@@ -954,6 +984,9 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	    buf_append(buf, '"');
 	}
 	break;
+    case OJC_WORD:
+	buf_append_string(buf, val->str.ca, strlen(val->str.ca));
+	break;
     case OJC_FIXNUM:
 	fixnum_fill(buf, val->fixnum);
 	break;
@@ -1061,6 +1094,7 @@ ojc_type_str(ojcValType type) {
     case OJC_FALSE:	return "false";
     case OJC_ARRAY:	return "array";
     case OJC_OBJECT:	return "object";
+    case OJC_WORD:	return "word";
     default:		return "unknown";
     }
 }

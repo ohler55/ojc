@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.2.5"
+#define OJC_VERSION	"1.3.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -69,6 +69,8 @@ typedef enum {
     OJC_ARRAY	= 'a',
     /** object */
     OJC_OBJECT	= 'o',
+    /** word with a maximum of 15 characters */
+    OJC_WORD	= 'w',
 } ojcValType;
 
 /**
@@ -136,9 +138,16 @@ typedef bool	(*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);
 extern const char*	ojc_version(void);
 
 /**
- * If true new lines will not be escaped in the output.
+ * If true new lines will not be escaped in the output. This is not a JSON
+ * feature.
  */
 extern bool		ojc_newline_ok;
+
+/**
+ * If true non-quoted word will be returned as OJC_WORD types. This is not a
+ * JSON feature.
+ */
+extern bool		ojc_word_ok;
 
 /**
  * Parses a string. An error will result in the __err__ argument being set with
@@ -247,10 +256,20 @@ extern double		ojc_double(ojcErr err, ojcVal val);
  * is not the correct type a type error is returned in the __err__ value.
  *
  * @param err structure to pass the status or an error back in
- * @param val __ojcVal__ to get the C int64_t from
- * @return the C integer value of the __val__ argument.
+ * @param val __ojcVal__ to get the C const char* from
+ * @return the C string value of the __val__ argument.
  */
 extern const char*	ojc_str(ojcErr err, ojcVal val);
+
+/**
+ * Get the string value of a __ojcVal__ if it is of type __OJC_WORD__. If it is
+ * not the correct type a type error is returned in the __err__ value.
+ *
+ * @param err structure to pass the status or an error back in
+ * @param val __ojcVal__ to get the C const char* from
+ * @return the C string value of the __val__ argument.
+ */
+extern const char*	ojc_word(ojcErr err, ojcVal val);
 
 /**
  * Get the first child value of a __ojcVal__ if it is of type __OJC_OBJECT__ or
@@ -331,6 +350,15 @@ extern ojcVal		ojc_create_array(void);
  * @return the new value.
  */
 extern ojcVal		ojc_create_str(const char *str, size_t len);
+
+/**
+ * Creates a word value.
+ *
+ * @param str value of the new instance
+ * @param len length of str or <0 to calculate
+ * @return the new value.
+ */
+extern ojcVal		ojc_create_word(const char *str, size_t len);
 
 /**
  * Creates a integer value.

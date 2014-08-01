@@ -103,6 +103,18 @@ string_test() {
 }
 
 static void
+word_test() {
+    const char	*jsons[] = {
+	"X",
+	"Foo",
+	"a_long_15_word_",
+	0 };
+    ojc_word_ok = true;
+    in_and_out(jsons);
+    ojc_word_ok = false;
+}
+
+static void
 number_test() {
     const char	*jsons[] = {
 	"0",
@@ -518,6 +530,7 @@ static struct _Test	tests[] = {
     { "true",		true_test },
     { "false",		false_test },
     { "string",		string_test },
+    { "word",		word_test },
     { "number",		number_test },
     { "object",		object_test },
     { "mix",		mix_test },
