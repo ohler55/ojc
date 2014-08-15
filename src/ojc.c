@@ -665,6 +665,44 @@ ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
     }
 }
 
+ojcVal
+ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key) {
+    ojcVal	m = 0;
+
+    if (bad_object(err, object)) {
+	return 0;
+    }
+    for (m = object->members.head; 0 != m; m = m->next) {
+	if (0 == strcmp(key, ojc_key(m))) {
+	    break;
+	}
+    }
+    return m;
+}
+
+ojcVal
+ojc_get_member(ojcErr err, ojcVal val, int pos) {
+    ojcVal	m = 0;
+
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    if (0 == val || (OJC_ARRAY != val->type && OJC_OBJECT != val->type)) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can only get a member from an array or object, not a %s",
+		     ojc_type_str((ojcValType)val->type));
+	}
+	return 0;
+    }
+    if (0 > pos) {
+	return 0;
+    }
+    for (m = val->members.head; 0 != m && 0 < pos; m = m->next, pos--) {
+    }
+    return m;
+}
 
 void
 ojc_array_append(ojcErr err, ojcVal array, ojcVal val) {

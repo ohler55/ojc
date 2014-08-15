@@ -287,6 +287,7 @@ _ojc_bstr_create_batch(size_t cnt, MList list) {
     }
     for (; 0 < cnt; cnt--) {
 	v = _ojc_bstr_create();
+	v->next = 0;
 	if (0 == list->head) {
 	    list->head = v;
 	} else {

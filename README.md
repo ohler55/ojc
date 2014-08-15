@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.3.0 -July 31, 2014
+### Current Release 1.4.0 - August 15, 2014
+
+ - Added functions to get members of an object and an array.
+
+### Release 1.3.0 -July 31, 2014
 
  - Added support for non quoted words as values if a flag is set to allow the
    non-standard feature. Functions create and get values from word values also

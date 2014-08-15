@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.3.0"
+#define OJC_VERSION	"1.4.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -454,25 +454,46 @@ extern void		ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcV
 extern void		ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal val);
 
 /**
- * Removes a __val__ in a JSON object at the specified __pos__. The __err__
+ * Removes a member in a JSON object at the specified __pos__. The __err__
  * struct is set if the __object__ is not an __OJC__OBJECT__ type or if there is
  * no member at the position specified.
  *
  * @param err pointer to an initialized __ojcErr__ struct.
- * @param object object to append __val__ to
+ * @param object object to remove the member from
  * @param pos zero based position of the member to remove
  */
 extern void		ojc_object_remove_by_pos(ojcErr err, ojcVal object, int pos);
 
 /**
- * Removes all __val__ in a JSON object with the specified __key__. The __err__
+ * Removes all members in a JSON object with the specified __key__. The __err__
  * struct is set if the __object__ is not an __OJC__OBJECT__ type.
  *
  * @param err pointer to an initialized __ojcErr__ struct.
- * @param object object to append __val__ to
+ * @param object object to remove the member from
  * @param key the key to use in the key-value pair
  */
 extern void		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);
+
+/**
+ * Get the first __val__ in a JSON object with the specified __key__. The
+ * __err__ struct is set if the __object__ is not an __OJC__OBJECT__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to get the member from
+ * @param key the key to use in finding the key-value pair
+ */
+extern ojcVal		ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key);
+
+/**
+ * Gets a __val__ member in a JSON object at the specified __pos__. The __err__
+ * struct is set if the __object__ is not an __OJC__ARRAY__ or __OJC__OBJECT__
+ * type. NULL is returned if __pos__ is out of range.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to get the member from
+ * @param pos zero based position of the member to get
+ */
+extern ojcVal		ojc_get_member(ojcErr err, ojcVal val, int pos);
 
 /**
  * Appends a __val__ to a JSON array. The __err__ struct is set if the

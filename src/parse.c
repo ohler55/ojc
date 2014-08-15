@@ -109,6 +109,7 @@ get_bstr(ParseInfo pi) {
     Bstr	v;
 
     if (0 == pi->free_bstrs.head) {
+	pi->free_bstrs.tail = 0;
 	_ojc_bstr_create_batch(16, &pi->free_bstrs);
     }
     v = pi->free_bstrs.head;
