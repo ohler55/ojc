@@ -94,6 +94,8 @@ struct _ojcVal {
     uint8_t		expect; // ValNext
 };
 
+extern void	_ojc_val_cleanup(void) ;
+
 extern ojcVal	_ojc_val_create(ojcValType type);
 extern void	_ojc_destroy(ojcVal val);
 extern void	_ojc_val_return(List freed, MList freed_bstrs);

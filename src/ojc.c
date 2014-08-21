@@ -69,6 +69,11 @@ ojc_version() {
 }
 
 void
+ojc_cleanup() {
+    _ojc_val_cleanup();
+}
+
+void
 ojc_destroy(ojcVal val) {
     _ojc_destroy(val);
 }

@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.4.0 - August 15, 2014
+### Current Release 1.4.1 - August 21, 2014
+
+ - Added cleanup function to free memory used in re-use pools.
+
+### Release 1.4.0 - August 15, 2014
 
  - Added functions to get members of an object and an array.
 

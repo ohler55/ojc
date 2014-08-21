@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.4.0"
+#define OJC_VERSION	"1.4.1"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -133,11 +133,6 @@ typedef struct _ojcVal	*ojcVal;
 typedef bool	(*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);
 
 /**
- * @return version of OjC.
- */
-extern const char*	ojc_version(void);
-
-/**
  * If true new lines will not be escaped in the output. This is not a JSON
  * feature.
  */
@@ -148,6 +143,16 @@ extern bool		ojc_newline_ok;
  * JSON feature.
  */
 extern bool		ojc_word_ok;
+
+/**
+ * @return version of OjC.
+ */
+extern const char*	ojc_version(void);
+
+/**
+ * Cleans up re-use memory pools.
+ */
+extern void		ojc_cleanup(void);
 
 /**
  * Parses a string. An error will result in the __err__ argument being set with
