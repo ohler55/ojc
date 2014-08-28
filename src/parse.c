@@ -673,19 +673,23 @@ pi_val_destroy(ParseInfo pi, ojcVal val) {
     struct _MList	freed_bstrs = { 0, 0 };
 
     _ojc_val_destroy(val, &freed, &freed_bstrs);
-    if (0 == pi->free_vals.head) {
-	pi->free_vals.head = freed.head;
-	pi->free_vals.tail = freed.tail;
-    } else {
-	freed.tail->next = pi->free_vals.head;
-	pi->free_vals.head = freed.head;
+    if (0 != freed.tail) {
+	if (0 == pi->free_vals.head) {
+	    pi->free_vals.head = freed.head;
+	    pi->free_vals.tail = freed.tail;
+	} else {
+	    freed.tail->next = pi->free_vals.head;
+	    pi->free_vals.head = freed.head;
+	}
     }
-    if (0 == pi->free_bstrs.head) {
-	pi->free_bstrs.head = freed_bstrs.head;
-	pi->free_bstrs.tail = freed_bstrs.tail;
-    } else {
-	freed_bstrs.tail->next = pi->free_bstrs.head;
-	pi->free_bstrs.head = freed_bstrs.head;
+    if (0 != freed_bstrs.tail) {
+	if (0 == pi->free_bstrs.head) {
+	    pi->free_bstrs.head = freed_bstrs.head;
+	    pi->free_bstrs.tail = freed_bstrs.tail;
+	} else {
+	    freed_bstrs.tail->next = pi->free_bstrs.head;
+	    pi->free_bstrs.head = freed_bstrs.head;
+	}
     }
 }
 
