@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.4.2 - August 28, 2014
+### Current Release 1.4.3 - August 29, 2014
+
+ - Attempting to extract from a NULL val no longer crashes.
+ 
+### Release 1.4.2 - August 28, 2014
 
  - Fixed bug in parse destroy during callback parsing.
  
