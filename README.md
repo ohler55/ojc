@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.4.3 - August 29, 2014
+### Current Release 1.4.4 - September 22, 2014
+
+ - Added an unbuffered parse function to work with tail -f.
+ 
+### Release 1.4.3 - August 29, 2014
 
  - Attempting to extract from a NULL val no longer crashes.
  

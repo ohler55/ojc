@@ -63,6 +63,7 @@ reader_init(Reader reader) {
     reader->free_head = 0;
     reader->eof = false;
     reader->read_func = 0;
+    reader->follow = false;
 }
 
 void
@@ -165,6 +166,9 @@ read_from_file(ojcErr err, Reader reader) {
     size_t	max = reader->end - reader->tail;
     bool	eof = false;
 
+    if (reader->follow) {
+	max = 1;
+    }
     cnt = fread(reader->tail, 1, max, reader->file);
     if (cnt != max) {
 	eof = true;

@@ -44,6 +44,7 @@ typedef struct _Reader {
     int		line;
     int		col;
     int		free_head;
+    bool	follow;
     bool	eof;
     bool	(*read_func)(ojcErr err, struct _Reader *reader); // return eof state
     union {

@@ -153,6 +153,30 @@ ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
     return val;
 }
 
+void
+ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
+    struct _ParseInfo	pi;
+    ojcVal		val;
+
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return;
+    }
+    parse_init(&pi.err, &pi, cb, ctx);
+    reader_init_stream(err, &pi.rd, file);
+    pi.rd.follow = true;
+    if (OJC_OK != err->code) {
+	return;
+    }
+    ojc_parse(&pi);
+    val = *pi.stack.head;
+    if (OJC_OK != pi.err.code && 0 != err) {
+	err->code = pi.err.code;
+	memcpy(err->msg, pi.err.msg, sizeof(pi.err.msg));
+    }
+    parse_cleanup(&pi);
+}
+
 ojcVal
 ojc_get(ojcVal val, const char *path) {
     const char	*start;

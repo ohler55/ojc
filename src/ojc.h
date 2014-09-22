@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.4.3"
+#define OJC_VERSION	"1.4.4"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -195,6 +195,20 @@ extern ojcVal		ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, voi
  * @see ojcParseCallback
  */
 extern ojcVal		ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx);
+
+/**
+ * Parses a the contents of a file without waiting on EOF. This is typically
+ * used when tailing a file or redirected input. An error will result in the
+ * __err__ argument being set with an error code and message. The __file__ can
+ * contain more than one JSON element.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param  file file to parse
+ * @param cb callback function or NULL if no callbacks are desired
+ * @param ctx context for the callback function if provided.
+ * @see ojcParseCallback
+ */
+extern void		ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx);
 
 /**
  * Frees memory used by a __ojcVal__.
