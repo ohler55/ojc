@@ -1,5 +1,6 @@
 CC=clang
 #CC=cc
+#CFLAGS=-c -Wall -g -O1
 CFLAGS=-c -Wall
 
 SRC_DIR=.

@@ -156,7 +156,7 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
 void
 _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
     free_key(val, freed_bstrs);
-    if (OJC_STRING == val->type) {
+    if (OJC_STRING == val->type || OJC_NUMBER == val->type) {
 	switch (val->str_type) {
 	case STR_PTR:
 	    free(val->str.str);
