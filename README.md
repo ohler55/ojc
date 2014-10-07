@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.4.5 - September 26, 2014
+### Current Release 1.4.6 - October 7, 2014
+
+ - Cleaned up ubuntu/g++ errors.
+
+### Release 1.4.5 - September 26, 2014
 
  - Fixed memory leak with number strings.
 

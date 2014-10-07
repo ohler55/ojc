@@ -126,11 +126,11 @@ pi_object_nappend(ParseInfo pi, ojcVal object, ojcVal val) {
     int		klen = pi->klen;
 
     val->next = 0;
-    if (sizeof(union _Bstr) <= klen) {
+    if ((int)sizeof(union _Bstr) <= klen) {
 	val->key_type = STR_PTR;
 	val->key.str = strndup(key, klen);
 	val->key.str[klen] = '\0';
-    } else if (sizeof(val->key.ca) <= klen) {
+    } else if ((int)sizeof(val->key.ca) <= klen) {
 	val->key_type = STR_BLOCK;
 	val->key.bstr = get_bstr(pi);
 	memcpy(val->key.bstr->ca, key, klen);
@@ -188,11 +188,11 @@ static ojcVal
 get_str_val(ParseInfo pi, const char *str, int len) {
     ojcVal	val = get_val(pi, OJC_STRING);
 
-    if (sizeof(union _Bstr) <= len) {
+    if ((int)sizeof(union _Bstr) <= len) {
 	val->str_type = STR_PTR;
 	val->str.str = strndup(str, len);
 	val->str.str[len] = '\0';
-    } else if (sizeof(val->str.ca) <= len) {
+    } else if ((int)sizeof(val->str.ca) <= len) {
 	val->str_type = STR_BLOCK;
 	val->str.bstr = get_bstr(pi);
 	memcpy(val->str.bstr->ca, str, len);
@@ -229,7 +229,7 @@ add_str(ParseInfo pi, const char *str, int len) {
 	    break;
 	case NEXT_OBJECT_NEW:
 	case NEXT_OBJECT_KEY:
-	    if (sizeof(pi->karray) <= len) {
+	    if ((int)sizeof(pi->karray) <= len) {
 		pi->key = strndup(str, len);
 		pi->kalloc = true;
 	    } else {

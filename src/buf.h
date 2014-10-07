@@ -31,6 +31,8 @@
 #ifndef __OJC_BUF_H__
 #define __OJC_BUF_H__
 
+#include <unistd.h>
+
 typedef struct _Buf {
     char	*head;
     char	*end;
@@ -88,7 +90,7 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 	if (0 != buf->fd) {
 	    size_t	len = buf->tail - buf->head;
 
-	    if (len != write(buf->fd, buf->head, len)) {
+	    if (len != (size_t)write(buf->fd, buf->head, len)) {
 		buf->err = OJC_WRITE_ERR;
 	    }
 	    buf->tail = buf->head;
@@ -126,7 +128,7 @@ buf_append(Buf buf, char c) {
 	if (0 != buf->fd) {
 	    size_t	len = buf->tail - buf->head;
 
-	    if (len != write(buf->fd, buf->head, len)) {
+	    if (len != (size_t)write(buf->fd, buf->head, len)) {
 		buf->err = OJC_WRITE_ERR;
 	    }
 	    buf->tail = buf->head;
@@ -160,7 +162,7 @@ buf_finish(Buf buf) {
     if (0 != buf->fd) {
 	size_t	len = buf->tail - buf->head;
 
-	if (0 < len && len != write(buf->fd, buf->head, len)) {
+	if (0 < len && len != (size_t)write(buf->fd, buf->head, len)) {
 	    buf->err = OJC_WRITE_ERR;
 	}
 	buf->tail = buf->head;

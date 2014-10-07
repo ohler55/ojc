@@ -1,5 +1,5 @@
-CC=clang
-#CC=cc
+#CC=clang
+CC=g++
 #CFLAGS=-c -Wall -g -O1
 CFLAGS=-c -Wall
 

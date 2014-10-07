@@ -136,11 +136,11 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
 	if (0 >= klen) {
 	    klen = strlen(key);
 	}
-	if (sizeof(union _Bstr) <= klen) {
+	if ((int)sizeof(union _Bstr) <= klen) {
 	    val->key_type = STR_PTR;
 	    val->key.str = strndup(key, klen);
 	    val->key.str[klen] = '\0';
-	} else if (sizeof(val->key.ca) <= klen) {
+	} else if ((int)sizeof(val->key.ca) <= klen) {
 	    val->key_type = STR_BLOCK;
 	    val->key.bstr = _ojc_bstr_create();
 	    memcpy(val->key.bstr->ca, key, klen);

@@ -163,7 +163,7 @@ reader_read(ojcErr err, Reader reader) {
 static bool
 read_from_file(ojcErr err, Reader reader) {
     ssize_t	cnt;
-    size_t	max = reader->end - reader->tail;
+    ssize_t	max = reader->end - reader->tail;
     bool	eof = false;
 
     if (reader->follow) {
