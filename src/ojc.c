@@ -156,7 +156,6 @@ ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
 void
 ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
-    ojcVal		val;
 
     if (0 != err && OJC_OK != err->code) {
 	// Previous call must have failed or err was not initialized.
@@ -169,7 +168,6 @@ ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) 
 	return;
     }
     ojc_parse(&pi);
-    val = *pi.stack.head;
     if (OJC_OK != pi.err.code && 0 != err) {
 	err->code = pi.err.code;
 	memcpy(err->msg, pi.err.msg, sizeof(pi.err.msg));
@@ -377,7 +375,7 @@ ojc_members(ojcErr err, ojcVal val) {
     if (0 == val) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    strcmp(err->msg, "Can not get members from NULL");
+	    strcpy(err->msg, "Can not get members from NULL");
 	}
 	return 0;
     }
@@ -408,7 +406,7 @@ ojc_member_count(ojcErr err, ojcVal val) {
     if (0 == val) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    strcmp(err->msg, "No members in NULL");
+	    strcpy(err->msg, "No members in NULL");
 	}
 	return 0;
     }
