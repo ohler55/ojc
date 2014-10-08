@@ -44,6 +44,9 @@
 #define DEC_MAX		14
 #define DIV_MAX		100000000000000000LL
 #define BIGGISH		922337203685477580LL
+#ifndef	INT64_MAX
+#define INT64_MAX       9223372036854775807LL
+#endif
 
 void	ojc_set_error_at(ParseInfo pi, ojcErrCode code, const char* file, int line, const char *format, ...);
 
