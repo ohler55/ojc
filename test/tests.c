@@ -233,6 +233,34 @@ file_parse_test() {
     ut_same(bench_json, result);
 }
 
+static ssize_t
+my_read_func(void *src, char *buf, size_t size) {
+    return fread(buf, 1, size, (FILE*)src);
+}
+
+static void
+func_parse_test() {
+    FILE		*f = fopen("tmp.json", "w");
+    char		result[300];
+    struct _ojcErr	err;
+    ojcVal		val;
+
+    fwrite(bench_json, sizeof(bench_json) - 1, 1, f);
+    fclose(f);
+
+    ojc_err_init(&err);
+    f = fopen("tmp.json", "r");
+    val = ojc_parse_reader(&err, f, my_read_func, 0, 0);
+    fclose(f);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_fill(&err, val, 0, result, sizeof(result));
+
+    ut_same(bench_json, result);
+}
+
+
 static void
 file_write_test() {
     FILE		*f = fopen("tmp.json", "w");
@@ -537,6 +565,7 @@ static struct _Test	tests[] = {
     { "comment",	comment_test },
     { "each",		each_test },
     { "file_parse",	file_parse_test },
+    { "func_parse",	func_parse_test },
     { "file_write",	file_write_test },
     { "fill_too_big",	fill_too_big_test },
     { "array_get",	array_get_test },

@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.4.6"
+#define OJC_VERSION	"1.5.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -133,6 +133,14 @@ typedef struct _ojcVal	*ojcVal;
 typedef bool	(*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);
 
 /**
+ * Function type to use when providing a custom reader to the parser. Useful for
+ * hooking up zlib or similar libraries.
+ *
+ * @see ojc_parse_reader
+ */
+typedef ssize_t	(*ojcReadFunc)(void *src, char *buf, size_t size);
+
+/**
  * If true new lines will not be escaped in the output. This is not a JSON
  * feature.
  */
@@ -209,6 +217,22 @@ extern ojcVal		ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, voi
  * @see ojcParseCallback
  */
 extern void		ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx);
+
+/**
+ * Parses from the provided __src__. An error will result in the __err__
+ * argument being set with an error code and message. The __socket__ can contain
+ * more than one JSON element. The __read__ function is used with the __src__ to
+ * read characters for the parser.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param src source to extract the json from
+ * @param rf read function for the src
+ * @param cb callback function or NULL if no callbacks are desired
+ * @param ctx context for the callback function if provided.
+ * @return the parsed JSON as a __ojcVal__.
+ * @see ojcParseCallback
+ */
+extern ojcVal		ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseCallback cb, void *ctx);
 
 /**
  * Frees memory used by a __ojcVal__.

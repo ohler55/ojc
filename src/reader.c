@@ -48,6 +48,7 @@
 static bool	read_from_file(ojcErr err, Reader reader);
 static bool	read_from_socket(ojcErr err, Reader reader);
 static bool	read_from_str(ojcErr err, Reader reader);
+static bool	read_from_func(ojcErr err, Reader reader);
 
 static void
 reader_init(Reader reader) {
@@ -101,6 +102,14 @@ reader_init_socket(ojcErr err, Reader reader, int socket) {
     reader_init(reader);
     reader->read_func = read_from_socket;
     reader->socket = socket;
+}
+
+void
+reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size)) {
+    reader_init(reader);
+    reader->read_func = read_from_func;
+    reader->src = src;
+    reader->rf = rf;
 }
 
 // returns true if EOF
@@ -201,4 +210,19 @@ read_from_socket(ojcErr err, Reader reader) {
 static bool
 read_from_str(ojcErr err, Reader reader) {
     return true;
+}
+
+static bool
+read_from_func(ojcErr err, Reader reader) {
+    ssize_t	cnt;
+    size_t	max = reader->end - reader->tail;
+
+    cnt = reader->rf(reader->src, reader->tail, max);
+    if (cnt < 0) {
+	snprintf(err->msg, sizeof(err->msg) - 1, "Error while reading from user provided function.");
+	return true;
+    }
+    reader->read_end = reader->tail + cnt;
+
+    return (0 == cnt);
 }

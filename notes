@@ -4,9 +4,12 @@
 ^c^s show subtree
 
 - allow tokens
- - default handler is error
+ - default handler if error
 
 - add tests for object and array functions
+
+- provide a parse function that takes functions to reading
+  extern ojcVal ojc_parse_reader(ojcErr err, void *src, size_t (*read)(void *src, char *buf, size_t size), ojcParseCallback cb, void *ctx);
 
 
 
@@ -20,4 +23,3 @@
  - could have free thread to put nodes back in cache
 
 - TBD stream write functions someday
-

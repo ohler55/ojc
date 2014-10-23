@@ -12,7 +12,12 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.4.6 - October 7, 2014
+### Current Release 1.5.0 - October 23, 2014
+
+ - Added parse function where the caller provides a read function. Planned for
+   use with external libraries such as zlib.
+
+### Release 1.4.6 - October 7, 2014
 
  - Cleaned up ubuntu/g++ errors.
 

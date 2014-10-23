@@ -51,12 +51,17 @@ typedef struct _Reader {
 	int		socket;
 	FILE		*file;
 	const char	*str;
+	struct {
+	    void	*src;
+	    ssize_t	(*rf)(void *src, char *buf, size_t size);
+	};
     };
 } *Reader;
 
 extern void	reader_init_str(ojcErr err, Reader reader, const char *str);
 extern void	reader_init_stream(ojcErr err, Reader reader, FILE *file);
 extern void	reader_init_socket(ojcErr err, Reader reader, int socket);
+extern void	reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size));
 extern bool	reader_read(ojcErr err, Reader reader);
 
 static inline char
