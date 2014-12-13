@@ -620,14 +620,14 @@ read_num(ParseInfo pi) {
     if ('\0' != c) {
 	reader_backup(&pi->rd);
     }
-    if (big) {
-	val = ojc_create_number(pi->rd.start, pi->rd.tail - pi->rd.start);
-    } else if (1 == div && 0 == exp) { // fixnum
+    if (!big && 1 == div && 0 == exp) { // fixnum
 	if (neg) {
 	    i = -i;
 	}
 	val = get_val(pi, OJC_FIXNUM);
 	val->fixnum = i;
+    } else if (big || ojc_decimal_as_number) {
+	val = ojc_create_number(pi->rd.start, pi->rd.tail - pi->rd.start);
     } else { // decimal
 	double	d = (double)i + (double)num / (double)div;
 

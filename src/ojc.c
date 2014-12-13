@@ -62,6 +62,7 @@ static char		hibit_friendly_chars[257] = "\
 
 bool		ojc_newline_ok = false;
 bool		ojc_word_ok = false;
+bool		ojc_decimal_as_number = false;
 
 const char*
 ojc_version() {
@@ -367,6 +368,20 @@ ojc_double(ojcErr err, ojcVal val) {
 	return 0;
     }
     return val->dub;
+}
+
+const char*
+ojc_number(ojcErr err, ojcVal val) {
+    if (!is_type_ok(err, val, OJC_NUMBER)) {
+	return 0;
+    }
+    switch (val->str_type) {
+    case STR_PTR:	return val->str.str;
+    case STR_ARRAY:	return val->str.ca;
+    case STR_BLOCK:	return val->str.bstr->ca;
+    case STR_NONE:
+    default:		return 0;
+    }
 }
 
 const char*

@@ -12,7 +12,13 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.5.0 - October 23, 2014
+### Current Release 1.6.0 - December 12, 2014
+
+ - Added option to parse decimal numbers as strings instead of doubles.
+
+ - Added ojc_number() function.
+ 
+### Release 1.5.0 - October 23, 2014
 
  - Added parse function where the caller provides a read function. Planned for
    use with external libraries such as zlib.
