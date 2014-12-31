@@ -225,7 +225,7 @@ ojc_get(ojcVal val, const char *path) {
 		if (*path < '0' || '9' < *path) {
 		    return 0;
 		}
-		index = index * 10 + (int)(*path - '0');
+		index = index * 10 + (unsigned int)(*path - '0');
 		if (MAX_INDEX < index) {
 		    return 0;
 		}
@@ -237,7 +237,6 @@ ojc_get(ojcVal val, const char *path) {
 	    }
 	    return ojc_get(m, path);
 	}
-	break;
     case OJC_OBJECT:
 	{
 	    const char	*key;
@@ -260,8 +259,8 @@ ojc_get(ojcVal val, const char *path) {
 		    return ojc_get(m, path);
 		}
 	    }
+	    break;
 	}
-	break;
     default:
 	break;
     }
@@ -297,7 +296,6 @@ ojc_aget(ojcVal val, const char **path) {
 	    }
 	    return ojc_aget(m, path + 1);
 	}
-	break;
     case OJC_OBJECT:
 	{
 	    const char	*key;
@@ -317,8 +315,8 @@ ojc_aget(ojcVal val, const char **path) {
 		    return ojc_aget(m, path + 1);
 		}
 	    }
+	    break;
 	}
-	break;
     default:
 	break;
     }
@@ -334,7 +332,7 @@ static bool
 is_type_ok(ojcErr err, ojcVal val, ojcValType type) {
     if (0 != err && OJC_OK != err->code) {
 	// Previous call must have failed or err was not initialized.
-	return 0;
+	return false;
     }
     if (0 == val) {
 	if (0 != err) {
