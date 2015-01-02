@@ -12,7 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.6.0 - December 12, 2014
+### Current Release 1.7.0 - January 1, 2015
+
+ - Added ojc_duplicate() function that make a deep copy of an element (ojcVal).
+
+### Release 1.6.0 - December 12, 2014
 
  - Added option to parse decimal numbers as strings instead of doubles.
 

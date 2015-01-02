@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.6.0"
+#define OJC_VERSION	"1.7.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -629,6 +629,14 @@ extern void		ojc_write(ojcErr err, ojcVal val, int indent, int socket);
  * @param file file to write to
  */
 extern void		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);
+
+/**
+ * Returns a deep copy of a __ojcVal__.
+ *
+ * @param val __ojcVal__ to duplicate.
+ * @return a deep copy of the __val__.
+ */
+extern ojcVal		ojc_duplicate(ojcVal val);
 
 /**
  * Returns a string representation of a type.

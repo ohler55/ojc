@@ -441,6 +441,28 @@ object_aget_test() {
 }
 
 static void
+duplicate_test() {
+    char		expect[256];
+    char		actual[256];
+    ojcVal		src;
+    ojcVal		dup;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "{\"zero\":0,\"one\":{\"1\":true,\"2\":null,\"3\":[1,2,3]},\"two\":12345}";
+
+    src = ojc_parse_str(&err, json, 0, 0);
+    ojc_fill(&err, src, 0, expect, sizeof(expect));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    dup = ojc_duplicate(src);
+    ojc_fill(&err, dup, 0, actual, sizeof(actual));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(expect, actual);
+}
+
+static void
 bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
     ojcVal		val;
@@ -572,6 +594,7 @@ static struct _Test	tests[] = {
     { "object_get",	object_get_test },
     { "array_aget",	array_aget_test },
     { "object_aget",	object_aget_test },
+    { "duplicate",	duplicate_test },
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
     { "free_benchmark",	free_benchmark_test },

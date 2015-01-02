@@ -1207,6 +1207,80 @@ ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file) {
     ojc_write(err, val, indent, fileno(file));
 }
 
+ojcVal
+ojc_duplicate(ojcVal val) {
+    ojcVal		dup;
+    struct _ojcErr	err = OJC_ERR_INIT;
+
+    if (0 == val) {
+	return 0;
+    }
+    dup = _ojc_val_create(val->type);
+    switch (val->type) {
+    case OJC_ARRAY:
+	{
+	    ojcVal	m;
+
+	    for (m = val->members.head; 0 != m; m = m->next) {
+		ojc_array_append(&err, dup, ojc_duplicate(m));
+	    }
+	}
+	break;
+    case OJC_OBJECT:
+	{
+	    ojcVal	m;
+	    const char	*key;
+
+	    for (m = val->members.head; 0 != m; m = m->next) {
+		switch (m->key_type) {
+		case STR_PTR:	key = m->key.str;	break;
+		case STR_ARRAY:	key = m->key.ca;	break;
+		case STR_BLOCK:	key = m->key.bstr->ca;	break;
+		case STR_NONE:
+		default:	key = "";		break;
+		}
+		ojc_object_append(&err, dup, key, ojc_duplicate(m));
+	    }
+	}
+	break;
+    case OJC_NULL:
+    case OJC_TRUE:
+    case OJC_FALSE:
+	break;
+    case OJC_STRING:
+    case OJC_NUMBER:
+	dup->str_type = val->str_type;
+	switch (val->str_type) {
+	case STR_PTR:
+	    dup->str.str = strdup(val->str.str);
+	    break;
+	case STR_ARRAY:
+	    strcpy(dup->str.ca, val->str.ca);
+	    break;
+	case STR_BLOCK:
+	    dup->str.bstr = _ojc_bstr_create();
+	    strcpy(dup->str.bstr->ca, val->str.bstr->ca);
+	    break;
+	case STR_NONE:
+	default:
+	    break;
+	}
+	break;
+    case OJC_WORD:
+	strcpy(dup->str.ca, val->str.ca);
+	break;
+    case OJC_FIXNUM:
+	dup->fixnum = val->fixnum;
+	break;
+    case OJC_DECIMAL:
+	dup->dub = val->dub;
+	break;
+    default:
+	break;
+    }
+    return dup;
+}
+
 const char*
 ojc_type_str(ojcValType type) {
     switch (type) {
@@ -1234,6 +1308,8 @@ ojc_error_str(ojcErrCode code) {
     case OJC_WRITE_ERR:		return "write error";
     case OJC_MEMORY_ERR:	return "memory error";
     case OJC_UNICODE_ERR:	return "unicode error";
+    case OJC_ABORT_ERR:		return "abort";
+    case OJC_ARG_ERR:		return "argument error";
     default:			return "unknown";
     }
 }
