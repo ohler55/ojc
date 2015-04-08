@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.7.0"
+#define OJC_VERSION	"1.8.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -637,6 +637,16 @@ extern void		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);
  * @return a deep copy of the __val__.
  */
 extern ojcVal		ojc_duplicate(ojcVal val);
+
+/**
+ * Returns an integer greater than, equal to, or less than zero according if
+ * __v1__ is greater than, equal to, or less than __v2__.
+ *
+ * @param v1 __ojcVal__ an object to compare.
+ * @param v2 __ojcVal__ an object to compare.
+ * @return the result of the comparison.
+ */
+extern int		ojc_cmp(ojcVal v1, ojcVal v2);
 
 /**
  * Returns a string representation of a type.

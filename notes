@@ -3,21 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- allow tokens
- - default handler if error
+- allow catchup on stream parser
 
-- add tests for object and array functions
-
-- provide a parse function that takes functions to reading
-  extern ojcVal ojc_parse_reader(ojcErr err, void *src, size_t (*read)(void *src, char *buf, size_t size), ojcParseCallback cb, void *ctx);
 
 
 
 - reader_next_non_white(ojcErr err, Reader reader) 
  - ignore ANSI/VT100 escape sequences
   - will need to parse each code to determine length
-
-
 
 - multiple threads
  - could have free thread to put nodes back in cache

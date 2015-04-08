@@ -1281,6 +1281,94 @@ ojc_duplicate(ojcVal val) {
     return dup;
 }
 
+int
+ojc_cmp(ojcVal v1, ojcVal v2) {
+    struct _ojcErr	err = OJC_ERR_INIT;
+
+    if (ojc_type(v1) != ojc_type(v2)) {
+	return (int)ojc_type(v1) - (int)ojc_type(v2);
+    }
+    switch (ojc_type(v1)) {
+	break;
+    case OJC_STRING: {
+	const char	*s1 = ojc_str(&err, v1);
+	const char	*s2 = ojc_str(&err, v2);
+
+	if (NULL == s1) {
+	    s1 = "";
+	}
+	if (NULL == s2) {
+	    s2 = "";
+	}
+	return strcmp(s1, s2);
+    }
+    case OJC_NUMBER:
+	break;
+    case OJC_FIXNUM:
+	return ojc_int(&err, v1) - ojc_int(&err, v2);
+    case OJC_DECIMAL: {
+	double	d = ojc_double(&err, v1) - ojc_double(&err, v2);
+	
+	return (0.0 == d) ? 0 : (0.0 < d) ? 1 : -1;
+    }
+    case OJC_ARRAY: {
+	ojcVal	m1 = ojc_members(&err, v1);
+	ojcVal	m2 = ojc_members(&err, v2);
+	int	x;
+
+	for (; 0 != m1 && 0 != m2; m1 = m1->next, m2 = m2->next) {
+	    if (0 != (x = ojc_cmp(m1, m2))) {
+		return x;
+	    }
+	}
+	if (0 != m1) {
+	    return 1;
+	}
+	if (0 != m2) {
+	    return -1;
+	}
+	break;
+    }
+    case OJC_OBJECT: {
+	ojcVal	m1 = ojc_members(&err, v1);
+	ojcVal	m2 = ojc_members(&err, v2);
+	int	x;
+
+	for (; 0 != m1 && 0 != m2; m1 = m1->next, m2 = m2->next) {
+	    if (0 != (x = strcmp(ojc_key(m1), ojc_key(m2))) ||
+		0 != (x = ojc_cmp(m1, m2))) {
+		return x;
+	    }
+	}
+	if (0 != m1) {
+	    return 1;
+	}
+	if (0 != m2) {
+	    return -1;
+	}
+	break;
+    }
+    case OJC_WORD: {
+	const char	*s1 = ojc_word(&err, v1);
+	const char	*s2 = ojc_word(&err, v2);
+
+	if (NULL == s1) {
+	    s1 = "";
+	}
+	if (NULL == s2) {
+	    s2 = "";
+	}
+	return strcmp(s1, s2);
+    }
+    case OJC_TRUE:
+    case OJC_FALSE:
+    case OJC_NULL:
+    default:
+	break;
+    }
+    return 0;
+}
+
 const char*
 ojc_type_str(ojcValType type) {
     switch (type) {
