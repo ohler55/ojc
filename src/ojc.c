@@ -163,8 +163,7 @@ ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) 
 	return;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_stream(err, &pi.rd, file);
-    pi.rd.follow = true;
+    reader_init_follow(err, &pi.rd, file);
     if (OJC_OK != err->code) {
 	return;
     }

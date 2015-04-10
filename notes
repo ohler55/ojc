@@ -3,7 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- allow catchup on stream parser
+- make sure follow works
+- allow catchup on stream parser if with callbacks
+ - make error callbacks but also ojcVal callbacks, maybe the same if start is bad
+ - if invalid character keep reading until the start of something
+  - best effort if not sure, worse case is bogus results
+  - catchup mode function
+   - read until an close - white space - open is hit
+    - } {    ][    }[   ] {
 
 
 

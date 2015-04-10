@@ -233,6 +233,47 @@ file_parse_test() {
     ut_same(bench_json, result);
 }
 
+static const char	*follow_json2 = "[3,2,1]";
+
+static bool
+follow_callback(ojcErr err, ojcVal val, void *ctx) {
+    ojcVal	*vp = (ojcVal*)ctx;
+    
+    if (0 == *vp) {
+	FILE		*f = fopen("tmp.json", "a");
+	
+	// write string and terminating \0
+	fwrite(follow_json2, 1, strlen(follow_json2) + 1, f);
+	fclose(f);
+    }
+    *vp = val;
+
+    return false;
+}
+
+static void
+follow_parse_test() {
+    FILE		*f = fopen("tmp.json", "w");
+    char		result[300];
+    struct _ojcErr	err;
+    ojcVal		val = NULL;
+    const char		*json = "[1,2,3,4]";
+
+    fwrite(json, 1, strlen(json), f);
+    fclose(f);
+
+    ojc_err_init(&err);
+    f = fopen("tmp.json", "r");
+    ojc_parse_stream_follow(&err, f, follow_callback, &val);
+    fclose(f);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_fill(&err, val, 0, result, sizeof(result));
+
+    ut_same(follow_json2, result);
+}
+
 static ssize_t
 my_read_func(void *src, char *buf, size_t size) {
     return fread(buf, 1, size, (FILE*)src);
@@ -643,6 +684,7 @@ static struct _Test	tests[] = {
     { "comment",	comment_test },
     { "each",		each_test },
     { "file_parse",	file_parse_test },
+    { "follow_parse",	follow_parse_test },
     { "func_parse",	func_parse_test },
     { "file_write",	file_write_test },
     { "fill_too_big",	fill_too_big_test },
