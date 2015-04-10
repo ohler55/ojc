@@ -1215,7 +1215,7 @@ ojc_duplicate(ojcVal val) {
     if (0 == val) {
 	return 0;
     }
-    dup = _ojc_val_create(val->type);
+    dup = _ojc_val_create((ojcValType)val->type);
     switch (val->type) {
     case OJC_ARRAY:
 	{
