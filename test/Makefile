@@ -26,3 +26,5 @@ $(BENCH): benchmark.o
 %.o : %.c  $(HEADERS) $(LIB_DIR)/libojc.a
 	$(CC) -O3 -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
 
+test: all
+	$(TARGET)

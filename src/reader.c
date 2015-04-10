@@ -46,6 +46,7 @@
 #define BUF_PAD	4
 
 static bool	read_from_file(ojcErr err, Reader reader);
+static bool	read_from_follow(ojcErr err, Reader reader);
 static bool	read_from_socket(ojcErr err, Reader reader);
 static bool	read_from_str(ojcErr err, Reader reader);
 static bool	read_from_func(ojcErr err, Reader reader);
@@ -64,7 +65,6 @@ reader_init(Reader reader) {
     reader->free_head = 0;
     reader->eof = false;
     reader->read_func = 0;
-    reader->follow = false;
 }
 
 void
@@ -90,6 +90,17 @@ reader_init_stream(ojcErr err, Reader reader, FILE *file) {
     }
     reader_init(reader);
     reader->read_func = read_from_file;
+    reader->file = file;
+}
+
+void
+reader_init_follow(ojcErr err, Reader reader, FILE *file) {
+    if (0 == file) {
+	snprintf(err->msg, sizeof(err->msg) - 1, "No source file provided during initialization.");
+	return;
+    }
+    reader_init(reader);
+    reader->read_func = read_from_follow;
     reader->file = file;
 }
 
@@ -175,9 +186,6 @@ read_from_file(ojcErr err, Reader reader) {
     ssize_t	max = reader->end - reader->tail;
     bool	eof = false;
 
-    if (reader->follow) {
-	max = 1;
-    }
     cnt = fread(reader->tail, 1, max, reader->file);
     if (cnt != max) {
 	eof = true;
@@ -189,6 +197,30 @@ read_from_file(ojcErr err, Reader reader) {
     reader->read_end = reader->tail + cnt;
 
     return eof;
+}
+
+static bool
+read_from_follow(ojcErr err, Reader reader) {
+    ssize_t	cnt = 0;
+    ssize_t	max = reader->end - reader->tail;
+
+    while (0 == cnt) {
+	cnt = fread(reader->tail, 1, max, reader->file);
+	if (cnt != max) {
+	    if (!feof(reader->file)) {
+		snprintf(err->msg, sizeof(err->msg) - 1, "Error while reading from file.");
+		return true;
+	    }
+	    clearerr(reader->file);
+	    if (0 == cnt) {
+		// TBD is there a better way to detect a change in the file?
+		usleep(100000);
+	    }
+	}
+    }
+    reader->read_end = reader->tail + cnt;
+
+    return false;
 }
 
 static bool

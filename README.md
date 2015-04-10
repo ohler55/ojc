@@ -12,7 +12,13 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.7.0 - January 1, 2015
+### Current Release 1.8.0 - April 7, 2015
+
+ - Added ojc_cmp() function that compares two ojcVal values.
+
+ - Fixed follow parser to remain open as expected.
+
+### Release 1.7.0 - January 1, 2015
 
  - Added ojc_duplicate() function that make a deep copy of an element (ojcVal).
 

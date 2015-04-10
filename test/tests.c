@@ -233,6 +233,47 @@ file_parse_test() {
     ut_same(bench_json, result);
 }
 
+static const char	*follow_json2 = "[3,2,1]";
+
+static bool
+follow_callback(ojcErr err, ojcVal val, void *ctx) {
+    ojcVal	*vp = (ojcVal*)ctx;
+    
+    if (0 == *vp) {
+	FILE		*f = fopen("tmp.json", "a");
+	
+	// write string and terminating \0
+	fwrite(follow_json2, 1, strlen(follow_json2) + 1, f);
+	fclose(f);
+    }
+    *vp = val;
+
+    return false;
+}
+
+static void
+follow_parse_test() {
+    FILE		*f = fopen("tmp.json", "w");
+    char		result[300];
+    struct _ojcErr	err;
+    ojcVal		val = NULL;
+    const char		*json = "[1,2,3,4]";
+
+    fwrite(json, 1, strlen(json), f);
+    fclose(f);
+
+    ojc_err_init(&err);
+    f = fopen("tmp.json", "r");
+    ojc_parse_stream_follow(&err, f, follow_callback, &val);
+    fclose(f);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_fill(&err, val, 0, result, sizeof(result));
+
+    ut_same(follow_json2, result);
+}
+
 static ssize_t
 my_read_func(void *src, char *buf, size_t size) {
     return fread(buf, 1, size, (FILE*)src);
@@ -295,7 +336,7 @@ fill_too_big_test() {
 	return;
     }
     ojc_fill(&err, val, 0, result, 10);
-    ut_same_int(OJC_OVERFLOW_ERR, err.code);
+    ut_same_int(OJC_OVERFLOW_ERR, err.code, "overflow check");
     ojc_destroy(val);
 }
 
@@ -462,6 +503,62 @@ duplicate_test() {
     ut_same(expect, actual);
 }
 
+typedef struct _CmpPair {
+    const char	*json1;
+    const char	*json2;
+    int		result;
+} *CmpPair;
+
+static void
+cmp_test() {
+    ojcVal		v1;
+    ojcVal		v2;
+    struct _ojcErr	err;
+    CmpPair		cp;
+    struct _CmpPair	data[] = {
+	{ "null", "null", 0 },
+	{ "true", "false", 14 },
+	{ "true", "true", 0 },
+	{ "false", "false", 0 },
+	{ "7", "7", 0 },
+	{ "6", "7", -1 },
+	{ "7", "6", 1 },
+	{ "7.1", "7.0", 1 },
+	{ "7.0", "7.1", -1 },
+	{ "7.1", "7.1", 0 },
+	{ "\"abc\"", "\"abc\"", 0 },
+	{ "\"abc\"", "\"\"", 97 },
+	{ "\"ab\"", "\"abc\"", -99 },
+	{ "\"abc\"", "\"abd\"", -1 },
+	{ "abc", "abc", 0 },
+	{ "ab", "abc", -99 },
+	{ "abd", "abc", 1 },
+	{ "[]", "[]", 0 },
+	{ "[1]", "[1]", 0 },
+	{ "[1,2]", "[1]", 1 },
+	{ "[1,2]", "[1,[]]", 13 },
+	{ "{}", "{}", 0 },
+	{ "{\"a\":1}", "{\"a\":1}", 0 },
+	{ "{\"a\":1}", "{\"b\":1}", -1 },
+	{ "{\"a\":2}", "{\"a\":1}", 1 },
+	{ "null", "true", -116 },
+	{ "true", "null", 116 },
+	{ "1", "1.0", 10 },
+	{ 0, 0, 0 }};
+
+    ojc_word_ok = true;
+    for (cp = data; 0 != cp->json1; cp++) {
+	ojc_err_init(&err);
+	v1 = ojc_parse_str(&err, cp->json1, 0, 0);
+	v2 = ojc_parse_str(&err, cp->json2, 0, 0);
+	if (ut_handle_error(&err)) {
+	    continue;
+	}
+	// TBD show which fail
+	ut_same_int(cp->result, ojc_cmp(v1, v2), "ojc_cmp(%s, %s)", cp->json1, cp->json2);
+    }
+}
+
 static void
 bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
@@ -587,6 +684,7 @@ static struct _Test	tests[] = {
     { "comment",	comment_test },
     { "each",		each_test },
     { "file_parse",	file_parse_test },
+    { "follow_parse",	follow_parse_test },
     { "func_parse",	func_parse_test },
     { "file_write",	file_write_test },
     { "fill_too_big",	fill_too_big_test },
@@ -595,6 +693,8 @@ static struct _Test	tests[] = {
     { "array_aget",	array_aget_test },
     { "object_aget",	object_aget_test },
     { "duplicate",	duplicate_test },
+    { "cmp",		cmp_test },
+
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
     { "free_benchmark",	free_benchmark_test },

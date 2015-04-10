@@ -44,7 +44,6 @@ typedef struct _Reader {
     int		line;
     int		col;
     int		free_head;
-    bool	follow;
     bool	eof;
     bool	(*read_func)(ojcErr err, struct _Reader *reader); // return eof state
     union {
@@ -60,6 +59,7 @@ typedef struct _Reader {
 
 extern void	reader_init_str(ojcErr err, Reader reader, const char *str);
 extern void	reader_init_stream(ojcErr err, Reader reader, FILE *file);
+extern void	reader_init_follow(ojcErr err, Reader reader, FILE *file);
 extern void	reader_init_socket(ojcErr err, Reader reader, int socket);
 extern void	reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size));
 extern bool	reader_read(ojcErr err, Reader reader);

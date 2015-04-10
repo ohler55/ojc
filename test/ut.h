@@ -23,7 +23,7 @@ extern void	ut_init(int argc, char **argv, const char *groupName, Test allTests)
 extern void	ut_print(const char *format, ...);
 extern void	ut_done(void);
 extern int	ut_same(const char *expected, const char *actual);
-extern int	ut_same_int(int64_t expected, int64_t actual);
+extern int	ut_same_int(int64_t expected, int64_t actual, const char *format, ...);
 extern int	ut_true(bool condition);
 extern int	ut_false(bool condition);
 extern void	ut_pass(void);
