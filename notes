@@ -3,6 +3,10 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- ojc_set() and ojc_aset()
+- ojc_replace
+ - should add if not there and return bool indicating change or new
+
 - make sure follow works
 - allow catchup on stream parser if with callbacks
  - make error callbacks but also ojcVal callbacks, maybe the same if start is bad

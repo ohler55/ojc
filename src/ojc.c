@@ -322,6 +322,287 @@ ojc_aget(ojcVal val, const char **path) {
     return 0;
 }
 
+static ojcVal
+get_parent(ojcVal val, const char *path, const char **keyp) {
+    const char	*start;
+    ojcVal	m;
+    
+    if ('/' == *path) {
+	path++;
+    }
+    if ('\0' == *path) {
+	// Indication to the caller that it is the parent.
+	return 0;
+    }
+    start = path;
+    switch (val->type) {
+    case OJC_ARRAY: {
+	unsigned int	index = 0;
+
+	for (; '/' != *path; path++) {
+	    if ('\0' == *path) { // this is the parent
+		*keyp = start;
+		return val;
+	    }
+	    if (*path < '0' || '9' < *path) {
+		return 0;
+	    }
+	    index = index * 10 + (unsigned int)(*path - '0');
+	    if (MAX_INDEX < index) {
+		return 0;
+	    }
+	}
+	for (m = val->members.head; 0 < index && 0 != m; m = m->next, index--) {
+	}
+	if (0 != m) {
+	    ojcVal	p = get_parent(m, path, keyp);
+
+	    if (0 != p) {
+		return p;
+	    }
+	}
+	return 0;
+    }
+    case OJC_OBJECT: {
+	const char	*key;
+	int		plen;
+	struct _ojcErr	err = OJC_ERR_INIT;
+	ojcVal		child;
+
+	for (; '/' != *path; path++) {
+	    if ('\0' == *path) { // this is the parent
+		*keyp = start;
+		return val;
+	    }
+	}
+	plen = path - start;
+	for (m = val->members.head; 0 != m; m = m->next) {
+	    switch (m->key_type) {
+	    case STR_PTR:	key = m->key.str;	break;
+	    case STR_ARRAY:	key = m->key.ca;	break;
+	    case STR_NONE:
+	    default:		key = 0;		break;
+	    }
+	    if (0 != key && 0 == strncmp(start, key, plen)) {
+		ojcVal	p = get_parent(m, path, keyp);
+
+		if (0 != p) {
+		    return p;
+		}
+	    }
+	}
+	child = ojc_create_object();
+	ojc_object_nappend(&err, val, start, plen, child); 
+	return get_parent(child, path, keyp);
+    }
+    default:
+	break;
+    }
+    return 0;
+}
+
+static ojcVal
+get_aparent(ojcVal val, const char **path, const char **keyp) {
+    ojcVal	m;
+    const char	**pn = path + 1;
+    
+    if (0 == *path) {
+	return 0;
+    }
+    switch (val->type) {
+    case OJC_ARRAY: {
+	unsigned int	index = 0;
+	const char	*p;
+
+	if (0 == *pn) {
+	    *keyp = *path;
+	    return val;
+	}
+	for (p = *path; '\0' != *p; p++) {
+	    if (*p < '0' || '9' < *p) {
+		return 0;
+	    }
+	    index = index * 10 + (int)(*p - '0');
+	    if (MAX_INDEX < index) {
+		return 0;
+	    }
+	}
+	for (m = val->members.head; 0 < index && 0 != m; m = m->next, index--) {
+	}
+	if (0 != m) {
+	    ojcVal	parent = get_aparent(m, pn, keyp);
+
+	    if (0 != parent) {
+		return parent;
+	    }
+	}
+	return 0;
+    }
+    case OJC_OBJECT: {
+	const char	*key;
+	struct _ojcErr	err = OJC_ERR_INIT;
+	ojcVal		child;
+
+	if (0 == *pn) {
+	    *keyp = *path;
+	    return val;
+	}
+	for (m = val->members.head; 0 != m; m = m->next) {
+	    switch (m->key_type) {
+	    case STR_PTR:	key = m->key.str;	break;
+	    case STR_ARRAY:	key = m->key.ca;	break;
+	    case STR_NONE:
+	    default:		key = 0;		break;
+	    }
+	    if (0 != key && 0 == strcmp(*path, key)) {
+		ojcVal	parent = get_aparent(m, pn, keyp);
+
+		if (0 != parent) {
+		    return parent;
+		}
+	    }
+	}
+	child = ojc_create_object();
+	ojc_object_append(&err, val, *path, child); 
+	return get_aparent(child, pn, keyp);
+    }
+    default:
+	break;
+    }
+    return 0;
+}
+
+
+void
+ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
+    const char	*key = 0;
+    ojcVal	p;
+
+    if (0 != err && OJC_OK != err->code) {
+	return;
+    }
+    if (0 == anchor || 0 == path || 0 == val) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	}
+	return;
+    }
+    p = get_parent(anchor, path, &key);
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node for %s", path);
+	}
+	return;
+    }
+    if (OJC_OBJECT != p->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	}
+	return;
+    }
+    ojc_object_append(err, p, key, val);
+}
+
+void
+ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
+    const char	*key = 0;
+    ojcVal	p = get_aparent(anchor, path, &key);
+
+    if (0 != err && OJC_OK != err->code) {
+	return;
+    }
+    if (0 == anchor || 0 == path || 0 == val) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	}
+	return;
+    }
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node");
+	}
+	return;
+    }
+    if (OJC_OBJECT != p->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	}
+	return;
+    }
+    ojc_object_append(err, p, key, val);
+}
+
+bool
+ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
+    const char	*key = 0;
+    ojcVal	p;
+
+    if (0 != err && OJC_OK != err->code) {
+	return 0;
+    }
+    if (0 == anchor || 0 == path || 0 == val) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	}
+	return false;
+    }
+    p = get_parent(anchor, path, &key);
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node for %s", path);
+	}
+	return false;
+    }
+    if (OJC_OBJECT != p->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	}
+	return false;
+    }
+    return ojc_object_replace(err, p, key, val);
+}
+
+bool
+ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
+    const char	*key = 0;
+    ojcVal	p = get_aparent(anchor, path, &key);
+
+    if (0 != err && OJC_OK != err->code) {
+	return false;
+    }
+    if (0 == anchor || 0 == path || 0 == val) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	}
+	return false;
+    }
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node");
+	}
+	return false;
+    }
+    if (OJC_OBJECT != p->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	}
+	return false;
+    }
+    return ojc_object_replace(err, p, key, val);
+}
+
 ojcValType
 ojc_type(ojcVal val) {
     return (ojcValType)val->type;
@@ -626,13 +907,13 @@ ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val) {
     return ojc_object_nappend(err, object, key, strlen(key), val);
 }
 
-void
+bool
 ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val) {
     ojcVal	m;
     ojcVal	prev = 0;
 
     if (bad_object(err, object, "replace")) {
-	return;
+	return false;
     }
     _ojc_set_key(val, key, 0);
     for (m = object->members.head; 0 != m; m = m->next) {
@@ -648,10 +929,14 @@ ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val) {
 	    }
 	    m->next = 0;
 	    ojc_destroy(m);
-	    break;
+	    return true;
 	}
 	prev = m;
     }
+    // nothing replaces so append
+    ojc_object_append(err, object, key, val);
+
+    return false;
 }
 
 void

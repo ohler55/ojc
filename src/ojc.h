@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.8.0"
+#define OJC_VERSION	"1.9.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -248,7 +248,7 @@ extern ojcVal		ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseC
 extern void		ojc_destroy(ojcVal val);
 
 /**
- * Gets a __ojcVal__ located by the provided path where the path is a sequence
+ * Gets an __ojcVal__ located by the provided path where the path is a sequence
  * of keys or indices separated by the / character. If the element does not
  * exist a NULL value is returned. A NULL path returns the __val__ argument.
  *
@@ -259,7 +259,7 @@ extern void		ojc_destroy(ojcVal val);
 extern ojcVal		ojc_get(ojcVal val, const char *path);
 
 /**
- * Gets a __ojcVal__ located by the provided path where the path is a NULL
+ * Gets an __ojcVal__ located by the provided path where the path is a NULL
  * terminated array of strings that are keys or indices that form a path to a
  * target value. If the element does not exist a NULL value is returned. A NULL
  * path returns the __val__ argument.
@@ -269,6 +269,51 @@ extern ojcVal		ojc_get(ojcVal val, const char *path);
  * @return the value identified by the path or NULL if it does not exist.
  */
 extern ojcVal		ojc_aget(ojcVal val, const char **path);
+
+/**
+ * Appends an __ojcVal__ at the provided path where the path is a sequence of
+ * keys or indices separated by the / character. If any node does not exist on
+ * the path an Object or Array is created for that element of the path.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ */
+extern void		ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
+
+/**
+ * Appends an __ojcVal__ at the provided path where the path is a NULL
+ * terminated array of strings that are keys or indices that form a path to a
+ * target value. If any node does not exist on the path an Object or Array is
+ * created for that element of the path.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ */
+extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
+
+/**
+ * Replaces or appends an __ojcVal__ at the provided path where the path is a
+ * sequence of keys or indices separated by the / character. If any node does
+ * not exist on the path an Object or Array is created for that element of the
+ * path.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ * @return true if a value was replaced and false if it was appended.
+ */
+    extern bool		ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
+
+/**
+ * Replaces of appends an __ojcVal__ at the provided path where the path is a
+ * NULL terminated array of strings that are keys or indices that form a path to
+ * a target value. If any node does not exist on the path an Object or Array is
+ * created for that element of the path.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ * @return true if a value was replaced and false if it was appended.
+ */
+extern bool		ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
 
 /**
  * Returns the type of the value.
@@ -496,8 +541,9 @@ extern void		ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int 
  * @param object object to append __val__ to
  * @param key the key to use in the key-value pair
  * @param val new value
+ * @return true if a value was replaced and false if it was appended.
  */
-extern void		ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val);
+extern bool		ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val);
 
 /**
  * Inserts a __val__ in a JSON object with the specified __key__. The insert is

@@ -12,7 +12,15 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Current Release 1.8.0 - April 7, 2015
+### Current Release 1.9.0 - April 14, 2015
+
+ - Changed ojc_object_replace to return a boolean.
+
+ - Added ojc_append() and ojc_aappend() for appending to a tree with a path.
+ 
+ - Added ojc_replace() and ojc_areplace() for replacing or append to a tree with a path.
+ 
+### Release 1.8.0 - April 7, 2015
 
  - Added ojc_cmp() function that compares two ojcVal values.
 
