@@ -509,7 +509,7 @@ replace_test() {
     ojcVal		val;
     struct _ojcErr	err = OJC_ERR_INIT;
     const char		*json = "{\"zero\":0,\"one\":{\"1\":true,\"2\":null,\"3\":[1,2,3]},\"two\":12345}";
-    const char		*expect = "{\"zero\":0,\"one\":{\"1\":false,\"2\":null,\"3\":[true,2,3]},\"two\":2,\"three\":3}";
+    const char		*expect = "{\"zero\":0,\"one\":{\"1\":false,\"2\":null,\"3\":[true,2,3],\"4\":{\"one\":141}},\"two\":2,\"three\":3}";
 
     val = ojc_parse_str(&err, json, 0, 0);
     if (ut_handle_error(&err)) {
@@ -519,6 +519,7 @@ replace_test() {
     ojc_replace(&err, val, "three", ojc_create_int(3));
     ojc_replace(&err, val, "one/1", ojc_create_bool(false));
     ojc_replace(&err, val, "one/3/0", ojc_create_bool(true));
+    ojc_replace(&err, val, "one/4/one", ojc_create_int(141));
     ojc_fill(&err, val, 0, actual, sizeof(actual));
     if (ut_handle_error(&err)) {
 	return;

@@ -12,7 +12,7 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
-### Future Release 1.10.0 - May 17, 2015
+### Release 1.10.0 - May 17, 2015
 
  - Added support for arrays in ojc_replace().
 
@@ -21,7 +21,9 @@ Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announceme
  - Changed ojc_object_remove_by_pos() to ojc_remove_by_pos() which now supports
    arrays.
 
-### Current Release 1.9.0 - April 14, 2015
+ - Aliased ojc_set() to ojc_replace() and ojc_aset() to ojc_areplace().
+
+### Release 1.9.0 - April 14, 2015
 
  - Changed ojc_object_replace to return a boolean.
 

@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.9.0"
+#define OJC_VERSION	"1.10.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -301,7 +301,8 @@ extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal va
  * @param path location of the target value
  * @return true if a value was replaced and false if it was appended.
  */
-    extern bool		ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
+extern bool		ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
+extern bool		ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
 
 /**
  * Replaces of appends an __ojcVal__ at the provided path where the path is a
@@ -314,6 +315,7 @@ extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal va
  * @return true if a value was replaced and false if it was appended.
  */
 extern bool		ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
+extern bool		ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
 
 /**
  * Returns the type of the value.

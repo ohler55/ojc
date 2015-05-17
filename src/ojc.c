@@ -540,6 +540,11 @@ ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
 
 bool
 ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
+    return ojc_set(err, anchor, path, val);
+}
+
+bool
+ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     const char	*key = 0;
     ojcVal	p;
 
@@ -549,7 +554,7 @@ ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     if (0 == anchor || 0 == path || 0 == val) {
 	if (0 != err) {
 	    err->code = OJC_ARG_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_set");
 	}
 	return false;
     }
@@ -571,7 +576,7 @@ ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
 	    if (*k < '0' || '9' < *k) {
 		if (0 != err) {
 		    err->code = OJC_ARG_ERR;
-		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_replace", key);
+		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_set", key);
 		}
 		return false;
 	    }
@@ -580,7 +585,7 @@ ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
 	if (MAX_INDEX < pos) {
 	    if (0 != err) {
 		err->code = OJC_ARG_ERR;
-		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_replace", key);
+		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_set", key);
 	    }
 	    return false;
 	}
@@ -588,13 +593,18 @@ ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     }
     if (0 != err) {
 	err->code = OJC_TYPE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	snprintf(err->msg, sizeof(err->msg), "Can not set an elements of a %s", ojc_type_str(p->type));
     }
     return false;
 }
 
 bool
 ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
+    return ojc_aset(err, anchor, path, val);
+}
+
+bool
+ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     const char	*key = 0;
     ojcVal	p = get_aparent(anchor, path, &key);
 
@@ -604,7 +614,7 @@ ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     if (0 == anchor || 0 == path || 0 == val) {
 	if (0 != err) {
 	    err->code = OJC_ARG_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_aset");
 	}
 	return false;
     }
@@ -615,14 +625,36 @@ ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
 	}
 	return false;
     }
-    if (OJC_OBJECT != p->type) {
-	if (0 != err) {
-	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+    if (OJC_OBJECT == p->type) {
+	return ojc_object_replace(err, p, key, val);
+    } else if (OJC_ARRAY == p->type) {
+	unsigned int	pos = 0;
+	const char	*k = key;
+
+	for (; '\0' != *k; k++) {
+	    if (*k < '0' || '9' < *k) {
+		if (0 != err) {
+		    err->code = OJC_ARG_ERR;
+		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_aset", key);
+		}
+		return false;
+	    }
+	    pos = pos * 10 + (unsigned int)(*k - '0');
 	}
-	return false;
+	if (MAX_INDEX < pos) {
+	    if (0 != err) {
+		err->code = OJC_ARG_ERR;
+		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_aset", key);
+	    }
+	    return false;
+	}
+	return ojc_array_replace(err, p, pos, val);
     }
-    return ojc_object_replace(err, p, key, val);
+    if (0 != err) {
+	err->code = OJC_TYPE_ERR;
+	snprintf(err->msg, sizeof(err->msg), "Can not set an elements of a %s", ojc_type_str(p->type));
+    }
+    return false;
 }
 
 ojcValType
