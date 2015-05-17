@@ -283,8 +283,8 @@ extern void		ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val)
 /**
  * Appends an __ojcVal__ at the provided path where the path is a NULL
  * terminated array of strings that are keys or indices that form a path to a
- * target value. If any node does not exist on the path an Object or Array is
- * created for that element of the path.
+ * target value. If any node does not exist on the path an Object is created for
+ * that element of the path.
  *
  * @param val anchor value for locating the target value
  * @param path location of the target value
@@ -306,8 +306,8 @@ extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal va
 /**
  * Replaces of appends an __ojcVal__ at the provided path where the path is a
  * NULL terminated array of strings that are keys or indices that form a path to
- * a target value. If any node does not exist on the path an Object or Array is
- * created for that element of the path.
+ * a target value. If any node does not exist on the path an Object is created
+ * for that element of the path.
  *
  * @param val anchor value for locating the target value
  * @param path location of the target value
@@ -567,7 +567,7 @@ extern void		ojc_object_insert(ojcErr err, ojcVal object, int before, const char
  * @param object object to remove the member from
  * @param pos zero based position of the member to remove
  */
-extern void		ojc_object_remove_by_pos(ojcErr err, ojcVal object, int pos);
+extern void		ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);
 
 /**
  * Removes all members in a JSON object with the specified __key__. The __err__
@@ -629,6 +629,33 @@ extern void		ojc_array_push(ojcErr err, ojcVal array, ojcVal val);
  * @return the first element in an array.
  */
 extern ojcVal		ojc_array_pop(ojcErr err, ojcVal array);
+
+/**
+ * Replaces a __val__ in a JSON object for the specified __pos__. The __err__
+ * struct is set if the __array__ is not an __OJC__ARRAY__ type. If the __pos__
+ * is negative the position is counted from the end of the array unless the
+ * value is less than the length of the array and then it is pushed onto the
+ * array. If the __pos__ is larger than the length the __val__ is appended to
+ * the array.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param arrat array to replace the value with __val__
+ * @param pos the position of the value to replace in the array
+ * @param val new value
+ * @return true if a value was replaced and false if it was pushed or appended.
+ */
+extern bool		ojc_array_replace(ojcErr err, ojcVal object, int pos, ojcVal val);
+
+/**
+ * Inserts a __val__ in a JSON array before the __pos__. The __err__ struct is
+ * set if the __array__ is not an __OJC__ARRAY__ type.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param array array to insert __val__ into
+ * @param pos position to insert the new value
+ * @param val new value
+ */
+extern void		ojc_array_insert(ojcErr err, ojcVal array, int pos, ojcVal val);
 
 /**
  * Converts __val__ to a JSON formated string. The __indent__ argument is used

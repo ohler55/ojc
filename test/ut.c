@@ -476,7 +476,7 @@ ut_toCodeStr(const unsigned char *data, int len) {
 bool
 ut_handle_error(ojcErr err) {
     if (OJC_OK != err->code) {
-	ut_print("[%d] %s", err->code, err->msg);
+	ut_print("[%d] %s\n", err->code, err->msg);
 	ut_fail();
 	return true;
     }

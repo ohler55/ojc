@@ -12,6 +12,7 @@ OBJS=$(SRCS:.c=.o)
 TARGET=$(LIB_DIR)/libojc.a
 
 all: $(LIB_DIR) $(INC_DIR) $(TARGET)
+	rsync -tupRE $(HEADERS) $(INC_DIR)
 
 clean:
 	$(RM) $(OBJS)

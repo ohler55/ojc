@@ -509,7 +509,7 @@ replace_test() {
     ojcVal		val;
     struct _ojcErr	err = OJC_ERR_INIT;
     const char		*json = "{\"zero\":0,\"one\":{\"1\":true,\"2\":null,\"3\":[1,2,3]},\"two\":12345}";
-    const char		*expect = "{\"zero\":0,\"one\":{\"1\":false,\"2\":null,\"3\":true},\"two\":2,\"three\":3}";
+    const char		*expect = "{\"zero\":0,\"one\":{\"1\":false,\"2\":null,\"3\":[true,2,3]},\"two\":2,\"three\":3}";
 
     val = ojc_parse_str(&err, json, 0, 0);
     if (ut_handle_error(&err)) {
@@ -518,7 +518,28 @@ replace_test() {
     ojc_replace(&err, val, "two", ojc_create_int(2));
     ojc_replace(&err, val, "three", ojc_create_int(3));
     ojc_replace(&err, val, "one/1", ojc_create_bool(false));
-    ojc_replace(&err, val, "one/3", ojc_create_bool(true));
+    ojc_replace(&err, val, "one/3/0", ojc_create_bool(true));
+    ojc_fill(&err, val, 0, actual, sizeof(actual));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(expect, actual);
+}
+
+static void
+array_replace_test() {
+    char		actual[256];
+    ojcVal		val;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "[0,1,2,3,4]";
+    const char		*expect = "[0,-1,2,3,-4]";
+
+    val = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_array_replace(&err, val, -1, ojc_create_int(-4));
+    ojc_array_replace(&err, val, 1, ojc_create_int(-1));
     ojc_fill(&err, val, 0, actual, sizeof(actual));
     if (ut_handle_error(&err)) {
 	return;
@@ -596,6 +617,79 @@ aappend_test() {
     path[1] = "3";
     ojc_aappend(&err, val, path, ojc_create_bool(true));
     ojc_aappend(&err, val, path, ojc_create_bool(false));
+    ojc_fill(&err, val, 0, actual, sizeof(actual));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(expect, actual);
+}
+
+static void
+object_remove_test() {
+    char		actual[256];
+    ojcVal		val;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "{\"zero\":0,\"one\":1,\"two\":2,\"three\":3,\"four\":4}";
+    const char		*expect = "{\"zero\":0,\"two\":2,\"three\":3}";
+
+    val = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_remove_by_pos(&err, val, -1);
+    ojc_remove_by_pos(&err, val, 1);
+
+    ojc_fill(&err, val, 0, actual, sizeof(actual));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(expect, actual);
+
+    ojc_remove_by_pos(&err, val, 4);
+    ut_same_int(OJC_ARG_ERR, err.code, "expected an error code");
+}
+
+static void
+array_remove_test() {
+    char		actual[256];
+    ojcVal		val;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "[0,1,2,3,4]";
+    const char		*expect = "[0,2,3]";
+
+    val = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_remove_by_pos(&err, val, -1);
+    ojc_remove_by_pos(&err, val, 1);
+
+    ojc_fill(&err, val, 0, actual, sizeof(actual));
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(expect, actual);
+
+    ojc_remove_by_pos(&err, val, 4);
+    ut_same_int(OJC_ARG_ERR, err.code, "expected an error code");
+}
+
+static void
+array_insert_test() {
+    char		actual[256];
+    ojcVal		val;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*json = "[2,3]";
+    const char		*expect = "[0,1,2,3,4]";
+
+    val = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ojc_array_insert(&err, val, -1, ojc_create_int(4));
+    ojc_array_insert(&err, val, 0, ojc_create_int(0));
+    ojc_array_insert(&err, val, 1, ojc_create_int(1));
+
     ojc_fill(&err, val, 0, actual, sizeof(actual));
     if (ut_handle_error(&err)) {
 	return;
@@ -794,9 +888,13 @@ static struct _Test	tests[] = {
     { "object_aget",	object_aget_test },
     { "duplicate",	duplicate_test },
     { "replace",	replace_test },
+    { "array_replace",	array_replace_test },
     { "areplace",	areplace_test },
     { "append",		append_test },
     { "aappend",	aappend_test },
+    { "object_remove",	object_remove_test },
+    { "array_remove",	array_remove_test },
+    { "array_insert",	array_insert_test },
     { "cmp",		cmp_test },
 
     { "benchmark",	benchmark_test },

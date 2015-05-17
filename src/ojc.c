@@ -484,7 +484,7 @@ ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     if (0 == anchor || 0 == path || 0 == val) {
 	if (0 != err) {
 	    err->code = OJC_ARG_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_append");
 	}
 	return;
     }
@@ -499,7 +499,7 @@ ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     if (OJC_OBJECT != p->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not append to an elements of a %s", ojc_type_str(p->type));
 	}
 	return;
     }
@@ -517,7 +517,7 @@ ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     if (0 == anchor || 0 == path || 0 == val) {
 	if (0 != err) {
 	    err->code = OJC_ARG_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_replace");
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_aappend");
 	}
 	return;
     }
@@ -531,7 +531,7 @@ ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     if (OJC_OBJECT != p->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+	    snprintf(err->msg, sizeof(err->msg), "Can not append to an elements of a %s", ojc_type_str(p->type));
 	}
 	return;
     }
@@ -561,14 +561,36 @@ ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
 	}
 	return false;
     }
-    if (OJC_OBJECT != p->type) {
-	if (0 != err) {
-	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+    if (OJC_OBJECT == p->type) {
+	return ojc_object_replace(err, p, key, val);
+    } else if (OJC_ARRAY == p->type) {
+	unsigned int	pos = 0;
+	const char	*k = key;
+
+	for (; '\0' != *k; k++) {
+	    if (*k < '0' || '9' < *k) {
+		if (0 != err) {
+		    err->code = OJC_ARG_ERR;
+		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_replace", key);
+		}
+		return false;
+	    }
+	    pos = pos * 10 + (unsigned int)(*k - '0');
 	}
-	return false;
+	if (MAX_INDEX < pos) {
+	    if (0 != err) {
+		err->code = OJC_ARG_ERR;
+		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_replace", key);
+	    }
+	    return false;
+	}
+	return ojc_array_replace(err, p, pos, val);
     }
-    return ojc_object_replace(err, p, key, val);
+    if (0 != err) {
+	err->code = OJC_TYPE_ERR;
+	snprintf(err->msg, sizeof(err->msg), "Can not replace an elements of a %s", ojc_type_str(p->type));
+    }
+    return false;
 }
 
 bool
@@ -872,15 +894,40 @@ bad_object(ojcErr err, ojcVal object, const char *op) {
     if (0 == object) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not object %s to NULL", op);
+	    snprintf(err->msg, sizeof(err->msg), "Can not object %s on NULL", op);
 	}
 	return true;
     }
     if (OJC_OBJECT != object->type) {
 	if (0 != err) {
 	    err->code = OJC_TYPE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "Can not object %s to a %s",
+	    snprintf(err->msg, sizeof(err->msg), "Can not object %s on a %s",
 		     op, ojc_type_str((ojcValType)object->type));
+	}
+	return true;
+    }
+    return false;
+}
+
+// returns false if val has members, true if there is an error
+static bool
+has_no_members(ojcErr err, ojcVal val, const char *op) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return true;
+    }
+    if (0 == val) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not %s on NULL", op);
+	}
+	return true;
+    }
+    if (OJC_OBJECT != val->type && OJC_ARRAY != val->type) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not %s on a %s",
+		     op, ojc_type_str((ojcValType)val->type));
 	}
 	return true;
     }
@@ -970,34 +1017,47 @@ ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal
 }
 
 void
-ojc_object_remove_by_pos(ojcErr err, ojcVal object, int pos) {
+ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
     ojcVal	m;
     ojcVal	prev = 0;
-    int		p = pos;
+    ojcVal	next;
 
-    if (bad_object(err, object, "remove by position")) {
+    if (has_no_members(err, val, "remove by position")) {
 	return;
     }
-    for (m = object->members.head; 0 != m && 0 < pos; m = m->next, p--) {
+    if (0 > pos) {
+	int	cnt = ojc_member_count(err, val);
+
+	pos += cnt;
+	if (0 > pos) {
+	    if (0 != err) {
+		err->code = OJC_ARG_ERR;
+		snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos - cnt);
+	    }
+	    return;
+	}
+    }
+    for (m = val->members.head; 0 != m; m = next, pos--) {
+	next = m->next;
+	if (0 == pos) {
+	    if (0 == prev) {
+		val->members.head = m->next;
+	    } else {
+		prev->next = m->next;
+	    }
+	    if (m == val->members.tail) {
+		val->members.tail = prev;
+	    }
+	    m->next = 0;
+	    ojc_destroy(m);
+	    return;
+	}
 	prev = m;
     }
-    if (0 != p || 0 == object->members.head || 0 == m) {
-	if (0 != err) {
-	    err->code = OJC_ARG_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos);
-	}
-	return;
+    if (0 != err) {
+	err->code = OJC_ARG_ERR;
+	snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos);
     }
-    if (0 == prev) {
-	object->members.head = m->next;
-    } else {
-	prev->next = m->next;
-    }
-    if (0 == prev->next) {
-	object->members.tail = prev;
-    }
-    m->next = 0;
-    ojc_destroy(m);
 }
 
 void
@@ -1142,6 +1202,74 @@ ojc_array_pop(ojcErr err, ojcVal array) {
 	return val;
     }
     return 0;
+}
+
+bool
+ojc_array_replace(ojcErr err, ojcVal array, int pos, ojcVal val) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+
+    if (bad_array(err, array, "replace")) {
+	return false;
+    }
+    if (0 > pos) {
+	pos += ojc_member_count(err, array);
+    }
+    if (0 > pos) {
+	ojc_array_push(err, array, val);
+	return false;
+    }
+    for (m = array->members.head; 0 != m; m = m->next, pos--) {
+	if (0 == pos) {
+	    val->next = m->next;
+	    if (0 == prev) {
+		array->members.head = val;
+	    } else {
+		prev->next = val;
+	    }
+	    if (0 == val->next) {
+		array->members.tail = val;
+	    }
+	    m->next = 0;
+	    ojc_destroy(m);
+	    return true;
+	}
+	prev = m;
+    }
+    ojc_array_append(err, array, val);
+
+    return false;
+}
+
+void
+ojc_array_insert(ojcErr err, ojcVal array, int pos, ojcVal val) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+
+    if (bad_array(err, array, "insert")) {
+	return;
+    }
+    if (0 > pos) {
+	pos += ojc_member_count(err, array) + 1;
+    }
+    if (0 > pos) {
+	ojc_array_push(err, array, val);
+	return;
+    }
+    for (m = array->members.head; 0 != m; m = m->next, pos--) {
+	if (0 == pos) {
+	    if (0 == prev) {
+		val->next = array->members.head;
+		array->members.head = val;
+	    } else {
+		prev->next = val;
+		val->next = m;
+	    }
+	    return;
+	}
+	prev = m;
+    }
+    ojc_array_append(err, array, val);
 }
 
 static void
