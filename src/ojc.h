@@ -255,7 +255,7 @@ extern void		ojc_destroy(ojcVal val);
 
 /**
  * Gets an __ojcVal__ located by the provided path where the path is a sequence
- * of keys or indices separated by the / character. If the element does not
+ * of keys or indices separated by the / or . character. If the element does not
  * exist a NULL value is returned. A NULL path returns the __val__ argument.
  *
  * @param val anchor value for locating the target value
@@ -278,8 +278,8 @@ extern ojcVal		ojc_aget(ojcVal val, const char **path);
 
 /**
  * Appends an __ojcVal__ at the provided path where the path is a sequence of
- * keys or indices separated by the / character. If any node does not exist on
- * the path an Object or Array is created for that element of the path.
+ * keys or indices separated by the / or . character. If any node does not exist
+ * on the path an Object or Array is created for that element of the path.
  *
  * @param val anchor value for locating the target value
  * @param path location of the target value
@@ -299,9 +299,9 @@ extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal va
 
 /**
  * Replaces or appends an __ojcVal__ at the provided path where the path is a
- * sequence of keys or indices separated by the / character. If any node does
- * not exist on the path an Object or Array is created for that element of the
- * path.
+ * sequence of keys or indices separated by the / or . character. If any node
+ * does not exist on the path an Object or Array is created for that element of
+ * the path.
  *
  * @param val anchor value for locating the target value
  * @param path location of the target value

@@ -209,7 +209,7 @@ ojc_get(ojcVal val, const char *path) {
     if (0 == path || 0 == val) {
 	return val;
     }
-    if ('/' == *path) {
+    if ('/' == *path || '.' == *path) {
 	path++;
     }
     if ('\0' == *path) {
@@ -221,7 +221,7 @@ ojc_get(ojcVal val, const char *path) {
 	{
 	    unsigned int	index = 0;
 
-	    for (; '\0' != *path && '/' != *path; path++) {
+	    for (; '\0' != *path && '/' != *path && '.' != *path; path++) {
 		if (*path < '0' || '9' < *path) {
 		    return 0;
 		}
@@ -242,7 +242,7 @@ ojc_get(ojcVal val, const char *path) {
 	    const char	*key;
 	    int		plen;
 
-	    for (; '\0' != *path && '/' != *path; path++) {
+	    for (; '\0' != *path && '/' != *path && '.' != *path; path++) {
 	    }
 	    plen = path - start;
 	    for (m = val->members.head; ; m = m->next) {
@@ -335,7 +335,7 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
     const char	*start;
     ojcVal	m;
     
-    if ('/' == *path) {
+    if ('/' == *path || '.' == *path) {
 	path++;
     }
     if ('\0' == *path) {
@@ -347,7 +347,7 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
     case OJC_ARRAY: {
 	unsigned int	index = 0;
 
-	for (; '/' != *path; path++) {
+	for (; '/' != *path && '.' != *path; path++) {
 	    if ('\0' == *path) { // this is the parent
 		*keyp = start;
 		return val;
@@ -377,7 +377,7 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
 	struct _ojcErr	err = OJC_ERR_INIT;
 	ojcVal		child;
 
-	for (; '/' != *path; path++) {
+	for (; '/' != *path && '.' != *path; path++) {
 	    if ('\0' == *path) { // this is the parent
 		*keyp = start;
 		return val;
