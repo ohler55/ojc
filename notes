@@ -3,11 +3,6 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- check for NULL on str and other creates
-
-- ojc_set() and ojc_aset()
-- ojc_replace
- - should add if not there and return bool indicating change or new
 
 - make sure follow works
 - allow catchup on stream parser if with callbacks

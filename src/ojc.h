@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.10.0"
+#define OJC_VERSION	"1.11.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -157,6 +157,12 @@ extern bool		ojc_word_ok;
  * OJC_DECIMAL.
  */
 extern bool		ojc_decimal_as_number;
+
+/**
+ * If true searches are case insensitive. Searches includes get and replace
+ * operations.
+ */
+extern bool		ojc_case_insensitive;
 
 /**
  * @return version of OjC.

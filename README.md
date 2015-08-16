@@ -12,6 +12,14 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
+### Release 1.11.0 - August 15, 2015
+
+ - Fixed bug in ocj_get() that missed keys of a medium size range.
+
+ - Added an option for case insensitive searches. By setting the
+   ojc_case_insensitive flag to true search and replace functions become case
+   insensitive.
+
 ### Release 1.10.0 - May 17, 2015
 
  - Added support for arrays in ojc_replace().

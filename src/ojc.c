@@ -63,6 +63,7 @@ static char		hibit_friendly_chars[257] = "\
 bool		ojc_newline_ok = false;
 bool		ojc_word_ok = false;
 bool		ojc_decimal_as_number = false;
+bool		ojc_case_insensitive = false;
 
 const char*
 ojc_version() {
@@ -251,10 +252,14 @@ ojc_get(ojcVal val, const char *path) {
 		switch (m->key_type) {
 		case STR_PTR:	key = m->key.str;	break;
 		case STR_ARRAY:	key = m->key.ca;	break;
+		case STR_BLOCK:	key = m->key.bstr->ca;	break;
 		case STR_NONE:
 		default:	key = 0;		break;
 		}
-		if (0 != key && 0 == strncmp(start, key, plen)) {
+		if (0 != key && '\0' == key[plen] &&
+		    (ojc_case_insensitive ?
+		     0 == strncasecmp(start, key, plen) :
+		     0 == strncmp(start, key, plen))) {
 		    return ojc_get(m, path);
 		}
 	    }
@@ -310,7 +315,10 @@ ojc_aget(ojcVal val, const char **path) {
 		case STR_NONE:
 		default:	key = 0;		break;
 		}
-		if (0 != key && 0 == strcmp(*path, key)) {
+		if (0 != key &&
+		    (ojc_case_insensitive ?
+		     0 == strcasecmp(*path, key) :
+		     0 == strcmp(*path, key))) {
 		    return ojc_aget(m, path + 1);
 		}
 	    }
@@ -383,7 +391,10 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
 	    case STR_NONE:
 	    default:		key = 0;		break;
 	    }
-	    if (0 != key && 0 == strncmp(start, key, plen)) {
+	    if (0 != key && '\0' == key[plen] &&
+		(ojc_case_insensitive ?
+		 0 == strncasecmp(start, key, plen) :
+		 0 == strncmp(start, key, plen))) {
 		ojcVal	p = get_parent(m, path, keyp);
 
 		if (0 != p) {
@@ -454,7 +465,10 @@ get_aparent(ojcVal val, const char **path, const char **keyp) {
 	    case STR_NONE:
 	    default:		key = 0;		break;
 	    }
-	    if (0 != key && 0 == strcmp(*path, key)) {
+	    if (0 != key &&
+		(ojc_case_insensitive ?
+		 0 == strcasecmp(*path, key) :
+		 0 == strcmp(*path, key))) {
 		ojcVal	parent = get_aparent(m, pn, keyp);
 
 		if (0 != parent) {
@@ -831,6 +845,10 @@ ojcVal
 ojc_create_str(const char *str, size_t len) {
     ojcVal	val = _ojc_val_create(OJC_STRING);
     
+    if (NULL == str) {
+	val->type = OJC_NULL;
+	return val;
+    }
     if (0 >= len) {
 	len = strlen(str);
     }
@@ -886,6 +904,10 @@ ojcVal
 ojc_create_number(const char *num, size_t len) {
     ojcVal	val = _ojc_val_create(OJC_NUMBER);
 
+    if (NULL == num) {
+	val->type = OJC_NULL;
+	return val;
+    }
     if (0 >= len) {
 	len = strlen(num);
     }
@@ -996,7 +1018,9 @@ ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val) {
     }
     _ojc_set_key(val, key, 0);
     for (m = object->members.head; 0 != m; m = m->next) {
-	if (0 == strcmp(key, ojc_key(m))) {
+	if (ojc_case_insensitive ?
+	    0 == strcasecmp(key, ojc_key(m)) :
+	    0 == strcmp(key, ojc_key(m))) {
 	    val->next = m->next;
 	    if (0 == prev) {
 		object->members.head = val;
@@ -1103,7 +1127,9 @@ ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
     }
     for (m = object->members.head; 0 != m; m = next) {
 	next = m->next;
-	if (0 == strcmp(key, ojc_key(m))) {
+	if (ojc_case_insensitive ?
+	    0 == strcasecmp(key, ojc_key(m)) :
+	    0 == strcmp(key, ojc_key(m))) {
 	    if (0 == prev) {
 		object->members.head = m->next;
 	    } else {
@@ -1128,7 +1154,9 @@ ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key) {
 	return 0;
     }
     for (m = object->members.head; 0 != m; m = m->next) {
-	if (0 == strcmp(key, ojc_key(m))) {
+	if (ojc_case_insensitive ?
+	    0 == strcasecmp(key, ojc_key(m)) :
+	    0 == strcmp(key, ojc_key(m))) {
 	    break;
 	}
     }
@@ -1744,7 +1772,7 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	if (NULL == s2) {
 	    s2 = "";
 	}
-	return strcmp(s1, s2);
+	return (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
     }
     case OJC_NUMBER:
 	break;
@@ -1779,7 +1807,9 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	int	x;
 
 	for (; 0 != m1 && 0 != m2; m1 = m1->next, m2 = m2->next) {
-	    if (0 != (x = strcmp(ojc_key(m1), ojc_key(m2))) ||
+	    if (0 != (x = (ojc_case_insensitive ?
+			   strcasecmp(ojc_key(m1), ojc_key(m2)) :
+			   strcmp(ojc_key(m1), ojc_key(m2)))) ||
 		0 != (x = ojc_cmp(m1, m2))) {
 		return x;
 	    }
@@ -1802,7 +1832,7 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	if (NULL == s2) {
 	    s2 = "";
 	}
-	return strcmp(s1, s2);
+	return (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
     }
     case OJC_TRUE:
     case OJC_FALSE:

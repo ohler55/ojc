@@ -412,6 +412,32 @@ object_get_test() {
     }
 }
 
+static void
+object_get_size_test() {
+    char		result[256];
+    ojcVal		array;
+    ojcVal		val;
+    struct _ojcErr	err;
+    PathExp		pe;
+    const char		*json = "{\"zerozero\":1,\"zerozer\":0,\"zerozeroz\":2}";
+    struct _PathExp	data[] = {
+	{ "zerozer",	"0" },
+	{ "zerozero",	"1" },
+	{ "zerozeroz",	"2" },
+	{ 0, 0 } };
+
+    ojc_err_init(&err);
+    array = ojc_parse_str(&err, json, 0, 0);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    for (pe = data; 0 != pe->expect; pe++) {
+	val = ojc_get(array, pe->path);
+	ojc_fill(&err, val, 0, result, sizeof(result));
+	ut_same(pe->expect, result);
+    }
+}
+
 typedef struct _APathExp {
     const char	*path[4];
     const char	*expect;
@@ -885,6 +911,7 @@ static struct _Test	tests[] = {
     { "fill_too_big",	fill_too_big_test },
     { "array_get",	array_get_test },
     { "object_get",	object_get_test },
+    { "object_get_size",object_get_size_test },
     { "array_aget",	array_aget_test },
     { "object_aget",	object_aget_test },
     { "duplicate",	duplicate_test },
