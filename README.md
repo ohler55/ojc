@@ -15,7 +15,8 @@ Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announceme
 ### Release 1.12.0 - September 3, 2015
 
  - Added support for opaque elements that can be set but do not get
-   written. They do not show up in string output either.
+   written. They do not show up in string output unless the new ojc_write_opaque
+   is set to true.
 
 ### Release 1.11.0 - August 15, 2015
 
