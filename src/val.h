@@ -87,6 +87,7 @@ struct _ojcVal {
 	struct _List	members;
 	int64_t		fixnum;
 	double		dub;
+	void		*opaque;
     };
     uint8_t		type;	// ojcValType
     uint8_t		key_type;

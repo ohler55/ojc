@@ -132,6 +132,30 @@ number_test() {
 }
 
 static void
+opaque_test() {
+    char		result[64];
+    char		expect[64];
+    const char		*opaque = "OjC";
+    ojcVal		val = ojc_create_opaque((void*)opaque);
+    struct _ojcErr	err = OJC_ERR_INIT;
+    const char		*s = (const char*)ojc_opaque(&err, val);
+
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    ut_same(opaque, s);
+    ojc_fill(&err, val, 0, result, sizeof(result) - 1);
+    ut_same("", result);
+    ojc_write_opaque = true;
+    sprintf(expect, "%llu", (unsigned long long)opaque);
+    ojc_fill(&err, val, 0, result, sizeof(result) - 1);
+    ut_same(expect, result);
+    ojc_write_opaque = false;
+
+    ojc_destroy(val);
+}
+
+static void
 object_test() {
     const char	*jsons[] = {
 	"{}",
@@ -900,6 +924,7 @@ static struct _Test	tests[] = {
     { "string",		string_test },
     { "word",		word_test },
     { "number",		number_test },
+    { "opaque",		opaque_test },
     { "object",		object_test },
     { "mix",		mix_test },
     { "comment",	comment_test },

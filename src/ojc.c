@@ -64,6 +64,7 @@ bool		ojc_newline_ok = false;
 bool		ojc_word_ok = false;
 bool		ojc_decimal_as_number = false;
 bool		ojc_case_insensitive = false;
+bool		ojc_write_opaque = false;
 
 const char*
 ojc_version() {
@@ -752,6 +753,14 @@ ojc_word(ojcErr err, ojcVal val) {
     return val->str.ca;
 }
 
+void*
+ojc_opaque(ojcErr err, ojcVal val) {
+    if (!is_type_ok(err, val, OJC_OPAQUE)) {
+	return NULL;
+    }
+    return val->opaque;
+}
+
 ojcVal
 ojc_members(ojcErr err, ojcVal val) {
     if (0 != err && OJC_OK != err->code) {
@@ -936,6 +945,15 @@ ojc_create_null(void) {
 ojcVal
 ojc_create_bool(bool boo) {
     return _ojc_val_create(boo ? OJC_TRUE : OJC_FALSE);
+}
+
+ojcVal
+ojc_create_opaque(void *opaque) {
+    ojcVal	val = _ojc_val_create(OJC_OPAQUE);
+
+    val->opaque = opaque;
+
+    return val;
 }
 
 // returns false if okay, true if there is an error
@@ -1359,6 +1377,25 @@ fixnum_fill(Buf bb, int64_t num) {
     buf_append_string(bb, b, end - b);
 }
 
+static void
+opaque_fill(Buf bb, void *v) {
+    char	buf[32];
+    char	*end = buf + sizeof(buf) - 1;
+    char	*b = end;
+    uint64_t	num = (uint64_t)v;
+
+    *b-- = '\0';
+    if (0 < num) {
+	for (; 0 < num; num /= 10, b--) {
+	    *b = (num % 10) + '0';
+	}
+	b++;
+    } else {
+	*b = '0';
+    }
+    buf_append_string(bb, b, end - b);
+}
+
 const char*
 buf_unicode(Buf buf, const char *str) {
     uint32_t	code = 0;
@@ -1614,6 +1651,11 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	    buf_append_string(buf, str, strlen(str));
 	}
 	break;
+    case OJC_OPAQUE:
+	if (ojc_write_opaque) {
+	    opaque_fill(buf, val->opaque);
+	}
+	break;
     default:
 	break;
     }
@@ -1747,6 +1789,9 @@ ojc_duplicate(ojcVal val) {
     case OJC_DECIMAL:
 	dup->dub = val->dub;
 	break;
+    case OJC_OPAQUE:
+	dup->opaque = val->opaque;
+	break;
     default:
 	break;
     }
@@ -1834,6 +1879,8 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	}
 	return (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
     }
+    case OJC_OPAQUE:
+	return (int)(v1->opaque - v2->opaque);
     case OJC_TRUE:
     case OJC_FALSE:
     case OJC_NULL:
@@ -1856,6 +1903,7 @@ ojc_type_str(ojcValType type) {
     case OJC_ARRAY:	return "array";
     case OJC_OBJECT:	return "object";
     case OJC_WORD:	return "word";
+    case OJC_OPAQUE:	return "opaque";
     default:		return "unknown";
     }
 }

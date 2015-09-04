@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.11.0"
+#define OJC_VERSION	"1.12.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -71,6 +71,8 @@ typedef enum {
     OJC_OBJECT	= 'o',
     /** word with a maximum of 15 characters */
     OJC_WORD	= 'w',
+    /** opaque which is ignored on write */
+    OJC_OPAQUE	= 'i',
 } ojcValType;
 
 /**
@@ -163,6 +165,13 @@ extern bool		ojc_decimal_as_number;
  * operations.
  */
 extern bool		ojc_case_insensitive;
+
+/**
+ * If true opaque values will be printed as a number. Note that reading in this
+ * value will from a JSON string will result in a OJC_FIXNUM type. This flag is
+ * intended for debugging and should be set back to false after printing.
+ */
+extern bool		ojc_write_opaque;
 
 /**
  * @return version of OjC.
@@ -384,6 +393,16 @@ extern const char*	ojc_str(ojcErr err, ojcVal val);
 extern const char*	ojc_word(ojcErr err, ojcVal val);
 
 /**
+ * Get the opaque value of a __ojcVal__ if it is of type __OJC_OPAQUE__. If it
+ * is not the correct type a type error is returned in the __err__ value.
+ *
+ * @param err structure to pass the status or an error back in
+ * @param val __ojcVal__ to get the opaque from
+ * @return the C string value of the __val__ argument.
+ */
+extern void*		ojc_opaque(ojcErr err, ojcVal val);
+
+/**
  * Get the first child value of a __ojcVal__ if it is of type __OJC_OBJECT__ or
  * __OJC_ARRAY__. If it is not the correct type a type error is returned in the
  * __err__ value.
@@ -509,10 +528,18 @@ extern ojcVal		ojc_create_null(void);
 /**
  * Creates a boolean value or either __true__ or __false__.
  *
- * @param num value of the new instance
+ * @param boo value of the new instance
  * @return the new value.
  */
 extern ojcVal		ojc_create_bool(bool boo);
+
+/**
+ * Creates an opaque value.
+ *
+ * @param opaque value of the new instance
+ * @return the new value.
+ */
+extern ojcVal		ojc_create_opaque(void *opaque);
 
 /**
  * Appends a __val__ to a JSON object using the specified __key__. This does not

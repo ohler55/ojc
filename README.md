@@ -12,6 +12,11 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
+### Release 1.12.0 - September 3, 2015
+
+ - Added support for opaque elements that can be set but do not get
+   written. They do not show up in string output either.
+
 ### Release 1.11.0 - August 15, 2015
 
  - Fixed bug in ocj_get() that missed keys of a medium size range.

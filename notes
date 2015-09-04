@@ -3,6 +3,7 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- add opaque
 
 - make sure follow works
 - allow catchup on stream parser if with callbacks
