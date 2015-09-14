@@ -50,7 +50,7 @@ bench_write(const char *filename, int64_t iter) {
     fd = fileno(f);
     for (i = 0; i < iter; i++) {
 	ojc_write(&err, obj, 0, fd);
-	write(fd, "\n", 1);
+	if (write(fd, "\n", 1)) {}
     }
     fclose(f);
     dt = clock_micro() - start;
