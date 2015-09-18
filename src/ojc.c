@@ -674,6 +674,9 @@ ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
 
 ojcValType
 ojc_type(ojcVal val) {
+    if (NULL == val) {
+	return OJC_NULL;
+    }
     return (ojcValType)val->type;
 }
 
@@ -1166,7 +1169,7 @@ ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
 
 ojcVal
 ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key) {
-    ojcVal	m = 0;
+    ojcVal	m;
 
     if (bad_object(err, object, "get by key")) {
 	return 0;
@@ -1179,6 +1182,56 @@ ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key) {
 	}
     }
     return m;
+}
+
+void
+ojc_merge(ojcErr err, ojcVal primary, ojcVal other) {
+    ojcVal	m;
+    ojcVal	pm;
+    const char	*key;
+
+    if (bad_object(err, primary, "merge primary")) {
+	return;
+    }
+    if (bad_object(err, other, "merge other")) {
+	return;
+    }
+    for (m = other->members.head; NULL != m; m = m->next) {
+	key = ojc_key(m);
+	if (NULL == (pm = ojc_object_get_by_key(err, primary, key))) {
+	    ojc_object_append(err, primary, key, ojc_duplicate(m));
+	} else if (m->type != pm->type) {
+	    if ((OJC_TRUE == m->type && OJC_FALSE == pm->type) ||
+		(OJC_FALSE == m->type && OJC_TRUE == pm->type)) {
+		pm->type = m->type;
+	    } else {
+		if (NULL != err) {
+		    err->code = OJC_TYPE_ERR;
+		    snprintf(err->msg, sizeof(err->msg), "Can not merge when types do not match for %s.", key);
+		}
+		return;
+	    }
+	} else {
+	    switch (ojc_type(m)) {
+	    case OJC_STRING:
+	    case OJC_NUMBER:
+	    case OJC_FIXNUM:
+	    case OJC_DECIMAL:
+	    case OJC_WORD:
+	    case OJC_OPAQUE:
+		ojc_object_replace(err, primary, key, ojc_duplicate(m));
+		break;
+	    case OJC_OBJECT:
+		ojc_merge(err, pm, m);
+		break;
+	    case OJC_ARRAY:
+		// TBD union of elements
+		break;
+	    default:
+		break;
+	    }
+	}
+    }
 }
 
 ojcVal

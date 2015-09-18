@@ -42,7 +42,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.12.0"
+#define OJC_VERSION	"1.13.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -623,6 +623,15 @@ extern void		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key
  * @param key the key to use in finding the key-value pair
  */
 extern ojcVal		ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key);
+
+/**
+ * Merges the __other__ JSON object into the __primary__ JSON object. __other__
+ * values override __primary__ values. Nested values are replaced recursively.
+ *
+ * @param primary __ojcVal__ base object
+ * @param other __ojcVal__ override object
+ */
+    extern void		ojc_merge(ojcErr err, ojcVal primary, ojcVal other);
 
 /**
  * Gets a __val__ member in a JSON object at the specified __pos__. The __err__
