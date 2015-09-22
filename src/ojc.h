@@ -320,6 +320,17 @@ extern bool		ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val
 extern bool		ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
 
 /**
+ * Removes and __ojcVal__ at the provided path where the path is a sequence of
+ * keys or indices separated by the / or . character. If any node the call
+ * returns false without removing a value.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ * @return true if a value was removed and false if it was not.
+ */
+extern bool		ojc_remove(ojcErr err, ojcVal anchor, const char *path);
+
+/**
  * Replaces of appends an __ojcVal__ at the provided path where the path is a
  * NULL terminated array of strings that are keys or indices that form a path to
  * a target value. If any node does not exist on the path an Object is created
@@ -331,6 +342,17 @@ extern bool		ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
  */
 extern bool		ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
 extern bool		ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
+
+/**
+ * Removes an __ojcVal__ at the provided path where the path is a
+ * NULL terminated array of strings that are keys or indices that form a path to
+ * a target value.
+ *
+ * @param val anchor value for locating the target value
+ * @param path location of the target value
+ * @return true if a value was removed and false if it was not.
+ */
+extern bool		ojc_aremove(ojcErr err, ojcVal anchor, const char **path);
 
 /**
  * Returns the type of the value.
@@ -602,7 +624,7 @@ extern void		ojc_object_insert(ojcErr err, ojcVal object, int before, const char
  * @param object object to remove the member from
  * @param pos zero based position of the member to remove
  */
-extern void		ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);
+extern bool		ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);
 
 /**
  * Removes all members in a JSON object with the specified __key__. The __err__
@@ -612,7 +634,7 @@ extern void		ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);
  * @param object object to remove the member from
  * @param key the key to use in the key-value pair
  */
-extern void		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);
+extern bool		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);
 
 /**
  * Get the first __val__ in a JSON object with the specified __key__. The

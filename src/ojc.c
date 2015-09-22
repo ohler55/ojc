@@ -614,6 +614,61 @@ ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
 }
 
 bool
+ojc_remove(ojcErr err, ojcVal anchor, const char *path) {
+    const char	*key = 0;
+    ojcVal	p;
+
+    if (0 != err && OJC_OK != err->code) {
+	return 0;
+    }
+    if (0 == anchor || 0 == path) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_remove");
+	}
+	return false;
+    }
+    p = get_parent(anchor, path, &key);
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node for %s", path);
+	}
+	return false;
+    }
+    if (OJC_OBJECT == p->type) {
+	return ojc_object_remove_by_key(err, p, key);
+    } else if (OJC_ARRAY == p->type) {
+	unsigned int	pos = 0;
+	const char	*k = key;
+
+	for (; '\0' != *k; k++) {
+	    if (*k < '0' || '9' < *k) {
+		if (0 != err) {
+		    err->code = OJC_ARG_ERR;
+		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_remove", key);
+		}
+		return false;
+	    }
+	    pos = pos * 10 + (unsigned int)(*k - '0');
+	}
+	if (MAX_INDEX < pos) {
+	    if (0 != err) {
+		err->code = OJC_ARG_ERR;
+		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_remove", key);
+	    }
+	    return false;
+	}
+	return ojc_remove_by_pos(err, p, pos);
+    }
+    if (0 != err) {
+	err->code = OJC_TYPE_ERR;
+	snprintf(err->msg, sizeof(err->msg), "Can not remove an elements of a %s", ojc_type_str(p->type));
+    }
+    return false;
+}
+
+bool
 ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     return ojc_aset(err, anchor, path, val);
 }
@@ -668,6 +723,60 @@ ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val) {
     if (0 != err) {
 	err->code = OJC_TYPE_ERR;
 	snprintf(err->msg, sizeof(err->msg), "Can not set an elements of a %s", ojc_type_str(p->type));
+    }
+    return false;
+}
+
+bool
+ojc_aremove(ojcErr err, ojcVal anchor, const char **path) {
+    const char	*key = 0;
+    ojcVal	p = get_aparent(anchor, path, &key);
+
+    if (0 != err && OJC_OK != err->code) {
+	return false;
+    }
+    if (0 == anchor || 0 == path) {
+	if (0 != err) {
+	    err->code = OJC_ARG_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_aremove");
+	}
+	return false;
+    }
+    if (0 == p || 0 == key) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node");
+	}
+	return false;
+    }
+    if (OJC_OBJECT == p->type) {
+	return ojc_object_remove_by_key(err, p, key);
+    } else if (OJC_ARRAY == p->type) {
+	unsigned int	pos = 0;
+	const char	*k = key;
+
+	for (; '\0' != *k; k++) {
+	    if (*k < '0' || '9' < *k) {
+		if (0 != err) {
+		    err->code = OJC_ARG_ERR;
+		    snprintf(err->msg, sizeof(err->msg), "Can not convert '%s' into an array index in ojc_aremove", key);
+		}
+		return false;
+	    }
+	    pos = pos * 10 + (unsigned int)(*k - '0');
+	}
+	if (MAX_INDEX < pos) {
+	    if (0 != err) {
+		err->code = OJC_ARG_ERR;
+		snprintf(err->msg, sizeof(err->msg), "'%s' is too large for an array index in ojc_aremove", key);
+	    }
+	    return false;
+	}
+	return ojc_remove_by_pos(err, p, pos);
+    }
+    if (0 != err) {
+	err->code = OJC_TYPE_ERR;
+	snprintf(err->msg, sizeof(err->msg), "Can not remove an elements of a %s", ojc_type_str(p->type));
     }
     return false;
 }
@@ -1093,14 +1202,14 @@ ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal
     }
 }
 
-void
+bool
 ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
     ojcVal	m;
     ojcVal	prev = 0;
     ojcVal	next;
 
     if (has_no_members(err, val, "remove by position")) {
-	return;
+	return false;
     }
     if (0 > pos) {
 	int	cnt = ojc_member_count(err, val);
@@ -1111,7 +1220,7 @@ ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
 		err->code = OJC_ARG_ERR;
 		snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos - cnt);
 	    }
-	    return;
+	    return false;
 	}
     }
     for (m = val->members.head; 0 != m; m = next, pos--) {
@@ -1127,7 +1236,7 @@ ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
 	    }
 	    m->next = 0;
 	    ojc_destroy(m);
-	    return;
+	    return true;
 	}
 	prev = m;
     }
@@ -1135,16 +1244,17 @@ ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
 	err->code = OJC_ARG_ERR;
 	snprintf(err->msg, sizeof(err->msg), "No element at position %d.", pos);
     }
+    return false;
 }
 
-void
+bool
 ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
     ojcVal	m;
     ojcVal	prev = 0;
     ojcVal	next;
 
     if (bad_object(err, object, "remove by key")) {
-	return;
+	return false;
     }
     for (m = object->members.head; 0 != m; m = next) {
 	next = m->next;
@@ -1165,6 +1275,7 @@ ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
 	}
 	prev = m;
     }
+    return (NULL != m);
 }
 
 ojcVal

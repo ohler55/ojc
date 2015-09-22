@@ -12,6 +12,10 @@ Optimized JSON in C
 
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
 
+### Release 1.13.0 - September 21, 2015
+
+ - Added functions to remove elements by path.
+
 ### Release 1.12.0 - September 3, 2015
 
  - Added support for opaque elements that can be set but do not get
