@@ -36,6 +36,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
