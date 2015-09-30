@@ -1135,7 +1135,7 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
 
 void
 ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val) {
-    return ojc_object_nappend(err, object, key, strlen(key), val);
+    ojc_object_nappend(err, object, key, strlen(key), val);
 }
 
 bool
@@ -2044,7 +2044,7 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	return (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
     }
     case OJC_OPAQUE:
-	return (int)(v1->opaque - v2->opaque);
+	return (int)((int64_t)v1->opaque - (int64_t)v2->opaque);
     case OJC_TRUE:
     case OJC_FALSE:
     case OJC_NULL:

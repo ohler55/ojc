@@ -1,7 +1,8 @@
 #CC=clang
 CC=cc
 #CFLAGS=-c -Wall -g -O1
-CFLAGS=-c -Wall
+#CFLAGS=-c -Wall
+CFLAGS=-c -Wall -std=c11 -pedantic
 
 SRC_DIR=.
 LIB_DIR=../lib
