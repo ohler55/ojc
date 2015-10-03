@@ -96,7 +96,7 @@ typedef enum {
     /** unicode error */
     OJC_UNICODE_ERR	= 'u',
     /** abort callback parsing */
-    OJC_ABORT_ERR	= 'A',
+    OJC_ABORT_ERR	= '@',
     /** argument error */
     OJC_ARG_ERR		= 'a',
 } ojcErrCode;
