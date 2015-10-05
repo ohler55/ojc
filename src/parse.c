@@ -757,14 +757,20 @@ ojc_parse(ParseInfo pi) {
 	if (OJC_OK != pi->err.code) {
 	    return;
 	}
-	if (0 != pi->each_cb && stack_empty(&pi->stack)) {
-	    ojcVal	val = stack_head(&pi->stack);
+	if (stack_empty(&pi->stack)) {
+	    if (NULL == pi->each_cb) {
+		// Could check for remaining characters and report error but
+		// this is a more tolerant approach.
+		break;
+	    } else {
+		ojcVal	val = stack_head(&pi->stack);
 
-	    if (0 != val) {
-		if (pi->each_cb(&pi->err, val, pi->each_ctx)) {
-		    pi_val_destroy(pi, val);
+		if (0 != val) {
+		    if (pi->each_cb(&pi->err, val, pi->each_ctx)) {
+			pi_val_destroy(pi, val);
+		    }
+		    *pi->stack.head = 0;
 		}
-		*pi->stack.head = 0;
 	    }
 	}
     }

@@ -107,6 +107,34 @@ ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx) {
 }
 
 ojcVal
+ojc_parse_strp(ojcErr err, const char **jsonp) {
+    const char		*json = *jsonp;
+    struct _ParseInfo	pi;
+    ojcVal		val;
+
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return 0;
+    }
+    parse_init(&pi.err, &pi, NULL, NULL);
+    reader_init_str(&pi.err, &pi.rd, json);
+    if (OJC_OK != pi.err.code) {
+	return 0;
+    }
+    ojc_parse(&pi);
+    val = *pi.stack.head;
+    if (OJC_OK != pi.err.code && 0 != err) {
+	err->code = pi.err.code;
+	memcpy(err->msg, pi.err.msg, sizeof(pi.err.msg));
+    } else {
+	*jsonp = pi.rd.read_end - 1;
+    }
+    parse_cleanup(&pi);
+
+    return val;
+}
+
+ojcVal
 ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;

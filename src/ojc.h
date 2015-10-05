@@ -43,7 +43,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.13.0"
+#define OJC_VERSION	"1.14.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -197,6 +197,10 @@ extern void		ojc_cleanup(void);
  * @see ojcParseCallback
  */
 extern ojcVal		ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx);
+
+// TBD
+extern ojcVal		ojc_parse_strp(ojcErr err, const char **jsonp);
+
 
 /**
  * Parses a the contents of a file. An error will result in the __err__ argument
