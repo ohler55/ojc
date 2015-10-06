@@ -43,7 +43,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"1.14.0"
+#define OJC_VERSION	"1.15.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -198,9 +198,17 @@ extern void		ojc_cleanup(void);
  */
 extern ojcVal		ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx);
 
-// TBD
+/**
+ * Parses a string. An error will result in the __err__ argument being set with
+ * an error code and message. The function returns after parsing a complete
+ * __json__ element. The __jsonp__ will then point to the next character in the
+ * original string.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param json pointer to the JSON document to parse
+ * @return the parsed JSON as a __ojcVal__.
+ */
 extern ojcVal		ojc_parse_strp(ojcErr err, const char **jsonp);
-
 
 /**
  * Parses a the contents of a file. An error will result in the __err__ argument
@@ -783,8 +791,19 @@ extern void		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);
 extern ojcVal		ojc_duplicate(ojcVal val);
 
 /**
+ * Returns true if the two arguments have the same value. False is returned if
+ * the argument are of different types or have different values.
+ *
+ * @param v1 __ojcVal__ an object to compare.
+ * @param v2 __ojcVal__ an object to compare.
+ * @return the result of the comparison.
+ */
+extern bool		ojc_equals(ojcVal v1, ojcVal v2);
+
+/**
  * Returns an integer greater than, equal to, or less than zero according if
- * __v1__ is greater than, equal to, or less than __v2__.
+ * __v1__ is greater than, equal to, or less than __v2__. A best effort is made
+ * to compare dissimilar type.
  *
  * @param v1 __ojcVal__ an object to compare.
  * @param v2 __ojcVal__ an object to compare.

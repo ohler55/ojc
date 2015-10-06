@@ -127,7 +127,7 @@ ojc_parse_strp(ojcErr err, const char **jsonp) {
 	err->code = pi.err.code;
 	memcpy(err->msg, pi.err.msg, sizeof(pi.err.msg));
     } else {
-	*jsonp = pi.rd.read_end - 1;
+	*jsonp = pi.rd.tail;
     }
     parse_cleanup(&pi);
 
@@ -1990,15 +1990,14 @@ ojc_duplicate(ojcVal val) {
     return dup;
 }
 
-int
-ojc_cmp(ojcVal v1, ojcVal v2) {
+bool
+ojc_equals(ojcVal v1, ojcVal v2) {
     struct _ojcErr	err = OJC_ERR_INIT;
 
     if (ojc_type(v1) != ojc_type(v2)) {
-	return (int)ojc_type(v1) - (int)ojc_type(v2);
+	return false;
     }
     switch (ojc_type(v1)) {
-	break;
     case OJC_STRING: {
 	const char	*s1 = ojc_str(&err, v1);
 	const char	*s2 = ojc_str(&err, v2);
@@ -2009,15 +2008,171 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
 	if (NULL == s2) {
 	    s2 = "";
 	}
+	return 0 == (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
+    }
+    case OJC_NUMBER: {
+	const char	*s1 = ojc_number(&err, v1);
+	const char	*s2 = ojc_number(&err, v2);
+
+	if (NULL == s1) {
+	    s1 = "";
+	}
+	if (NULL == s2) {
+	    s2 = "";
+	}
+	return 0 == strcmp(s1, s2);
+    }
+    case OJC_FIXNUM:
+	return ojc_int(&err, v1) == ojc_int(&err, v2);
+    case OJC_DECIMAL:
+	return ojc_double(&err, v1) == ojc_double(&err, v2);
+    case OJC_ARRAY: {
+	ojcVal	m1 = ojc_members(&err, v1);
+	ojcVal	m2 = ojc_members(&err, v2);
+
+	for (; 0 != m1 && 0 != m2; m1 = m1->next, m2 = m2->next) {
+	    if (!ojc_equals(m1, m2)) {
+		return false;
+	    }
+	}
+	if (NULL != m1 || NULL != m2) {
+	    return false;
+	}
+	return true;
+    }
+    case OJC_OBJECT: {
+	ojcVal	m1 = ojc_members(&err, v1);
+	ojcVal	m2 = ojc_members(&err, v2);
+
+	for (; 0 != m1 && 0 != m2; m1 = m1->next, m2 = m2->next) {
+	    if ((0 != (ojc_case_insensitive ?
+		       strcasecmp(ojc_key(m1), ojc_key(m2)) :
+		       strcmp(ojc_key(m1), ojc_key(m2)))) ||
+		!ojc_equals(m1, m2)) {
+		return false;
+	    }
+	}
+	if (NULL != m1 || NULL != m2) {
+	    return false;
+	}
+	return true;
+    }
+    case OJC_WORD: {
+	const char	*s1 = ojc_word(&err, v1);
+	const char	*s2 = ojc_word(&err, v2);
+
+	if (NULL == s1) {
+	    s1 = "";
+	}
+	if (NULL == s2) {
+	    s2 = "";
+	}
+	return 0 == (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
+    }
+    case OJC_OPAQUE:
+	return v1->opaque == v2->opaque;
+    case OJC_TRUE:
+    case OJC_FALSE:
+    case OJC_NULL:
+    default:
+	return true;
+    }
+    return false;
+}
+
+int
+ojc_cmp(ojcVal v1, ojcVal v2) {
+    struct _ojcErr	err = OJC_ERR_INIT;
+
+    switch (ojc_type(v1)) {
+    case OJC_STRING: {
+	const char	*s1 = ojc_str(&err, v1);
+	const char	*s2 = NULL;
+
+	switch (ojc_type(v2)) {
+	case OJC_STRING:
+	    s2 = ojc_str(&err, v2);
+	    break;
+	case OJC_WORD:
+	    s2 = ojc_word(&err, v2);
+	    break;
+	default:
+	    return (int)ojc_type(v1) - (int)ojc_type(v2);
+	}
+	if (NULL == s1) {
+	    s1 = "";
+	}
+	if (NULL == s2) {
+	    s2 = "";
+	}
 	return (ojc_case_insensitive ? strcasecmp(s1, s2) : strcmp(s1, s2));
     }
-    case OJC_NUMBER:
+    case OJC_NUMBER: {
+	// TBD convert to int or double
 	break;
-    case OJC_FIXNUM:
-	return ojc_int(&err, v1) - ojc_int(&err, v2);
+    }
+    case OJC_FIXNUM: {
+	int64_t	n1 = ojc_int(&err, v1);
+
+	switch (ojc_type(v2)) {
+	case OJC_FIXNUM:
+	    return n1 - ojc_int(&err, v2);
+	case OJC_DECIMAL: {
+	    double	d = (double)n1 - ojc_double(&err, v2);
+
+	    return (0.0 == d) ? 0 : (0.0 < d) ? 1 : -1;
+	}
+	case OJC_NUMBER: {
+	    char	*end;
+	    const char	*ns = ojc_number(&err, v2);
+	    int64_t	n2 = strtoll(ns, &end, 10);
+
+	    if (n1 != n2) {
+		return n1 - n2;
+	    }
+	    if ('\0' != *end) {
+		if ('.' == *end) {
+		    end++;
+		    for (; '\0' != *end; end++) {
+			if ('0' != *end) {
+			    return (0 <= n1 ? -1 : 1);
+			}
+		    }
+		}
+
+	    }
+	    return 0;
+	}
+	default:
+	    return (int)ojc_type(v1) - (int)ojc_type(v2);
+	}
+    }
     case OJC_DECIMAL: {
-	double	d = ojc_double(&err, v1) - ojc_double(&err, v2);
-	
+	double	d1 = ojc_double(&err, v1);
+	double	d2 = 0.0;
+
+	switch (ojc_type(v2)) {
+	case OJC_FIXNUM:
+	    d2 = (double)ojc_int(&err, v2);
+	    break;
+	case OJC_DECIMAL: {
+	    d2 = ojc_double(&err, v2);
+	    break;
+	}
+	case OJC_NUMBER: {
+	    char	*end;
+	    const char	*ns = ojc_number(&err, v2);
+
+	    d2 = strtod(ns, &end);
+	    if ('\0' != *end) {
+		return (int)ojc_type(v1) - (int)ojc_type(v2);
+	    }
+	}
+	default:
+	    return (int)ojc_type(v1) - (int)ojc_type(v2);
+	}
+	double	d = d1 - d2;
+
 	return (0.0 == d) ? 0 : (0.0 < d) ? 1 : -1;
     }
     case OJC_ARRAY: {
@@ -2061,8 +2216,18 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
     }
     case OJC_WORD: {
 	const char	*s1 = ojc_word(&err, v1);
-	const char	*s2 = ojc_word(&err, v2);
+	const char	*s2 = NULL;
 
+	switch (ojc_type(v2)) {
+	case OJC_STRING:
+	    s2 = ojc_str(&err, v2);
+	    break;
+	case OJC_WORD:
+	    s2 = ojc_word(&err, v2);
+	    break;
+	default:
+	    return (int)ojc_type(v1) - (int)ojc_type(v2);
+	}
 	if (NULL == s1) {
 	    s1 = "";
 	}
@@ -2077,7 +2242,7 @@ ojc_cmp(ojcVal v1, ojcVal v2) {
     case OJC_FALSE:
     case OJC_NULL:
     default:
-	break;
+	return (int)ojc_type(v1) - (int)ojc_type(v2);
     }
     return 0;
 }

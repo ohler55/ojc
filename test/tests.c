@@ -755,6 +755,55 @@ typedef struct _CmpPair {
 } *CmpPair;
 
 static void
+equals_test() {
+    ojcVal		v1;
+    ojcVal		v2;
+    struct _ojcErr	err;
+    CmpPair		cp;
+    struct _CmpPair	data[] = {
+	{ "null", "null", 1 },
+	{ "true", "false", 0 },
+	{ "true", "true", 1 },
+	{ "false", "false", 1 },
+	{ "7", "7", 1 },
+	{ "6", "7", 0 },
+	{ "7", "6", 0 },
+	{ "7.1", "7.0", 0 },
+	{ "7.0", "7.1", 0 },
+	{ "7.1", "7.1", 1 },
+	{ "\"abc\"", "\"abc\"", 1 },
+	{ "\"abc\"", "\"\"", 0 },
+	{ "\"ab\"", "\"abc\"", 0 },
+	{ "\"abc\"", "\"abd\"", 0 },
+	{ "abc", "abc", 1 },
+	{ "ab", "abc", 0 },
+	{ "abd", "abc", 0 },
+	{ "[]", "[]", 1 },
+	{ "[1]", "[1]", 1 },
+	{ "[1,2]", "[1]", 0 },
+	{ "[1,2]", "[1,[]]", 0 },
+	{ "{}", "{}", 1 },
+	{ "{\"a\":1}", "{\"a\":1}", 1 },
+	{ "{\"a\":1}", "{\"b\":1}", 0 },
+	{ "{\"a\":2}", "{\"a\":1}", 0 },
+	{ "null", "true", 0 },
+	{ "true", "null", 0 },
+	{ "1", "1.0", 0 },
+	{ NULL, NULL, 0 }};
+
+    ojc_word_ok = true;
+    for (cp = data; 0 != cp->json1; cp++) {
+	ojc_err_init(&err);
+	v1 = ojc_parse_str(&err, cp->json1, 0, 0);
+	v2 = ojc_parse_str(&err, cp->json2, 0, 0);
+	if (ut_handle_error(&err)) {
+	    continue;
+	}
+	ut_same_int(cp->result, (int)ojc_equals(v1, v2), "ojc_equals(%s, %s)", cp->json1, cp->json2);
+    }
+}
+
+static void
 cmp_test() {
     ojcVal		v1;
     ojcVal		v2;
@@ -788,7 +837,11 @@ cmp_test() {
 	{ "{\"a\":2}", "{\"a\":1}", 1 },
 	{ "null", "true", -116 },
 	{ "true", "null", 116 },
-	{ "1", "1.0", 10 },
+	{ "1", "1.0", 0 },
+	{ "1.0", "1", 0 },
+	{ "1.01", "1", 1 },
+	{ "1", "1.01", -1 },
+	{ "-1", "-1.01", 1 },
 	{ 0, 0, 0 }};
 
     ojc_word_ok = true;
@@ -948,6 +1001,7 @@ static struct _Test	tests[] = {
     { "object_remove",	object_remove_test },
     { "array_remove",	array_remove_test },
     { "array_insert",	array_insert_test },
+    { "equals",		equals_test },
     { "cmp",		cmp_test },
 
     { "benchmark",	benchmark_test },
