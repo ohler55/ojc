@@ -841,6 +841,35 @@ is_type_ok(ojcErr err, ojcVal val, ojcValType type) {
     return true;
 }
 
+bool
+ojc_bool(ojcErr err, ojcVal val) {
+    if (0 != err && OJC_OK != err->code) {
+	// Previous call must have failed or err was not initialized.
+	return false;
+    }
+    if (0 == val) {
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "Can not get a boolean from NULL");
+	}
+	return false;
+    }
+    switch (val->type) {
+    case OJC_TRUE:
+	return true;
+    case OJC_FALSE:
+	return false;
+    default:
+	if (0 != err) {
+	    err->code = OJC_TYPE_ERR;
+	    snprintf(err->msg, sizeof(err->msg),
+		     "Can not get a boolean from a %s", ojc_type_str((ojcValType)val->type));
+	}
+	return false;
+    }
+    return false;
+}
+
 int64_t
 ojc_int(ojcErr err, ojcVal val) {
     if (!is_type_ok(err, val, OJC_FIXNUM)) {

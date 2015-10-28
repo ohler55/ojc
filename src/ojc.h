@@ -377,6 +377,17 @@ extern bool		ojc_aremove(ojcErr err, ojcVal anchor, const char **path);
 extern ojcValType	ojc_type(ojcVal val);
 
 /**
+ * Get the boolean value of a __ojcVal__ if it is of type __OJC_TRUE__ or
+ * __OJC_FALSE__. If it is not the correct type a type error is returned in the
+ * __err__ value.
+ *
+ * @param err structure to pass the status or an error back in
+ * @param val __ojcVal__ to get the boolean from
+ * @return the boolean value of the __val__ argument.
+ */
+extern bool		ojc_bool(ojcErr err, ojcVal val);
+
+/**
  * Get the integer value of a __ojcVal__ if it is of type __OJC_FIXNUM__. If it
  * is not the correct type a type error is returned in the __err__ value.
  *
