@@ -278,13 +278,7 @@ ojc_get(ojcVal val, const char *path) {
 		if (0 == m) {
 		    return 0;
 		}
-		switch (m->key_type) {
-		case STR_PTR:	key = m->key.str;	break;
-		case STR_ARRAY:	key = m->key.ca;	break;
-		case STR_BLOCK:	key = m->key.bstr->ca;	break;
-		case STR_NONE:
-		default:	key = 0;		break;
-		}
+		key = ojc_key(m);
 		if (0 != key && '\0' == key[plen] &&
 		    (ojc_case_insensitive ?
 		     0 == strncasecmp(start, key, plen) :
@@ -337,13 +331,7 @@ ojc_aget(ojcVal val, const char **path) {
 		if (0 == m) {
 		    return 0;
 		}
-		switch (m->key_type) {
-		case STR_PTR:	key = m->key.str;	break;
-		case STR_ARRAY:	key = m->key.ca;	break;
-		case STR_BLOCK:	key = m->key.bstr->ca;	break;
-		case STR_NONE:
-		default:	key = 0;		break;
-		}
+		key = ojc_key(m);
 		if (0 != key &&
 		    (ojc_case_insensitive ?
 		     0 == strcasecmp(*path, key) :
@@ -414,12 +402,7 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
 	}
 	plen = path - start;
 	for (m = val->members.head; 0 != m; m = m->next) {
-	    switch (m->key_type) {
-	    case STR_PTR:	key = m->key.str;	break;
-	    case STR_ARRAY:	key = m->key.ca;	break;
-	    case STR_NONE:
-	    default:		key = 0;		break;
-	    }
+	    key = ojc_key(m);
 	    if (0 != key && '\0' == key[plen] &&
 		(ojc_case_insensitive ?
 		 0 == strncasecmp(start, key, plen) :
@@ -488,12 +471,7 @@ get_aparent(ojcVal val, const char **path, const char **keyp) {
 	    return val;
 	}
 	for (m = val->members.head; 0 != m; m = m->next) {
-	    switch (m->key_type) {
-	    case STR_PTR:	key = m->key.str;	break;
-	    case STR_ARRAY:	key = m->key.ca;	break;
-	    case STR_NONE:
-	    default:		key = 0;		break;
-	    }
+	    key = ojc_key(m);
 	    if (0 != key &&
 		(ojc_case_insensitive ?
 		 0 == strcasecmp(*path, key) :
@@ -1180,7 +1158,7 @@ ojc_object_nappend(ojcErr err, ojcVal object, const char *key, int klen, ojcVal 
     if (bad_object(err, object, "append")) {
 	return;
     }
-    val->next = 0;
+    val->next = NULL;
     _ojc_set_key(val, key, klen);
     if (0 == object->members.head) {
 	object->members.head = val;
