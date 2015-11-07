@@ -1371,7 +1371,9 @@ ojc_merge(ojcErr err, ojcVal primary, ojcVal other) {
 		ojc_merge(err, pm, m);
 		break;
 	    case OJC_ARRAY:
-		// TBD union of elements
+		for (ojcVal am = m->members.head; NULL != am; am = am->next) {
+		    ojc_array_append(NULL, pm, ojc_duplicate(am));
+		}
 		break;
 	    default:
 		break;
