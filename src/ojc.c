@@ -1910,6 +1910,7 @@ ojc_write(ojcErr err, ojcVal val, int indent, int socket) {
     }
     buf_init(&b, socket);
     fill_buf(&b, val, indent, 0);
+    buf_append(&b, '\n');
     buf_finish(&b);
     if (OJC_OK != b.err) {
 	err->code = b.err;
