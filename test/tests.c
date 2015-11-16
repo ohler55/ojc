@@ -8,13 +8,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <math.h>
 
 #include "ut.h"
 #include "ojc.h"
 
 static const char	bench_json[] = "{\"a\":\"Alpha\",\"b\":true,\"c\":12345,\"d\":[true,[false,[-123456789,null],3.9676,[\"Something else.\",false],null]],\"e\":{\"zero\":null,\"one\":1,\"two\":2,\"three\":[3],\"four\":[0,1,2,3,4]},\"f\":null,\"h\":{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"g\":null}}}}}}},\"i\":[[[[[[[null]]]]]]]}";
-
 
 static void
 in_and_out(const char **jsons) {
@@ -342,6 +342,16 @@ file_write_test() {
     fclose(f);
 
     result = ut_loadFile("tmp.json");
+    // trim
+    char *end = result + strlen(result) - 1;
+
+    for (; result < end; end--) {
+	if (isspace(*end)) {
+	    *end = '\0';
+	} else {
+	    break;
+	}
+    }
     ut_same(bench_json, result);
 
     free(result);

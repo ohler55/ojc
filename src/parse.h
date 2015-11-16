@@ -60,11 +60,11 @@ parse_init(ojcErr err, ParseInfo pi, ojcParseCallback cb, void *ctx) {
     ojc_err_init(&pi->err);
     pi->each_cb = cb;
     pi->each_ctx = ctx;
-    pi->free_vals.head = 0;
-    pi->free_vals.tail = 0;
-    pi->free_bstrs.head = 0;
-    pi->free_bstrs.tail = 0;
-    pi->key = 0;
+    pi->free_vals.head = NULL;
+    pi->free_vals.tail = NULL;
+    pi->free_bstrs.head = NULL;
+    pi->free_bstrs.tail = NULL;
+    pi->key = NULL;
     pi->klen = 0;
     pi->kalloc = false;
     stack_init(&pi->stack);

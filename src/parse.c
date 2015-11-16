@@ -94,13 +94,13 @@ get_val(ParseInfo pi, ojcValType type) {
     v = pi->free_vals.head;
     pi->free_vals.head = v->next;
     if (0 == pi->free_vals.head) {
-	pi->free_vals.tail = 0;
+	pi->free_vals.tail = NULL;
     }
     v->next = 0;
     v->key_type = STR_NONE;
     v->str_type = STR_NONE;
-    v->members.head = 0;
-    v->members.tail = 0;
+    v->members.head = NULL;
+    v->members.tail = NULL;
     v->type = type;
     v->expect = NEXT_NONE;
 
@@ -672,8 +672,8 @@ colon(ParseInfo pi) {
 
 static void
 pi_val_destroy(ParseInfo pi, ojcVal val) {
-    struct _List	freed = { 0, 0 };
-    struct _MList	freed_bstrs = { 0, 0 };
+    struct _List	freed = LIST_INIT;
+    struct _MList	freed_bstrs = LIST_INIT;
 
     _ojc_val_destroy(val, &freed, &freed_bstrs);
     if (0 != freed.tail) {

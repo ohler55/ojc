@@ -30,35 +30,38 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 #include "val.h"
 
-static struct _List	free_vals = { 0, 0 };
-static struct _MList	free_bstrs = { 0, 0 };
-static pthread_mutex_t	free_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct _List	free_vals = LIST_INIT;
+static struct _MList	free_bstrs = LIST_INIT;
 
 ojcVal
 _ojc_val_create(ojcValType type) {
-    ojcVal	val;
+    ojcVal	val = NULL;
 
-    if (free_vals.head == free_vals.tail) {
+    // Carelessly check to see if a new val is needed. It doesn't matter if we
+    // get it wrong here.
+    if (NULL == free_vals.head || free_vals.head == free_vals.tail) {
 	val = (ojcVal)malloc(sizeof(struct _ojcVal));
     } else {
-	pthread_mutex_lock(&free_mutex);
-	if (free_vals.head == free_vals.tail) {
+	// Looks like we need to lock it down for a moment using the atomic busy
+	// flag.
+	while (atomic_flag_test_and_set(&free_vals.busy)) {
+	}
+	if (NULL == free_vals.head || free_vals.head == free_vals.tail) {
 	    val = (ojcVal)malloc(sizeof(struct _ojcVal));
 	} else {
 	    val = free_vals.head;
 	    free_vals.head = free_vals.head->next;
 	}
-	pthread_mutex_unlock(&free_mutex);
+	atomic_flag_clear(&free_vals.busy);
     }
-    val->next = 0;
+    val->next = NULL;
     val->key_type = STR_NONE;
     val->str_type = STR_NONE;
-    val->members.head = 0;
-    val->members.tail = 0;
+    val->members.head = NULL;
+    val->members.tail = NULL;
     val->type = type;
     val->expect = NEXT_NONE;
 
@@ -70,7 +73,8 @@ _ojc_val_create_batch(size_t cnt, List vals) {
     ojcVal	v;
 
     if (free_vals.head != free_vals.tail) {
-	pthread_mutex_lock(&free_mutex);
+	while (atomic_flag_test_and_set(&free_vals.busy)) {
+	}
 	if (free_vals.head != free_vals.tail) {
 	    ojcVal	prev = free_vals.head;
 
@@ -82,7 +86,7 @@ _ojc_val_create_batch(size_t cnt, List vals) {
 	    vals->tail = prev;
 	    vals->tail->next = 0;
 	}
-	pthread_mutex_unlock(&free_mutex);
+	atomic_flag_clear(&free_vals.busy);
     }
     for (; 0 < cnt; cnt--) {
 	v = _ojc_val_create(OJC_NULL);
@@ -121,7 +125,8 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
     struct _MList	freed_bstrs = { 0, 0 };
 
     free_key(val, &freed_bstrs);
-    pthread_mutex_lock(&free_mutex);
+    while (atomic_flag_test_and_set(&free_bstrs.busy)) {
+    }
     if (0 != freed_bstrs.head) {
 	if (0 == free_bstrs.head) {
 	    free_bstrs.head = freed_bstrs.head;
@@ -130,7 +135,7 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
 	}
 	free_bstrs.tail = freed_bstrs.tail;
     }
-    pthread_mutex_unlock(&free_mutex);
+    atomic_flag_clear(&free_bstrs.busy);
 
     if (0 != key) {
 	if (0 >= klen) {
@@ -196,37 +201,12 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
 }
 
 void
-_ojc_destroy(ojcVal val) {
-    struct _List	freed = { 0, 0 };
-    struct _MList	freed_bstrs = { 0, 0 };
-
-    _ojc_val_destroy(val, &freed, &freed_bstrs);
-
-    pthread_mutex_lock(&free_mutex);
-    if (0 == free_vals.head) {
-	free_vals.head = freed.head;
-    } else {
-	free_vals.tail->next = freed.head;
-    }
-    free_vals.tail = freed.tail;
-
-    if (0 != freed_bstrs.head) {
-	if (0 == free_bstrs.head) {
-	    free_bstrs.head = freed_bstrs.head;
-	} else {
-	    free_bstrs.tail->next = freed_bstrs.head;
-	}
-	free_bstrs.tail = freed_bstrs.tail;
-    }
-    pthread_mutex_unlock(&free_mutex);
-}
-
-void
 _ojc_val_return(List freed, MList freed_bstrs) {
     if (0 == freed->head) {
 	return;
     }
-    pthread_mutex_lock(&free_mutex);
+    while (atomic_flag_test_and_set(&free_vals.busy)) {
+    }
     if (0 == free_vals.head) {
 	free_vals.head = freed->head;
     } else {
@@ -242,7 +222,16 @@ _ojc_val_return(List freed, MList freed_bstrs) {
 	}
 	free_bstrs.tail = freed_bstrs->tail;
     }
-    pthread_mutex_unlock(&free_mutex);
+    atomic_flag_clear(&free_vals.busy);
+}
+
+void
+_ojc_destroy(ojcVal val) {
+    struct _List	freed = { NULL, NULL };
+    struct _MList	freed_bstrs = { NULL, NULL };
+
+    _ojc_val_destroy(val, &freed, &freed_bstrs);
+    _ojc_val_return(&freed, &freed_bstrs);
 }
 
 Bstr
@@ -252,14 +241,15 @@ _ojc_bstr_create() {
     if (free_bstrs.head == free_bstrs.tail) {
 	bstr = (Bstr)malloc(sizeof(union _Bstr));
     } else {
-	pthread_mutex_lock(&free_mutex);
+	while (atomic_flag_test_and_set(&free_bstrs.busy)) {
+	}
 	if (free_bstrs.head == free_bstrs.tail) {
 	    bstr = (Bstr)malloc(sizeof(union _Bstr));
 	} else {
 	    bstr = free_bstrs.head;
 	    free_bstrs.head = free_bstrs.head->next;
 	}
-	pthread_mutex_unlock(&free_mutex);
+	atomic_flag_clear(&free_bstrs.busy);
     }
     *bstr->ca = '\0';
 
@@ -271,7 +261,8 @@ _ojc_bstr_create_batch(size_t cnt, MList list) {
     Bstr	v;
 
     if (free_bstrs.head != free_bstrs.tail) {
-	pthread_mutex_lock(&free_mutex);
+	while (atomic_flag_test_and_set(&free_bstrs.busy)) {
+	}
 	if (free_bstrs.head != free_bstrs.tail) {
 	    Bstr	prev = free_bstrs.head;
 
@@ -283,7 +274,7 @@ _ojc_bstr_create_batch(size_t cnt, MList list) {
 	    list->tail = prev;
 	    list->tail->next = 0;
 	}
-	pthread_mutex_unlock(&free_mutex);
+	atomic_flag_clear(&free_bstrs.busy);
     }
     for (; 0 < cnt; cnt--) {
 	v = _ojc_bstr_create();
@@ -302,14 +293,15 @@ _ojc_bstr_return(MList freed) {
     if (0 == freed->head) {
 	return;
     }
-    pthread_mutex_lock(&free_mutex);
+    while (atomic_flag_test_and_set(&free_bstrs.busy)) {
+    }
     if (0 == free_bstrs.head) {
 	free_bstrs.head = freed->head;
     } else {
 	free_bstrs.tail->next = freed->head;
     }
     free_bstrs.tail = freed->tail;
-    pthread_mutex_unlock(&free_mutex);
+    atomic_flag_clear(&free_bstrs.busy);
 }
 
 void
@@ -319,14 +311,18 @@ _ojc_val_cleanup() {
     Bstr	bhead;
     Bstr	b;
 
-    pthread_mutex_lock(&free_mutex);
+    while (atomic_flag_test_and_set(&free_vals.busy)) {
+    }
     head = free_vals.head;
-    free_vals.head = 0;
-    free_vals.tail = 0;
+    free_vals.head = NULL;
+    free_vals.tail = NULL;
+    atomic_flag_clear(&free_vals.busy);
+    while (atomic_flag_test_and_set(&free_bstrs.busy)) {
+    }
     bhead = free_bstrs.head;
-    free_bstrs.head = 0;
-    free_bstrs.tail = 0;
-    pthread_mutex_unlock(&free_mutex);
+    free_bstrs.head = NULL;
+    free_bstrs.tail = NULL;
+    atomic_flag_clear(&free_bstrs.busy);
 
     while (0 != head) {
 	v = head;

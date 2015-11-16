@@ -232,8 +232,8 @@ ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseCallback cb, voi
 
 ojcVal
 ojc_get(ojcVal val, const char *path) {
-    const char	*start;
-    ojcVal	m;
+    const char		*start;
+    volatile ojcVal	m;
 
     if (0 == path || 0 == val) {
 	return val;
@@ -1474,7 +1474,7 @@ ojc_array_pop(ojcErr err, ojcVal array) {
 
 	array->members.head = val->next;
 	if (0 == array->members.head) {
-	    array->members.tail = 0;
+	    array->members.tail = NULL;
 	}
 	val->next = 0;
 

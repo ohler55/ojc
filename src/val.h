@@ -32,6 +32,7 @@
 #define __OJC_VAL_H__
 
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include "ojc.h"
 
@@ -39,6 +40,8 @@
 #define STR_PTR		'p'
 #define STR_ARRAY	'a'
 #define STR_BLOCK	'b'
+
+#define LIST_INIT	{ NULL, NULL, ATOMIC_FLAG_INIT }
 
 typedef enum {
     NEXT_NONE		= 0,
@@ -70,13 +73,16 @@ union _Str {
 };
 
 typedef struct _List {
-    struct _ojcVal	*head;
-    struct _ojcVal	*tail;
+    // pointer is volatile
+    struct _ojcVal	*volatile head;
+    struct _ojcVal	*volatile tail;
+    atomic_flag		busy;
 } *List;
 
 typedef struct _MList {
-    union _Bstr	*head;
-    union _Bstr	*tail;
+    union _Bstr	*volatile	head;
+    union _Bstr	*volatile	tail;
+    atomic_flag			busy;
 } *MList;
 
 struct _ojcVal {
