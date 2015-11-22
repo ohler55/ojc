@@ -1897,30 +1897,38 @@ ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len) {
     }
     *b.tail = '\0';
 
-    return buf_len(&b);
+    int	cnt = buf_len(&b);
+
+    return cnt;
 }
 
-void
+int
 ojc_write(ojcErr err, ojcVal val, int indent, int socket) {
     struct _Buf	b;
     
     if (0 != err && OJC_OK != err->code) {
 	// Previous call must have failed or err was not initialized.
-	return;
+	return -1;
     }
     buf_init(&b, socket);
     fill_buf(&b, val, indent, 0);
     buf_append(&b, '\n');
+
+    int	cnt = buf_len(&b);
+
     buf_finish(&b);
+    buf_cleanup(&b);
+
     if (OJC_OK != b.err) {
 	err->code = b.err;
 	strcpy(err->msg, ojc_error_str((ojcErrCode)b.err));
     }
+    return cnt;
 }
 
-void
+int
 ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file) {
-    ojc_write(err, val, indent, fileno(file));
+    return ojc_write(err, val, indent, fileno(file));
 }
 
 ojcVal

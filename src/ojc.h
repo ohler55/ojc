@@ -780,7 +780,7 @@ extern int		ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len);
  * @param indent indentation in spaces to use
  * @param socket socket to write to
  */
-extern void		ojc_write(ojcErr err, ojcVal val, int indent, int socket);
+extern int		ojc_write(ojcErr err, ojcVal val, int indent, int socket);
 
 /**
  * Converts __val__ to a JSON formated string and streams the output to a
@@ -791,7 +791,7 @@ extern void		ojc_write(ojcErr err, ojcVal val, int indent, int socket);
  * @param indent indentation in spaces to use
  * @param file file to write to
  */
-extern void		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);
+extern int		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);
 
 /**
  * Returns a deep copy of a __ojcVal__.
