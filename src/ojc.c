@@ -279,10 +279,11 @@ ojc_get(ojcVal val, const char *path) {
 		    return 0;
 		}
 		key = ojc_key(m);
-		if (0 != key && '\0' == key[plen] &&
+		if (0 != key &&
 		    (ojc_case_insensitive ?
 		     0 == strncasecmp(start, key, plen) :
-		     0 == strncmp(start, key, plen))) {
+		     0 == strncmp(start, key, plen)) &&
+		    '\0' == key[plen]) {
 		    return ojc_get(m, path);
 		}
 	    }
@@ -403,10 +404,11 @@ get_parent(ojcVal val, const char *path, const char **keyp) {
 	plen = path - start;
 	for (m = val->members.head; 0 != m; m = m->next) {
 	    key = ojc_key(m);
-	    if (0 != key && '\0' == key[plen] &&
+	    if (0 != key &&
 		(ojc_case_insensitive ?
 		 0 == strncasecmp(start, key, plen) :
-		 0 == strncmp(start, key, plen))) {
+		 0 == strncmp(start, key, plen)) &&
+		'\0' == key[plen]) {
 		ojcVal	p = get_parent(m, path, keyp);
 
 		if (0 != p) {
