@@ -1,8 +1,8 @@
 #CC=clang
 CC=cc
 CV=$(shell if [ `uname` = "Darwin" ]; then echo "c11"; elif [ `uname` = "Linux" ]; then echo "gnu11"; fi;)
-CFLAGS=-c -Wall -std=$(CV) -pedantic
 #CFLAGS=-c -Wall -g -O1 -std=$(CV) -pedantic
+CFLAGS=-c -Wall -O3 -std=$(CV) -pedantic
 
 
 SRC_DIR=.
@@ -30,4 +30,4 @@ $(TARGET): $(OBJS)
 	ar -rcs $@ $(OBJS)
 
 %.o : %.c  $(HEADERS)
-	$(CC) -O3 -I. -I$(SRC_DIR) $(CFLAGS) -o $@ $<
+	$(CC) -I. -I$(SRC_DIR) $(CFLAGS) -o $@ $<
