@@ -78,7 +78,9 @@ ojc_cleanup() {
 
 void
 ojc_destroy(ojcVal val) {
-    _ojc_destroy(val);
+    if (NULL != val) {
+	_ojc_destroy(val);
+    }
 }
 
 ojcVal
