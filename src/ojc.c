@@ -573,10 +573,10 @@ ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
     const char	*key = 0;
     ojcVal	p;
 
-    if (0 != err && OJC_OK != err->code) {
-	return 0;
+    if (NULL != err && OJC_OK != err->code) {
+	return false;
     }
-    if (0 == anchor || 0 == path || 0 == val) {
+    if (NULL == anchor || NULL == path || NULL == val) {
 	if (0 != err) {
 	    err->code = OJC_ARG_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "NULL argument to ojc_set");
@@ -584,8 +584,8 @@ ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val) {
 	return false;
     }
     p = get_parent(anchor, path, &key);
-    if (0 == p || 0 == key) {
-	if (0 != err) {
+    if (NULL == p || NULL == key) {
+	if (NULL != err) {
 	    err->code = OJC_TYPE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "Failed to get the parent node for %s", path);
 	}
@@ -1940,8 +1940,8 @@ ojc_duplicate(ojcVal val) {
     ojcVal		dup;
     struct _ojcErr	err = OJC_ERR_INIT;
 
-    if (0 == val) {
-	return 0;
+    if (NULL == val) {
+	return NULL;
     }
     dup = _ojc_val_create((ojcValType)val->type);
     switch (val->type) {
