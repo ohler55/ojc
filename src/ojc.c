@@ -65,6 +65,7 @@ bool		ojc_word_ok = false;
 bool		ojc_decimal_as_number = false;
 bool		ojc_case_insensitive = false;
 bool		ojc_write_opaque = false;
+bool		ojc_write_end_with_newline = true;
 
 const char*
 ojc_version() {
@@ -1286,6 +1287,36 @@ ojc_remove_by_pos(ojcErr err, ojcVal val, int pos) {
     return false;
 }
 
+ojcVal
+ojc_object_take(ojcErr err, ojcVal object, const char *key) {
+    ojcVal	m;
+    ojcVal	prev = 0;
+    ojcVal	next;
+
+    if (bad_object(err, object, "take by key")) {
+	return NULL;
+    }
+    for (m = object->members.head; 0 != m; m = next) {
+	next = m->next;
+	if (ojc_case_insensitive ?
+	    0 == strcasecmp(key, ojc_key(m)) :
+	    0 == strcmp(key, ojc_key(m))) {
+	    if (0 == prev) {
+		object->members.head = m->next;
+	    } else {
+		prev->next = m->next;
+	    }
+	    if (m == object->members.tail) {
+		object->members.tail = prev;
+	    }
+	    m->next = 0;
+	    break;
+	}
+	prev = m;
+    }
+    return m;
+}
+
 bool
 ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key) {
     ojcVal	m;
@@ -1916,8 +1947,9 @@ ojc_write(ojcErr err, ojcVal val, int indent, int socket) {
     }
     buf_init(&b, socket);
     fill_buf(&b, val, indent, 0);
-    buf_append(&b, '\n');
-
+    if (ojc_write_end_with_newline) {
+	buf_append(&b, '\n');
+    }
     int	cnt = buf_len(&b);
 
     buf_finish(&b);

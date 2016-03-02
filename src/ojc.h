@@ -175,6 +175,11 @@ extern bool		ojc_case_insensitive;
 extern bool		ojc_write_opaque;
 
 /**
+ * If true a write is terminated with a new line.
+ */
+extern bool		ojc_write_end_with_newline;
+
+/**
  * @return version of OjC.
  */
 extern const char*	ojc_version(void);
@@ -659,6 +664,17 @@ extern bool		ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);
  * @param key the key to use in the key-value pair
  */
 extern bool		ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);
+
+/**
+ * Removes the first member in a JSON object with the specified __key__. The
+ * __err__ struct is set if the __object__ is not an __OJC__OBJECT__ type. The
+ * removed member is not destroyed.
+ *
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param object object to remove the member from
+ * @param key the key to use in the key-value pair
+ */
+extern ojcVal		ojc_object_take(ojcErr err, ojcVal object, const char *key);
 
 /**
  * Get the first __val__ in a JSON object with the specified __key__. The
