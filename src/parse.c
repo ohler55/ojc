@@ -79,7 +79,7 @@ skip_comment(ParseInfo pi) {
 	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid comment format");
     }
     if ('\0' == c) {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "comment not terminated");
+	ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "comment not terminated");
 	return;
     }
 }
@@ -374,7 +374,11 @@ read_word(ParseInfo pi) {
 	}
     }
     if (16 <= pi->rd.tail - pi->rd.start) { // TBD sizeof _Str.ca
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
+	if ('\0' == c) {
+	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "invalid token");
+	} else {
+	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
+	}
     } else if (0 == strncmp("true", pi->rd.start, 4)) {
 	add_value(pi, get_val(pi, OJC_TRUE));
     } else if (0 == strncmp("false", pi->rd.start, 5)) {
@@ -384,7 +388,11 @@ read_word(ParseInfo pi) {
     } else if (ojc_word_ok) {
 	add_word(pi, pi->rd.start, pi->rd.tail - pi->rd.start);
     } else {
-	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
+	if ('\0' == c) {
+	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "invalid token");
+	} else {
+	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
+	}
     }
     reader_release(&pi->rd);
 }
@@ -459,7 +467,7 @@ read_escaped_str(ParseInfo pi) {
     }
     while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
-	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "quoted string not terminated");
+	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    buf_cleanup(&buf);
 	    return;
 	} else if ('\\' == c) {
@@ -523,7 +531,7 @@ read_str(ParseInfo pi) {
     reader_protect(&pi->rd);
     while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
-	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "quoted string not terminated");
+	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    return;
 	} else if ('\\' == c) {
 	    reader_backup(&pi->rd);
@@ -745,6 +753,20 @@ ojc_parse(ParseInfo pi) {
 	    skip_comment(pi);
 	    break;
 	case '\0':
+	    if (stack_empty(&pi->stack)) {
+		if (NULL != pi->each_cb) {
+		    ojcVal	val = stack_head(&pi->stack);
+
+		    if (0 != val) {
+			if (pi->each_cb(&pi->err, val, pi->each_ctx)) {
+			    pi_val_destroy(pi, val);
+			}
+			*pi->stack.head = 0;
+		    }
+		}
+	    } else {
+		ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "parse terminated early");
+	    }
 	    return;
 	default:
 	    read_word(pi);
@@ -772,8 +794,6 @@ ojc_parse(ParseInfo pi) {
 		    *pi->stack.head = 0;
 		}
 	    }
-	} else {
-	    // TBD report incomplete error
 	}
     }
 }
