@@ -1425,10 +1425,8 @@ ojc_merge(ojcErr err, ojcVal primary, ojcVal other) {
 	ojcVal	add = NULL;
 	ojcVal	add_end = NULL;
 	ojcVal	x;
-	ojcVal	end = NULL;
 	
 	for (m = other->members.head; NULL != m; m = m->next) {
-	    end = m;
 	    found = false;
 	    for (pm = primary->members.head; NULL != pm; pm = pm->next) {
 		if (ojc_equals(m, pm)) {
