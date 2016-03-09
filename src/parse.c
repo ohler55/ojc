@@ -772,6 +772,8 @@ ojc_parse(ParseInfo pi) {
 		    *pi->stack.head = 0;
 		}
 	    }
+	} else {
+	    // TBD report incomplete error
 	}
     }
 }

@@ -2366,6 +2366,7 @@ ojc_error_str(ojcErrCode code) {
     case OJC_OK:		return "ok";
     case OJC_TYPE_ERR:		return "type error";
     case OJC_PARSE_ERR:		return "parse error";
+    case OJC_INCOMPLETE_ERR:	return "incomplete parse error";
     case OJC_OVERFLOW_ERR:	return "overflow error";
     case OJC_WRITE_ERR:		return "write error";
     case OJC_MEMORY_ERR:	return "memory error";

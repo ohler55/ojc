@@ -87,6 +87,8 @@ typedef enum {
     OJC_TYPE_ERR	= 't',
     /** parse error */
     OJC_PARSE_ERR	= 'p',
+    /** incomplete parse error */
+    OJC_INCOMPLETE_ERR	= 'i',
     /** buffer overflow error */
     OJC_OVERFLOW_ERR	= 'o',
     /** write error */
