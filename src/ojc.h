@@ -212,7 +212,7 @@ extern ojcVal		ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, 
  * original string.
  *
  * @param err pointer to an initialized __ojcErr__ struct.
- * @param json pointer to the JSON document to parse
+ * @param jsonp pointer to the JSON document to parse
  * @return the parsed JSON as a __ojcVal__.
  */
 extern ojcVal		ojc_parse_strp(ojcErr err, const char **jsonp);
@@ -310,8 +310,10 @@ extern ojcVal		ojc_aget(ojcVal val, const char **path);
  * keys or indices separated by the / or . character. If any node does not exist
  * on the path an Object or Array is created for that element of the path.
  *
- * @param val anchor value for locating the target value
- * @param path location of the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
+ * @param path location of the target value relative to the anchor
+ * @param val value to place at the target location
  */
 extern void		ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
 
@@ -321,8 +323,10 @@ extern void		ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val)
  * target value. If any node does not exist on the path an Object is created for
  * that element of the path.
  *
- * @param val anchor value for locating the target value
- * @param path location of the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
+ * @param path location of the target value relative to the anchor
+ * @param val value to place at the target location
  */
 extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
 
@@ -332,8 +336,10 @@ extern void		ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal va
  * does not exist on the path an Object or Array is created for that element of
  * the path.
  *
- * @param val anchor value for locating the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
  * @param path location of the target value
+ * @param val value to place at the target location
  * @return true if a value was replaced and false if it was appended.
  */
 extern bool		ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
@@ -344,7 +350,8 @@ extern bool		ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val);
  * keys or indices separated by the / or . character. If any node the call
  * returns false without removing a value.
  *
- * @param val anchor value for locating the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
  * @param path location of the target value
  * @return true if a value was removed and false if it was not.
  */
@@ -356,8 +363,10 @@ extern bool		ojc_remove(ojcErr err, ojcVal anchor, const char *path);
  * a target value. If any node does not exist on the path an Object is created
  * for that element of the path.
  *
- * @param val anchor value for locating the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
  * @param path location of the target value
+ * @param val value to place at the target location
  * @return true if a value was replaced and false if it was appended.
  */
 extern bool		ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
@@ -368,7 +377,8 @@ extern bool		ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val);
  * NULL terminated array of strings that are keys or indices that form a path to
  * a target value.
  *
- * @param val anchor value for locating the target value
+ * @param err pointer to an initialized __ojcErr__ struct.
+ * @param anchor anchor value for locating the target value
  * @param path location of the target value
  * @return true if a value was removed and false if it was not.
  */
@@ -692,6 +702,7 @@ extern ojcVal		ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key)
  * Merges the __other__ JSON object into the __primary__ JSON object. __other__
  * values override __primary__ values. Nested values are replaced recursively.
  *
+ * @param err pointer to an initialized __ojcErr__ struct.
  * @param primary __ojcVal__ base object
  * @param other __ojcVal__ override object
  */
@@ -703,7 +714,7 @@ extern ojcVal		ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key)
  * type. NULL is returned if __pos__ is out of range.
  *
  * @param err pointer to an initialized __ojcErr__ struct.
- * @param object object to get the member from
+ * @param val object to get the member from
  * @param pos zero based position of the member to get
  */
 extern ojcVal		ojc_get_member(ojcErr err, ojcVal val, int pos);
@@ -747,12 +758,12 @@ extern ojcVal		ojc_array_pop(ojcErr err, ojcVal array);
  * the array.
  *
  * @param err pointer to an initialized __ojcErr__ struct.
- * @param arrat array to replace the value with __val__
+ * @param array array to replace the value with __val__
  * @param pos the position of the value to replace in the array
  * @param val new value
  * @return true if a value was replaced and false if it was pushed or appended.
  */
-extern bool		ojc_array_replace(ojcErr err, ojcVal object, int pos, ojcVal val);
+extern bool		ojc_array_replace(ojcErr err, ojcVal array, int pos, ojcVal val);
 
 /**
  * Inserts a __val__ in a JSON array before the __pos__. The __err__ struct is
