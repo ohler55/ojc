@@ -73,7 +73,7 @@ parse_init(ojcErr err, ParseInfo pi, ojcParseCallback cb, void *ctx) {
 
 inline static void
 parse_cleanup(ParseInfo pi) {
-    reader_cleanup(&pi->rd);
+    ojc_reader_cleanup(&pi->rd);
     stack_cleanup(&pi->stack);
     _ojc_val_return(&pi->free_vals, &pi->free_bstrs);
 }

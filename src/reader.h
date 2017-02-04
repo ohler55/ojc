@@ -57,21 +57,21 @@ typedef struct _Reader {
     };
 } *Reader;
 
-extern void	reader_init_str(ojcErr err, Reader reader, const char *str);
-extern void	reader_init_stream(ojcErr err, Reader reader, FILE *file);
-extern void	reader_init_follow(ojcErr err, Reader reader, FILE *file);
-extern void	reader_init_socket(ojcErr err, Reader reader, int socket);
-extern void	reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size));
-extern bool	reader_read(ojcErr err, Reader reader);
+extern void	ojc_reader_init_str(ojcErr err, Reader reader, const char *str);
+extern void	ojc_reader_init_stream(ojcErr err, Reader reader, FILE *file);
+extern void	ojc_reader_init_follow(ojcErr err, Reader reader, FILE *file);
+extern void	ojc_reader_init_socket(ojcErr err, Reader reader, int socket);
+extern void	ojc_reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size));
+extern bool	ojc_reader_read(ojcErr err, Reader reader);
 
 static inline char
-reader_get(ojcErr err, Reader reader) {
+ojc_reader_get(ojcErr err, Reader reader) {
     //printf("*** drive get from '%s'  from start: %ld	buf: %p	 from read_end: %ld\n", reader->tail, reader->tail - reader->head, reader->head, reader->read_end - reader->tail);
     if (reader->read_end <= reader->tail) {
 	if (reader->eof) {
 	    return '\0';
 	}
-	reader->eof = reader_read(err, reader);
+	reader->eof = ojc_reader_read(err, reader);
 	if (reader->eof && reader->read_end <= reader->tail) {
 	    return '\0';
 	}	    
@@ -86,7 +86,7 @@ reader_get(ojcErr err, Reader reader) {
 }
 
 static inline void
-reader_backup(Reader reader) {
+ojc_reader_backup(Reader reader) {
     reader->tail--;
     reader->col--;
     if (0 >= reader->col) {
@@ -96,13 +96,13 @@ reader_backup(Reader reader) {
 }
 
 static inline void
-reader_protect(Reader reader) {
+ojc_reader_protect(Reader reader) {
     reader->pro = reader->tail;
     reader->start = reader->tail; // can't have start before pro
 }
 
 static inline void
-reader_release(Reader reader) {
+ojc_reader_release(Reader reader) {
     reader->pro = 0;
 }
 
@@ -110,10 +110,10 @@ reader_release(Reader reader) {
  * compacted buffer.
  */
 static inline char
-reader_next_non_white(ojcErr err, Reader reader) {
+ojc_reader_next_non_white(ojcErr err, Reader reader) {
     char	c;
 
-    while ('\0' != (c = reader_get(err, reader))) {
+    while ('\0' != (c = ojc_reader_get(err, reader))) {
 	switch(c) {
 	case ' ':
 	case '\t':
@@ -132,10 +132,10 @@ reader_next_non_white(ojcErr err, Reader reader) {
  * compacted buffer.
  */
 static inline char
-reader_next_white(ojcErr err, Reader reader) {
+ojc_reader_next_white(ojcErr err, Reader reader) {
     char	c;
 
-    while ('\0' != (c = reader_get(err, reader))) {
+    while ('\0' != (c = ojc_reader_get(err, reader))) {
 	switch(c) {
 	case ' ':
 	case '\t':
@@ -152,9 +152,9 @@ reader_next_white(ojcErr err, Reader reader) {
 }
 
 static inline int
-reader_expect(ojcErr err, Reader reader, const char *s) {
+ojc_reader_expect(ojcErr err, Reader reader, const char *s) {
     for (; '\0' != *s; s++) {
-	if (reader_get(err, reader) != *s) {
+	if (ojc_reader_get(err, reader) != *s) {
 	    return -1;
 	}
     }
@@ -162,7 +162,7 @@ reader_expect(ojcErr err, Reader reader, const char *s) {
 }
 
 static inline void
-reader_cleanup(Reader reader) {
+ojc_reader_cleanup(Reader reader) {
     if (reader->free_head && 0 != reader->head) {
 	free(reader->head);
 	reader->head = 0;
@@ -185,4 +185,4 @@ is_white(char c) {
     return 0;
 }
 
-#endif /* __OJC_READER_H__ */
+#endif /* __OJC_OJC_READER_H__ */

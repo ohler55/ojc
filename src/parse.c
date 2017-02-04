@@ -52,19 +52,19 @@ void	ojc_set_error_at(ParseInfo pi, ojcErrCode code, const char* file, int line,
 
 static void
 skip_comment(ParseInfo pi) {
-    char	c = reader_get(&pi->err, &pi->rd);
+    char	c = ojc_reader_get(&pi->err, &pi->rd);
 
     if ('*' == c) {
-	while ('\0' != (c = reader_get(&pi->err, &pi->rd))) {
+	while ('\0' != (c = ojc_reader_get(&pi->err, &pi->rd))) {
 	    if ('*' == c) {
-		c = reader_get(&pi->err, &pi->rd);
+		c = ojc_reader_get(&pi->err, &pi->rd);
 		if ('/' == c) {
 		    return;
 		}
 	    }
 	}
     } else if ('/' == c) {
-	while ('\0' != (c = reader_get(&pi->err, &pi->rd))) {
+	while ('\0' != (c = ojc_reader_get(&pi->err, &pi->rd))) {
 	    switch (c) {
 	    case '\n':
 	    case '\r':
@@ -264,7 +264,7 @@ add_str(ParseInfo pi, const char *str, int len) {
 	    break;
 	}
     }
-    reader_release(&pi->rd);
+    ojc_reader_release(&pi->rd);
 }
 
 static void
@@ -302,7 +302,7 @@ add_word(ParseInfo pi, const char *str, int len) {
 	    break;
 	}
     }
-    reader_release(&pi->rd);
+    ojc_reader_release(&pi->rd);
 }
 
 static void
@@ -350,10 +350,10 @@ read_word(ParseInfo pi) {
     char	c;
     bool	reading = true;
 
-    reader_backup(&pi->rd);
-    reader_protect(&pi->rd);
+    ojc_reader_backup(&pi->rd);
+    ojc_reader_protect(&pi->rd);
     while (reading) {
-	c = reader_get(&pi->err, &pi->rd);
+	c = ojc_reader_get(&pi->err, &pi->rd);
 	switch (c) {
 	case ',': 
 	case ']': 
@@ -363,7 +363,7 @@ read_word(ParseInfo pi) {
 	case '\f':
 	case '\n':
 	case '\r':
-	    reader_backup(&pi->rd);
+	    ojc_reader_backup(&pi->rd);
 	    reading = false;
 	    break;
 	case '\0':
@@ -394,7 +394,7 @@ read_word(ParseInfo pi) {
 	    ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid token");
 	}
     }
-    reader_release(&pi->rd);
+    ojc_reader_release(&pi->rd);
 }
 
 static uint32_t
@@ -404,7 +404,7 @@ read_hex(ParseInfo pi) {
     char	c;
 
     for (i = 0; i < 4; i++) {
-	c = reader_get(&pi->err, &pi->rd);
+	c = ojc_reader_get(&pi->err, &pi->rd);
 	b = b << 4;
 	if ('0' <= c && c <= '9') {
 	    b += c - '0';
@@ -465,13 +465,13 @@ read_escaped_str(ParseInfo pi) {
     if (pi->rd.start < pi->rd.tail) {
 	buf_append_string(&buf, pi->rd.start, pi->rd.tail - pi->rd.start);
     }
-    while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
+    while ('"' != (c = ojc_reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
 	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    buf_cleanup(&buf);
 	    return;
 	} else if ('\\' == c) {
-	    c = reader_get(&pi->err, &pi->rd);
+	    c = ojc_reader_get(&pi->err, &pi->rd);
 	    switch (c) {
 	    case 'n':	buf_append(&buf, '\n');	break;
 	    case 'r':	buf_append(&buf, '\r');	break;
@@ -491,8 +491,8 @@ read_escaped_str(ParseInfo pi) {
 		    uint32_t	c2;
 		    char	ch2;
 
-		    c = reader_get(&pi->err, &pi->rd);
-		    ch2 = reader_get(&pi->err, &pi->rd);
+		    c = ojc_reader_get(&pi->err, &pi->rd);
+		    ch2 = ojc_reader_get(&pi->err, &pi->rd);
 		    if ('\\' != c || 'u' != ch2) {
 			ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "invalid escaped character");
 			buf_cleanup(&buf);
@@ -528,20 +528,20 @@ static void
 read_str(ParseInfo pi) {
     char	c;
 
-    reader_protect(&pi->rd);
-    while ('"' != (c = reader_get(&pi->err, &pi->rd))) {
+    ojc_reader_protect(&pi->rd);
+    while ('"' != (c = ojc_reader_get(&pi->err, &pi->rd))) {
 	if ('\0' == c) {
 	    ojc_set_error_at(pi, OJC_INCOMPLETE_ERR, __FILE__, __LINE__, "quoted string not terminated");
 	    return;
 	} else if ('\\' == c) {
-	    reader_backup(&pi->rd);
+	    ojc_reader_backup(&pi->rd);
 	    read_escaped_str(pi);
-	    reader_release(&pi->rd);
+	    ojc_reader_release(&pi->rd);
 	    return;
 	}
     }
     add_str(pi, pi->rd.start, pi->rd.tail - pi->rd.start - 1);
-    reader_release(&pi->rd);
+    ojc_reader_release(&pi->rd);
 }
 
 static void
@@ -557,15 +557,15 @@ read_num(ParseInfo pi) {
     int		neg = 0;
     char	c;
 
-    reader_protect(&pi->rd);
-    c = reader_get(&pi->err, &pi->rd);
+    ojc_reader_protect(&pi->rd);
+    c = ojc_reader_get(&pi->err, &pi->rd);
     if ('-' == c) {
-	c = reader_get(&pi->err, &pi->rd);
+	c = ojc_reader_get(&pi->err, &pi->rd);
 	neg = 1;
     } else if ('+' == c) {
-	c = reader_get(&pi->err, &pi->rd);
+	c = ojc_reader_get(&pi->err, &pi->rd);
     }
-    for (; '0' <= c && c <= '9'; c = reader_get(&pi->err, &pi->rd)) {
+    for (; '0' <= c && c <= '9'; c = ojc_reader_get(&pi->err, &pi->rd)) {
 	dec_cnt++;
 	if (big) {
 	    big++;
@@ -585,8 +585,8 @@ read_num(ParseInfo pi) {
 	}
     }
     if ('.' == c) {
-	c = reader_get(&pi->err, &pi->rd);
-	for (; '0' <= c && c <= '9'; c = reader_get(&pi->err, &pi->rd)) {
+	c = ojc_reader_get(&pi->err, &pi->rd);
+	for (; '0' <= c && c <= '9'; c = ojc_reader_get(&pi->err, &pi->rd)) {
 	    int	d = (c - '0');
 
 	    if (0 == d) {
@@ -607,14 +607,14 @@ read_num(ParseInfo pi) {
     if ('e' == c || 'E' == c) {
 	int	eneg = 0;
 
-	c = reader_get(&pi->err, &pi->rd);
+	c = ojc_reader_get(&pi->err, &pi->rd);
 	if ('-' == c) {
-	    c = reader_get(&pi->err, &pi->rd);
+	    c = ojc_reader_get(&pi->err, &pi->rd);
 	    eneg = 1;
 	} else if ('+' == c) {
-	    c = reader_get(&pi->err, &pi->rd);
+	    c = ojc_reader_get(&pi->err, &pi->rd);
 	}
-	for (; '0' <= c && c <= '9'; c = reader_get(&pi->err, &pi->rd)) {
+	for (; '0' <= c && c <= '9'; c = ojc_reader_get(&pi->err, &pi->rd)) {
 	    exp = exp * 10 + (c - '0');
 	    if (EXP_MAX <= exp) {
 		big = 1;
@@ -626,7 +626,7 @@ read_num(ParseInfo pi) {
     }
     dec_cnt -= zero_cnt;
     if ('\0' != c) {
-	reader_backup(&pi->rd);
+	ojc_reader_backup(&pi->rd);
     }
     if (!big && 1 == div && 0 == exp) { // fixnum
 	if (neg) {
@@ -649,7 +649,7 @@ read_num(ParseInfo pi) {
 	val->dub = d;
     }
     add_value(pi, val);
-    reader_release(&pi->rd);
+    ojc_reader_release(&pi->rd);
 }
 
 static void
@@ -711,7 +711,7 @@ ojc_parse(ParseInfo pi) {
     pi->err.code = 0;
     *pi->err.msg = '\0';
     while (1) {
-	c = reader_next_non_white(&pi->err, &pi->rd);
+	c = ojc_reader_next_non_white(&pi->err, &pi->rd);
 	switch (c) {
 	case '{':
 	    object_start(pi);
@@ -746,7 +746,7 @@ ojc_parse(ParseInfo pi) {
 	case '7':
 	case '8':
 	case '9':
-	    reader_backup(&pi->rd);
+	    ojc_reader_backup(&pi->rd);
 	    read_num(pi);
 	    break;
 	case '/':

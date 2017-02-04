@@ -52,7 +52,7 @@ static bool	read_from_str(ojcErr err, Reader reader);
 static bool	read_from_func(ojcErr err, Reader reader);
 
 static void
-reader_init(Reader reader) {
+ojc_reader_init(Reader reader) {
     reader->head = reader->base;
     *((char*)reader->head) = '\0';
     reader->end = reader->head + sizeof(reader->base) - BUF_PAD;
@@ -68,12 +68,12 @@ reader_init(Reader reader) {
 }
 
 void
-reader_init_str(ojcErr err, Reader reader, const char *str) {
+ojc_reader_init_str(ojcErr err, Reader reader, const char *str) {
     if (0 == str) {
 	snprintf(err->msg, sizeof(err->msg) - 1, "No source string provided during initialization.");
 	return;
     }
-    reader_init(reader);
+    ojc_reader_init(reader);
     reader->read_func = read_from_str;
     reader->str = str;
     reader->head = (char*)reader->str;
@@ -83,41 +83,41 @@ reader_init_str(ojcErr err, Reader reader, const char *str) {
 }
 
 void
-reader_init_stream(ojcErr err, Reader reader, FILE *file) {
+ojc_reader_init_stream(ojcErr err, Reader reader, FILE *file) {
     if (0 == file) {
 	snprintf(err->msg, sizeof(err->msg) - 1, "No source file provided during initialization.");
 	return;
     }
-    reader_init(reader);
+    ojc_reader_init(reader);
     reader->read_func = read_from_file;
     reader->file = file;
 }
 
 void
-reader_init_follow(ojcErr err, Reader reader, FILE *file) {
+ojc_reader_init_follow(ojcErr err, Reader reader, FILE *file) {
     if (0 == file) {
 	snprintf(err->msg, sizeof(err->msg) - 1, "No source file provided during initialization.");
 	return;
     }
-    reader_init(reader);
+    ojc_reader_init(reader);
     reader->read_func = read_from_follow;
     reader->file = file;
 }
 
 void
-reader_init_socket(ojcErr err, Reader reader, int socket) {
+ojc_reader_init_socket(ojcErr err, Reader reader, int socket) {
     if (0 >= socket) {
 	snprintf(err->msg, sizeof(err->msg) - 1, "Invalid socket provided during initialization.");
 	return;
     }
-    reader_init(reader);
+    ojc_reader_init(reader);
     reader->read_func = read_from_socket;
     reader->socket = socket;
 }
 
 void
-reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size)) {
-    reader_init(reader);
+ojc_reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, char *buf, size_t size)) {
+    ojc_reader_init(reader);
     reader->read_func = read_from_func;
     reader->src = src;
     reader->rf = rf;
@@ -125,7 +125,7 @@ reader_init_func(ojcErr err, Reader reader, void *src, ssize_t (*rf)(void *src, 
 
 // returns true if EOF
 bool
-reader_read(ojcErr err, Reader reader) {
+ojc_reader_read(ojcErr err, Reader reader) {
     size_t	shift = 0;
     
     if (0 == reader->read_func) {

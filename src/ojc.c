@@ -94,7 +94,7 @@ ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx) {
 	return 0;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_str(&pi.err, &pi.rd, json);
+    ojc_reader_init_str(&pi.err, &pi.rd, json);
     if (OJC_OK != pi.err.code) {
 	return 0;
     }
@@ -120,7 +120,7 @@ ojc_parse_strp(ojcErr err, const char **jsonp) {
 	return 0;
     }
     parse_init(&pi.err, &pi, NULL, NULL);
-    reader_init_str(&pi.err, &pi.rd, json);
+    ojc_reader_init_str(&pi.err, &pi.rd, json);
     if (OJC_OK != pi.err.code) {
 	return 0;
     }
@@ -147,7 +147,7 @@ ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
 	return 0;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_stream(err, &pi.rd, file);
+    ojc_reader_init_stream(err, &pi.rd, file);
     if (OJC_OK != err->code) {
 	return 0;
     }
@@ -172,7 +172,7 @@ ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
 	return 0;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_socket(err, &pi.rd, socket);
+    ojc_reader_init_socket(err, &pi.rd, socket);
     if (OJC_OK != err->code) {
 	return 0;
     }
@@ -196,7 +196,7 @@ ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) 
 	return;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_follow(err, &pi.rd, file);
+    ojc_reader_init_follow(err, &pi.rd, file);
     if (OJC_OK != err->code) {
 	return;
     }
@@ -218,7 +218,7 @@ ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseCallback cb, voi
 	return 0;
     }
     parse_init(&pi.err, &pi, cb, ctx);
-    reader_init_func(err, &pi.rd, src, rf);
+    ojc_reader_init_func(err, &pi.rd, src, rf);
     if (OJC_OK != err->code) {
 	return 0;
     }
