@@ -97,7 +97,8 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 	} else if (buf->realloc_ok) {
 	    size_t	len = buf->end - buf->head;
 	    size_t	toff = buf->tail - buf->head;
-	    size_t	new_len = len + slen + len / 2;
+	    size_t	new_len = len + slen + len;
+	    //size_t	new_len = len + slen + len / 2;
 
 	    if (buf->base == buf->head) {
 		buf->head = (char*)malloc(new_len);
@@ -167,6 +168,22 @@ buf_finish(Buf buf) {
 	}
 	buf->tail = buf->head;
     }
+}
+
+inline static char*
+buf_take_string(Buf buf) {
+    char	*str = buf->head;
+    
+    if (buf->base != buf->head && !buf->realloc_ok) {
+	buf->head = NULL;
+    } else {
+	int	len = buf->tail - buf->head;
+	char	*dup = (char*)malloc(len + 1);
+
+	str = memcpy(dup, buf->head, len);
+	str[len] = '\0';
+    }
+    return str;
 }
 
 #endif /* __OJC_BUF_H__ */
