@@ -31,7 +31,12 @@
 #ifndef __OJC_BUF_H__
 #define __OJC_BUF_H__
 
+#include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+
+#include "ojc.h"
 
 typedef struct _Buf {
     char	*head;
@@ -118,6 +123,7 @@ buf_append_string(Buf buf, const char *s, size_t slen) {
 	memcpy(buf->tail, s, slen);
     }
     buf->tail += slen;
+    *buf->tail = '\0';
 }
     
 inline static void
@@ -152,7 +158,12 @@ buf_append(Buf buf, char c) {
 	}
     }
     *buf->tail++ = c;
-    //*buf->tail = '\0'; // for debugging
+    *buf->tail = '\0';
+}
+
+inline static void
+buf_backup(Buf buf) {
+    buf->tail--;
 }
 
 inline static void
@@ -167,6 +178,8 @@ buf_finish(Buf buf) {
 	    buf->err = OJC_WRITE_ERR;
 	}
 	buf->tail = buf->head;
+    } else {
+	*buf->tail = '\0';
     }
 }
 

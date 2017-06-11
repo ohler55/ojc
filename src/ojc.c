@@ -32,8 +32,8 @@
 #include <string.h>
 
 #include "ojc.h"
-#include "parse.h"
 #include "buf.h"
+#include "parse.h"
 #include "val.h"
 
 #define MAX_INDEX	200000000
@@ -1950,6 +1950,12 @@ ojc_to_str(ojcVal val, int indent) {
 	return strdup(b.head);
     }
     return b.head;
+}
+
+void
+ojc_buf(Buf buf, ojcVal val, int indent) {
+    fill_buf(buf, val, indent, 0);
+    *buf->tail = '\0';
 }
 
 int

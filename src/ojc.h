@@ -40,6 +40,8 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+struct _Buf;
+    
 /**
  * Current version of OjC.
  */
@@ -798,6 +800,17 @@ extern char*		ojc_to_str(ojcVal val, int indent);
  * @param len size of the buffer
  */
 extern int		ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len);
+
+/**
+ * Fills a Buf with __val__ as a JSON formated string in the buffer
+ * provided. The __indent__ argument is used indentation of elements in the
+ * output.
+ *
+ * @param buf pointer to an __Buf__ struct.
+ * @param val __ojcVal__ to convert to JSON
+ * @param indent indentation in spaces to use
+ */
+extern void		ojc_buf(struct _Buf *buf, ojcVal val, int indent);
 
 /**
  * Converts __val__ to a JSON formated string and streams the output to a
