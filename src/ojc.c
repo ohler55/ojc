@@ -1016,7 +1016,6 @@ ojc_create_str(const char *str, size_t len) {
     if (sizeof(union _Bstr) <= len) {
 	val->str_type = STR_PTR;
 	val->str.str = strndup(str, len);
-	val->str.str[len] = '\0';
     } else if (sizeof(val->str.ca) <= len) {
 	val->str_type = STR_BLOCK;
 	val->str.bstr = _ojc_bstr_create();
@@ -1075,7 +1074,6 @@ ojc_create_number(const char *num, size_t len) {
     if (sizeof(union _Bstr) <= len) {
 	val->str_type = STR_PTR;
 	val->str.str = strndup(num, len);
-	val->str.str[len] = '\0';
     } else if (sizeof(val->str.ca) <= len) {
 	val->str_type = STR_BLOCK;
 	val->str.bstr = _ojc_bstr_create();
