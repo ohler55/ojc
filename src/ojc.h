@@ -45,7 +45,7 @@ struct _Buf;
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"2.0.1"
+#define OJC_VERSION	"2.1.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 
@@ -76,6 +76,8 @@ typedef enum {
     OJC_WORD	= 'w',
     /** opaque which is ignored on write */
     OJC_OPAQUE	= 'i',
+    /** freed */
+    OJC_FREE	= '#',
 } ojcValType;
 
 /**
@@ -281,8 +283,9 @@ extern ojcVal		ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseC
  * Frees memory used by a __ojcVal__.
  *
  * @param val value to free or destroy.
+ * @return 0 on success or non-zero if already freed.
  */
-extern void		ojc_destroy(ojcVal val);
+extern int		ojc_destroy(ojcVal val);
 
 /**
  * Gets an __ojcVal__ located by the provided path where the path is a sequence

@@ -104,9 +104,9 @@ struct _ojcVal {
 extern void	_ojc_val_cleanup(void) ;
 
 extern ojcVal	_ojc_val_create(ojcValType type);
-extern void	_ojc_destroy(ojcVal val);
+extern int	_ojc_destroy(ojcVal val);
 extern void	_ojc_val_return(List freed, MList freed_bstrs);
-extern void	_ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs);
+extern int	_ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs);
 extern void	_ojc_val_create_batch(size_t cnt, List vals);
 extern void	_ojc_set_key(ojcVal val, const char *key, int klen);
 

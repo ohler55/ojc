@@ -158,8 +158,13 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
     }
 }
 
-void
+int
 _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
+    if (OJC_FREE == val->type) {
+	// TBD
+	printf("*** already freed\n");
+	return OJC_MEMORY_ERR;
+    }
     free_key(val, freed_bstrs);
     if (OJC_STRING == val->type || OJC_NUMBER == val->type) {
 	switch (val->str_type) {
@@ -182,10 +187,13 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
     if (OJC_ARRAY == val->type || OJC_OBJECT == val->type) {
 	ojcVal	m;
 	ojcVal	next;
+	int	err;
 
 	for (m = val->members.head; 0 != m; m = next) {
 	    next = m->next;
-	    _ojc_val_destroy(m, freed, freed_bstrs);
+	    if (0 != (err = _ojc_val_destroy(m, freed, freed_bstrs))) {
+		return err;
+	    }
 	}
     }
     if (0 == freed->head) {
@@ -194,10 +202,12 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
 	freed->tail->next = val;
     }
     val->next = 0;
-    val->type = OJC_NULL;
+    val->type = OJC_FREE;
     val->str_type = STR_NONE;
     val->key_type = STR_NONE;
     freed->tail = val;
+
+    return 0;
 }
 
 void
@@ -225,13 +235,16 @@ _ojc_val_return(List freed, MList freed_bstrs) {
     atomic_flag_clear(&free_vals.busy);
 }
 
-void
+int
 _ojc_destroy(ojcVal val) {
     struct _List	freed = { NULL, NULL };
     struct _MList	freed_bstrs = { NULL, NULL };
+    int			err =_ojc_val_destroy(val, &freed, &freed_bstrs);
 
-    _ojc_val_destroy(val, &freed, &freed_bstrs);
-    _ojc_val_return(&freed, &freed_bstrs);
+    if (0 == err) {
+	_ojc_val_return(&freed, &freed_bstrs);
+    }
+    return err;
 }
 
 Bstr
