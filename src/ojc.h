@@ -812,8 +812,9 @@ extern int		ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len);
  * @param buf pointer to an __Buf__ struct.
  * @param val __ojcVal__ to convert to JSON
  * @param indent indentation in spaces to use
+ * @param depth initial indentaion depth
  */
-extern void		ojc_buf(struct _Buf *buf, ojcVal val, int indent);
+    extern void		ojc_buf(struct _Buf *buf, ojcVal val, int indent, int depth);
 
 /**
  * Converts __val__ to a JSON formated string and streams the output to a

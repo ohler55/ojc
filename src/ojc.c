@@ -1952,8 +1952,8 @@ ojc_to_str(ojcVal val, int indent) {
 }
 
 void
-ojc_buf(Buf buf, ojcVal val, int indent) {
-    fill_buf(buf, val, indent, 0);
+ojc_buf(Buf buf, ojcVal val, int indent, int depth) {
+    fill_buf(buf, val, indent, depth);
     *buf->tail = '\0';
 }
 
