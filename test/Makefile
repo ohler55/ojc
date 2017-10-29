@@ -1,9 +1,11 @@
 #CC=clang
 CC=cc
 CV=$(shell if [ `uname` = "Darwin" ]; then echo "c11"; elif [ `uname` = "Linux" ]; then echo "gnu11"; fi;)
-#CFLAGS=-c -Wall -g -O1
-#CFLAGS=-c -Wall
-CFLAGS=-c -Wall -std=$(CV) -pedantic
+ifeq ($(build),release)
+	CFLAGS=-c -Wall -O3 -std=$(CV) -pedantic
+else
+	CFLAGS=-c -Wall -g -Og -std=$(CV) -pedantic
+endif
 
 SRC_DIR=.
 LIB_DIR=../lib
