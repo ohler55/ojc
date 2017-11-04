@@ -1,5 +1,9 @@
 
+dist: trusty
+
 language: c
+
+install: true
 
 script:
   - make test
@@ -7,3 +11,4 @@ script:
 compiler:
   - clang
   - gcc
+  
