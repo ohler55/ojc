@@ -7,7 +7,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "ojc.h"
+#include "ojc/ojc.h"
 
 static uint64_t
 clock_micro() {
@@ -58,7 +58,7 @@ bench_write(const char *filename, int64_t iter) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("wrote %lld entries in %0.3f msecs. (%g iterations/msec)\n",
+    printf("ojc_write      %lld entries in %0.3f msecs. (%g iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
     return 0;
 }
@@ -73,23 +73,22 @@ bench_read(const char *filename) {
 
     f = fopen(filename, "r");
     ojc_err_init(&err);
-    ojc_parse_stream(&err, f, each_cb, &cnt);
+    ojc_parse_file(&err, f, each_cb, &cnt);
     fclose(f);
     dt = clock_micro() - start;
     if (OJC_OK != err.code) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("read %lld entries in %0.3f msecs. (%g iterations/msec)\n",
+    printf("ojc_parse_file %lld entries in %0.3f msecs. (%g iterations/msec)\n",
 	   (long long)cnt, (double)dt / 1000.0, (double)cnt * 1000.0 / (double)dt);
 
     return 0;
 }
 
 static int
-bench_parse(const char *filename) {
+bench_parse(const char *filename, int64_t iter) {
     struct _ojcErr	err = OJC_ERR_INIT;
-    int64_t		iter = 400000;
     int64_t		dt;
     ojcVal		obj;
 
@@ -116,7 +115,7 @@ bench_parse(const char *filename) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("parsed %lld entries in %0.3f msecs. (%g iterations/msec)\n",
+    printf("ojc_parse_str  %lld entries in %0.3f msecs. (%g iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
 
     return 0;
@@ -129,7 +128,7 @@ main(int argc, char **argv) {
 
     bench_write(filename, iter);
     bench_read(filename);
-    bench_parse(filename);
+    bench_parse(filename, iter);
 
     return 0;
 }

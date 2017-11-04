@@ -4,12 +4,6 @@
 ^c^s show subtree
 
 - wire
- - ojc_to_wire
-  - file, socket (fd), buf
-  - pre-calc size, first pass
- - ojc_wire_str - write json string
- - ojc_wire_parse
-  - from socket, file, string
 
  - format - mix of length and term chars
   - faster to parse and write
@@ -43,9 +37,7 @@
   - socket -> fd or fildes
 
 - plan
- - reorg
- - travis
- - wire header and stubs
+ - precalc
  - write to buf, file, fildes
  
 

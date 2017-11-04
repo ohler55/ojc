@@ -139,7 +139,7 @@ ojc_parse_strp(ojcErr err, const char **jsonp) {
 }
 
 ojcVal
-ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
+ojc_parse_file(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;
 
@@ -164,7 +164,7 @@ ojc_parse_stream(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
 }
 
 ojcVal
-ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
+ojc_parse_fd(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
     ojcVal		val;
 
@@ -189,7 +189,7 @@ ojc_parse_socket(ojcErr err, int socket, ojcParseCallback cb, void *ctx) {
 }
 
 void
-ojc_parse_stream_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
+ojc_parse_file_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx) {
     struct _ParseInfo	pi;
 
     if (0 != err && OJC_OK != err->code) {

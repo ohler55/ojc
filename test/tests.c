@@ -11,8 +11,8 @@
 #include <ctype.h>
 #include <math.h>
 
+#include "ojc/wire.h"
 #include "ut.h"
-#include "ojc.h"
 
 static const char	bench_json[] = "{\"a\":\"Alpha\",\"b\":true,\"c\":12345,\"d\":[true,[false,[-123456789,null],3.9676,[\"Something else.\",false],null]],\"e\":{\"zero\":null,\"one\":1,\"two\":2,\"three\":[3],\"four\":[0,1,2,3,4]},\"f\":null,\"h\":{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"g\":null}}}}}}},\"i\":[[[[[[[null]]]]]]]}";
 
@@ -247,7 +247,7 @@ file_parse_test() {
 
     ojc_err_init(&err);
     f = fopen("tmp.json", "r");
-    val = ojc_parse_stream(&err, f, 0, 0);
+    val = ojc_parse_file(&err, f, 0, 0);
     fclose(f);
     if (ut_handle_error(&err)) {
 	return;
@@ -288,7 +288,7 @@ follow_parse_test() {
 
     ojc_err_init(&err);
     f = fopen("tmp.json", "r");
-    ojc_parse_stream_follow(&err, f, follow_callback, &val);
+    ojc_parse_file_follow(&err, f, follow_callback, &val);
     fclose(f);
     if (ut_handle_error(&err)) {
 	return;
@@ -867,6 +867,43 @@ cmp_test() {
     }
 }
 
+typedef struct _Jlen {
+    const char	*json;
+    int		len;
+} *Jlen;
+
+static void
+wire_size_test() {
+    ojcVal		val;
+    struct _ojcErr	err;
+    struct _Jlen	data[] = {
+	{ "null", 5 },
+	{ "false", 5 },
+	{ "true", 5 },
+	{ "127", 6 },
+	{ "128", 7 },
+	{ "-40000", 9 },
+	{ "\"hello\"", 11 },
+	{ "12.3", 10 },
+	{ "{}", 6 },
+	{ "[]", 6 },
+	{ "[1,2,3]", 12 },
+	{ "{\"abc\":1,\"def\":2}", 20 },
+	{ "{\"abc\":1,\"def\":[1,2]}", 24 },
+	{ NULL, 0 }};
+
+    for (Jlen jl = data; NULL != jl->json; jl++) {
+	ojc_err_init(&err);
+	val = ojc_parse_str(&err, jl->json, 0, 0);
+	if (ut_handle_error(&err)) {
+	    continue;
+	}
+	ut_same_int(jl->len, ojc_wire_size(val), "%s", jl->json);
+    }
+}
+
+// TBD other wire tests
+
 static void
 bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
@@ -881,7 +918,7 @@ bench(int64_t iter, void *ctx) {
 
 static void
 benchmark_test() {
-    ut_benchmark("one at a time", 100000LL, bench, (void*)bench_json);
+    ut_benchmark("parse one at a time", 100000LL, bench, (void*)bench_json);
 }
 
 static bool
@@ -912,7 +949,7 @@ each_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each callback", 100000LL, each_bench, json);
 }
 
 static bool
@@ -944,7 +981,7 @@ free_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("free callback", 100000LL, free_bench, json);
+    ut_benchmark("parse and free callback", 100000LL, free_bench, json);
 }
 
 static void
@@ -960,7 +997,7 @@ each_str255_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each str255 callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each str255 callback", 100000LL, each_bench, json);
 }
 
 static void
@@ -976,7 +1013,7 @@ each_str257_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each str257 callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each str257 callback", 100000LL, each_bench, json);
 }
 
 static struct _Test	tests[] = {
@@ -1014,11 +1051,14 @@ static struct _Test	tests[] = {
     { "equals",		equals_test },
     { "cmp",		cmp_test },
 
+    { "wire.size",	wire_size_test },
+
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
     { "free_benchmark",	free_benchmark_test },
     { "each_str255_benchmark",	each_str255_benchmark_test },
     { "each_str257_benchmark",	each_str257_benchmark_test },
+
     { 0, 0 } };
 
 int

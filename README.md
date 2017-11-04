@@ -86,4 +86,9 @@ sample() {
 
 *GitHub* *repo*: https://github.com/ohler55/ojc
 
+## Releases
+
+See [{file:CHANGELOG.md}](CHANGELOG.md)
+
+
 Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.

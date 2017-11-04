@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "ojc.h"
+#include "ojc/ojc.h"
 
 typedef struct _Test {
     const char	*name;
