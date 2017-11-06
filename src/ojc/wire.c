@@ -45,6 +45,8 @@ typedef enum {
     WIRE_STR4	= (uint8_t)'B',
     WIRE_DEC	= (uint8_t)'d',
     WIRE_NUM	= (uint8_t)'n',
+    WIRE_UUID	= (uint8_t)'u',
+    WIRE_TIME	= (uint8_t)'T',
     WIRE_OBEG	= (uint8_t)'{',
     WIRE_OEND	= (uint8_t)'}',
     WIRE_ABEG	= (uint8_t)'[',
@@ -97,14 +99,9 @@ wire_size(ojcVal val) {
     case OJC_FALSE:
 	break;
     case OJC_STRING:
+	// TBD detect time and uuid
     case OJC_NUMBER:
-	switch (val->str_type) {
-	case STR_PTR:	len = strlen(val->str.str);		break;
-	case STR_ARRAY:	len = strlen(val->str.ca);		break;
-	case STR_BLOCK:	len = strlen(val->str.bstr->ca);	break;
-	default:	len = 0;				break;
-	}
-	size += len + size_bytes(len);
+	size += (int64_t)val->str_len + size_bytes((int64_t)val->str_len);
 	break;
     case OJC_FIXNUM:
 	size += size_bytes(val->fixnum);
@@ -129,11 +126,10 @@ wire_size(ojcVal val) {
     case OJC_OBJECT:
 	size++;
 	for (ojcVal m = val->members.head; NULL != m; m = m->next) {
-	    switch (m->key_type) {
-	    case STR_PTR:	len = strlen(m->key.str);	break;
-	    case STR_ARRAY:	len = strlen(m->key.ca);	break;
-	    case STR_BLOCK:	len = strlen(m->key.bstr->ca);	break;
-	    default:		len = 0;			break;
+	    if (KEY_BIG == (len = m->key_len)) {
+		len = strlen(m->key.str);
+	    } else if (KEY_NONE == len) {
+		len = 0;
 	    }
 	    size += len + size_bytes(len) + 1;
 	    size += wire_size(m);

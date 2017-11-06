@@ -3,7 +3,16 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- plan
+ - write to buf, file, fildes
+
+
+
+
 - wire
+ - methods to build
+ - callback struct for responses
+ - just copy needed headers to include dir
 
  - format - mix of length and term chars
   - faster to parse and write
@@ -36,10 +45,6 @@
   - stream -> file
   - socket -> fd or fildes
 
-- plan
- - precalc
- - write to buf, file, fildes
- 
 
 - make sure follow works
 - allow catchup on stream parser if with callbacks

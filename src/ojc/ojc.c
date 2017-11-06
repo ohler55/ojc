@@ -256,16 +256,16 @@ ojc_get(ojcVal val, const char *path) {
 
 	    for (; '\0' != *path && '/' != *path && '.' != *path; path++) {
 		if (*path < '0' || '9' < *path) {
-		    return 0;
+		    return NULL;
 		}
 		index = index * 10 + (unsigned int)(*path - '0');
 		if (MAX_INDEX < index) {
-		    return 0;
+		    return NULL;
 		}
 	    }
 	    for (m = val->members.head; 0 < index; m = m->next, index--) {
-		if (0 == m) {
-		    return 0;
+		if (NULL == m) {
+		    return NULL;
 		}
 	    }
 	    return ojc_get(m, path);
@@ -279,16 +279,14 @@ ojc_get(ojcVal val, const char *path) {
 	    }
 	    plen = path - start;
 	    for (m = val->members.head; ; m = m->next) {
-		if (0 == m) {
-		    return 0;
+		if (NULL == m) {
+		    return NULL;
 		}
-		key = ojc_key(m);
-		if (0 != key &&
-		    (ojc_case_insensitive ?
-		     0 == strncasecmp(start, key, plen) :
-		     0 == strncmp(start, key, plen)) &&
-		    '\0' == key[plen]) {
-		    return ojc_get(m, path);
+		if (NULL != (key = ojc_key(m))) {
+		    if ((ojc_case_insensitive ? 0 == strncasecmp(start, key, plen) : 0 == strncmp(start, key, plen)) &&
+			'\0' == key[plen]) {
+			return ojc_get(m, path);
+		    }
 		}
 	    }
 	    break;
@@ -873,29 +871,29 @@ ojc_double(ojcErr err, ojcVal val) {
 const char*
 ojc_number(ojcErr err, ojcVal val) {
     if (!is_type_ok(err, val, OJC_NUMBER)) {
-	return 0;
+	return NULL;
     }
-    switch (val->str_type) {
-    case STR_PTR:	return val->str.str;
-    case STR_ARRAY:	return val->str.ca;
-    case STR_BLOCK:	return val->str.bstr->ca;
-    case STR_NONE:
-    default:		return 0;
+    if ((int)sizeof(union _Bstr) <= val->str_len) {
+	return val->str.str;
     }
+    if ((int)sizeof(val->str.ca) <= val->str_len) {
+	return val->str.bstr->ca;
+    }
+    return val->str.ca;
 }
 
 const char*
 ojc_str(ojcErr err, ojcVal val) {
     if (!is_type_ok(err, val, OJC_STRING)) {
-	return 0;
+	return NULL;
     }
-    switch (val->str_type) {
-    case STR_PTR:	return val->str.str;
-    case STR_ARRAY:	return val->str.ca;
-    case STR_BLOCK:	return val->str.bstr->ca;
-    case STR_NONE:
-    default:		return 0;
+    if ((int)sizeof(union _Bstr) <= val->str_len) {
+	return val->str.str;
     }
+    if ((int)sizeof(val->str.ca) <= val->str_len) {
+	return val->str.bstr->ca;
+    }
+    return val->str.ca;
 }
 
 const char*
@@ -973,18 +971,21 @@ ojc_member_count(ojcErr err, ojcVal val) {
 
 bool
 ojc_has_key(ojcVal val) {
-    return STR_NONE != val->key_type;
+    return KEY_NONE != val->key_len;
 }
 
 const char*
 ojc_key(ojcVal val) {
-    switch (val->key_type) {
-    case STR_PTR:	return val->key.str;
-    case STR_ARRAY:	return val->key.ca;
-    case STR_BLOCK:	return val->key.bstr->ca;
-    case STR_NONE:
-    default:		return 0;
+    if (KEY_NONE == val->key_len) {
+	return NULL;
     }
+    if ((int)sizeof(union _Bstr) <= val->key_len) {
+	return val->key.str;
+    }
+    if ((int)sizeof(val->key.ca) <= val->key_len) {
+	return val->key.bstr->ca;
+    }
+    return val->key.ca;
 }
 
 void
@@ -1014,16 +1015,17 @@ ojc_create_str(const char *str, size_t len) {
     if (0 >= len) {
 	len = strlen(str);
     }
+    val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
-	val->str_type = STR_PTR;
+	if (STR_BIG < len) {
+	    val->str_len = STR_BIG;
+	}
 	val->str.str = strndup(str, len);
     } else if (sizeof(val->str.ca) <= len) {
-	val->str_type = STR_BLOCK;
 	val->str.bstr = _ojc_bstr_create();
 	memcpy(val->str.bstr->ca, str, len);
 	val->str.bstr->ca[len] = '\0';
     } else {
-	val->str_type = STR_ARRAY;
 	memcpy(val->str.ca, str, len);
 	val->str.ca[len] = '\0';
     }
@@ -1037,6 +1039,10 @@ ojc_create_word(const char *str, size_t len) {
     if (0 >= len) {
 	len = strlen(str);
     }
+    if ((int)sizeof(val->str.ca) <= len) {
+	len = (int)sizeof(val->str.ca) - 1;
+    }
+    val->str_len = len;
     memcpy(val->str.ca, str, len);
     val->str.ca[len] = '\0';
 
@@ -1072,16 +1078,17 @@ ojc_create_number(const char *num, size_t len) {
     if (0 >= len) {
 	len = strlen(num);
     }
+    val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
-	val->str_type = STR_PTR;
+	if (STR_BIG < len) {
+	    val->str_len = STR_BIG;
+	}
 	val->str.str = strndup(num, len);
     } else if (sizeof(val->str.ca) <= len) {
-	val->str_type = STR_BLOCK;
 	val->str.bstr = _ojc_bstr_create();
 	memcpy(val->str.bstr->ca, num, len);
 	val->str.bstr->ca[len] = '\0';
     } else {
-	val->str_type = STR_ARRAY;
 	memcpy(val->str.ca, num, len);
 	val->str.ca[len] = '\0';
     }
@@ -1181,15 +1188,17 @@ bool
 ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val) {
     ojcVal	m;
     ojcVal	prev = 0;
-
+    const char	*mkey;
+    
     if (bad_object(err, object, "replace")) {
 	return false;
     }
     _ojc_set_key(val, key, 0);
     for (m = object->members.head; 0 != m; m = m->next) {
-	if (ojc_case_insensitive ?
-	    0 == strcasecmp(key, ojc_key(m)) :
-	    0 == strcmp(key, ojc_key(m))) {
+	if (NULL == (mkey = ojc_key(m))) {
+	    continue;
+	}
+	if (ojc_case_insensitive ? 0 == strcasecmp(key, mkey) : 0 == strcmp(key, mkey)) {
 	    val->next = m->next;
 	    if (0 == prev) {
 		object->members.head = val;
@@ -1776,7 +1785,7 @@ buf_append_chars(Buf buf, const char *str) {
 
 static void
 fill_buf(Buf buf, ojcVal val, int indent, int depth) {
-    if (0 == val) {
+    if (NULL == val) {
 	return;
     }
     switch (val->type) {
@@ -1833,7 +1842,7 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 		in[icnt] = '\0';
 	    }
 	    buf_append(buf, '{');
-	    for (m = val->members.head; 0 != m; m = m->next) {
+	    for (m = val->members.head; NULL != m; m = m->next) {
 		if (m != val->members.head) {
 		    buf_append(buf, ',');
 		}
@@ -1841,13 +1850,14 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 		    buf_append_string(buf, in, icnt);
 		}
 		buf_append(buf, '"');
-
-		switch (m->key_type) {
-		case STR_PTR:	key = m->key.str;	break;
-		case STR_ARRAY:	key = m->key.ca;	break;
-		case STR_BLOCK:	key = m->key.bstr->ca;	break;
-		case STR_NONE:
-		default:	key = "";		break;
+		if (KEY_NONE == m->key_len) {
+		    key = "";
+		} else if ((int)sizeof(union _Bstr) <= m->key_len) {
+		    key = m->key.str;
+		} else if ((int)sizeof(m->key.ca) <= m->key_len) {
+		    key = m->key.bstr->ca;
+		} else {
+		    key = m->key.ca;
 		}
 		while ('\0' != *key) {
 		    key = buf_append_chars(buf, key);
@@ -1879,12 +1889,12 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	    const char	*str;
 
 	    buf_append(buf, '"');
-	    switch (val->str_type) {
-	    case STR_PTR:	str = val->str.str;		break;
-	    case STR_ARRAY:	str = val->str.ca;		break;
-	    case STR_BLOCK:	str = val->str.bstr->ca;	break;
-	    case STR_NONE:
-	    default:		str = "";			break;
+	    if ((int)sizeof(union _Bstr) <= val->str_len) {
+		str = val->str.str;
+	    } else if ((int)sizeof(val->str.ca) <= val->str_len) {
+		str = val->str.bstr->ca;
+	    } else {
+		str = val->str.ca;
 	    }
 	    while ('\0' != *str) {
 		str = buf_append_chars(buf, str);
@@ -1893,7 +1903,8 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	}
 	break;
     case OJC_WORD:
-	buf_append_string(buf, val->str.ca, strlen(val->str.ca));
+	// TBD val->str_len should work
+	buf_append_string(buf, val->str.ca, val->str_len);
 	break;
     case OJC_FIXNUM:
 	fixnum_fill(buf, val->fixnum);
@@ -1915,14 +1926,14 @@ fill_buf(Buf buf, ojcVal val, int indent, int depth) {
 	{
 	    const char	*str;
 
-	    switch (val->str_type) {
-	    case STR_PTR:	str = val->str.str;		break;
-	    case STR_ARRAY:	str = val->str.ca;		break;
-	    case STR_BLOCK:	str = val->str.bstr->ca;	break;
-	    case STR_NONE:
-	    default:		str = "";			break;
+	    if ((int)sizeof(union _Bstr) <= val->str_len) {
+		str = val->str.str;
+	    } else if ((int)sizeof(val->str.ca) <= val->str_len) {
+		str = val->str.bstr->ca;
+	    } else {
+		str = val->str.ca;
 	    }
-	    buf_append_string(buf, str, strlen(str));
+	    buf_append_string(buf, str, val->str_len);
 	}
 	break;
     case OJC_OPAQUE:
@@ -2036,12 +2047,14 @@ ojc_duplicate(ojcVal val) {
 	    const char	*key;
 
 	    for (m = val->members.head; 0 != m; m = m->next) {
-		switch (m->key_type) {
-		case STR_PTR:	key = m->key.str;	break;
-		case STR_ARRAY:	key = m->key.ca;	break;
-		case STR_BLOCK:	key = m->key.bstr->ca;	break;
-		case STR_NONE:
-		default:	key = "";		break;
+		if (KEY_NONE == m->key_len) {
+		    key = "";
+		} else if ((int)sizeof(union _Bstr) <= m->key_len) {
+		    key = m->key.str;
+		} else if ((int)sizeof(m->key.ca) <= m->key_len) {
+		    key = m->key.bstr->ca;
+		} else {
+		    key = m->key.ca;
 		}
 		ojc_object_append(&err, dup, key, ojc_duplicate(m));
 	    }
@@ -2053,21 +2066,14 @@ ojc_duplicate(ojcVal val) {
 	break;
     case OJC_STRING:
     case OJC_NUMBER:
-	dup->str_type = val->str_type;
-	switch (val->str_type) {
-	case STR_PTR:
+	dup->str_len = val->str_len;
+	if ((int)sizeof(union _Bstr) <= val->str_len) {
 	    dup->str.str = strdup(val->str.str);
-	    break;
-	case STR_ARRAY:
-	    strcpy(dup->str.ca, val->str.ca);
-	    break;
-	case STR_BLOCK:
+	} else if ((int)sizeof(val->str.ca) <= val->str_len) {
 	    dup->str.bstr = _ojc_bstr_create();
 	    strcpy(dup->str.bstr->ca, val->str.bstr->ca);
-	    break;
-	case STR_NONE:
-	default:
-	    break;
+	} else {
+	    strcpy(dup->str.ca, val->str.ca);
 	}
 	break;
     case OJC_WORD:

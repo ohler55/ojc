@@ -418,7 +418,7 @@ array_get_test() {
 static void
 object_get_test() {
     char		result[256];
-    ojcVal		array;
+    ojcVal		obj;
     ojcVal		val;
     struct _ojcErr	err;
     PathExp		pe;
@@ -435,12 +435,12 @@ object_get_test() {
 	{ 0, 0 } };
 
     ojc_err_init(&err);
-    array = ojc_parse_str(&err, json, 0, 0);
+    obj = ojc_parse_str(&err, json, 0, 0);
     if (ut_handle_error(&err)) {
 	return;
     }
     for (pe = data; 0 != pe->expect; pe++) {
-	val = ojc_get(array, pe->path);
+	val = ojc_get(obj, pe->path);
 	ojc_fill(&err, val, 0, result, sizeof(result));
 	ut_same(pe->expect, result);
     }

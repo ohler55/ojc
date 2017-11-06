@@ -97,8 +97,8 @@ get_val(ParseInfo pi, ojcValType type) {
 	pi->free_vals.tail = NULL;
     }
     v->next = 0;
-    v->key_type = STR_NONE;
-    v->str_type = STR_NONE;
+    v->str_len = 0;
+    v->key_len = KEY_NONE;;
     v->members.head = NULL;
     v->members.tail = NULL;
     v->type = type;
@@ -129,17 +129,18 @@ pi_object_nappend(ParseInfo pi, ojcVal object, ojcVal val) {
     int		klen = pi->klen;
 
     val->next = 0;
+    val->key_len = (uint16_t)klen;
     if ((int)sizeof(union _Bstr) <= klen) {
-	val->key_type = STR_PTR;
+	if ((int)KEY_BIG <= klen) {
+	    val->key_len = KEY_BIG;
+	}
 	val->key.str = strndup(key, klen);
 	val->key.str[klen] = '\0';
     } else if ((int)sizeof(val->key.ca) <= klen) {
-	val->key_type = STR_BLOCK;
 	val->key.bstr = get_bstr(pi);
 	memcpy(val->key.bstr->ca, key, klen);
 	val->key.bstr->ca[klen] = '\0';
     } else {
-	val->key_type = STR_ARRAY;
 	memcpy(val->key.ca, key, klen);
 	val->key.ca[klen] = '\0';
     }
@@ -191,17 +192,17 @@ static ojcVal
 get_str_val(ParseInfo pi, const char *str, int len) {
     ojcVal	val = get_val(pi, OJC_STRING);
 
+    val->str_len = len;
     if ((int)sizeof(union _Bstr) <= len) {
-	val->str_type = STR_PTR;
+	if (STR_BIG < len) {
+	    val->str_len = STR_BIG;
+	}
 	val->str.str = strndup(str, len);
-	val->str.str[len] = '\0';
     } else if ((int)sizeof(val->str.ca) <= len) {
-	val->str_type = STR_BLOCK;
 	val->str.bstr = get_bstr(pi);
 	memcpy(val->str.bstr->ca, str, len);
 	val->str.bstr->ca[len] = '\0';
     } else {
-	val->str_type = STR_ARRAY;
 	memcpy(val->str.ca, str, len);
 	val->str.ca[len] = '\0';
     }
@@ -212,6 +213,10 @@ static ojcVal
 get_word_val(ParseInfo pi, const char *str, int len) {
     ojcVal	val = get_val(pi, OJC_WORD);
 
+    if ((int)sizeof(val->str.ca) <= len) {
+	len = (int)sizeof(val->str.ca) - 1;
+    }
+    val->str_len = len;
     memcpy(val->str.ca, str, len);
 
     return val;
