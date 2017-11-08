@@ -7,7 +7,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "ojc/buf.h"
 #include "ojc/ojc.h"
+#include "ojc/wire.h"
 
 static uint64_t
 clock_micro() {
@@ -25,12 +27,43 @@ each_cb(ojcErr err, ojcVal val, void *ctx) {
 }
 
 static int
+bench_fill(int64_t iter) {
+    struct _Buf		buf;
+    struct _ojcErr	err;
+    int64_t		i;
+    int64_t		dt;
+    int64_t		start;
+    ojcVal		obj;
+
+    obj = ojc_create_object();
+    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
+    ojc_object_append(&err, obj, "message",
+		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
+    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
+    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
+    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
+    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
+    ojc_object_append(&err, obj, "version", ojc_create_int(1));
+
+    start = clock_micro();
+    for (i = 0; i < iter; i++) {
+	buf_init(&buf, 0);
+	ojc_buf(&buf, obj, 0, 0);
+	buf_cleanup(&buf);
+    }
+    dt = clock_micro() - start;
+    printf("ojc_fill        %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    return 0;
+}
+
+static int
 bench_write(const char *filename, int64_t iter) {
     FILE		*f;
     struct _ojcErr	err;
     int64_t		i;
     int64_t		dt;
-    int64_t		start = clock_micro();
+    int64_t		start;
     ojcVal		obj;
     int			fd;
 
@@ -58,8 +91,8 @@ bench_write(const char *filename, int64_t iter) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("ojc_write      %lld entries in %0.3f msecs. (%g iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
+    printf("ojc_write        %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
     return 0;
 }
 
@@ -80,8 +113,8 @@ bench_read(const char *filename) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("ojc_parse_file %lld entries in %0.3f msecs. (%g iterations/msec)\n",
-	   (long long)cnt, (double)dt / 1000.0, (double)cnt * 1000.0 / (double)dt);
+    printf("ojc_parse_file   %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt));
 
     return 0;
 }
@@ -115,20 +148,53 @@ bench_parse(const char *filename, int64_t iter) {
 	printf("*** Error: %s\n", err.msg);
 	return -1;
     }
-    printf("ojc_parse_str  %lld entries in %0.3f msecs. (%g iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
+    printf("ojc_parse_str    %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
     return 0;
 }
+
+static int
+bench_wire_fill(int64_t iter) {
+    uint8_t		buf[1024];
+    struct _ojcErr	err;
+    int64_t		i;
+    int64_t		dt;
+    int64_t		start;
+    ojcVal		obj;
+
+    obj = ojc_create_object();
+    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
+    ojc_object_append(&err, obj, "message",
+		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
+    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
+    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
+    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
+    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
+    ojc_object_append(&err, obj, "version", ojc_create_int(1));
+
+    start = clock_micro();
+    for (i = 0; i < iter; i++) {
+	ojc_wire_fill(obj, buf, 0);
+    }
+    dt = clock_micro() - start;
+    printf("ojc_wire_fill   %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    return 0;
+}
+
 
 int
 main(int argc, char **argv) {
     const char	*filename = "log.json";
     int64_t	iter = 100000LL;
 
+    bench_fill(iter * 10);
     bench_write(filename, iter);
     bench_read(filename);
     bench_parse(filename, iter);
+
+    bench_wire_fill(iter * 10);
 
     return 0;
 }

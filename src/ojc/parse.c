@@ -192,11 +192,12 @@ static ojcVal
 get_str_val(ParseInfo pi, const char *str, int len) {
     ojcVal	val = get_val(pi, OJC_STRING);
 
+    if (STR_BIG < (int64_t)len){
+	ojc_set_error_at(pi, OJC_PARSE_ERR, __FILE__, __LINE__, "string length of %d is over the maximum string size if %d bytes", len, STR_BIG);
+	return NULL;
+    }
     val->str_len = len;
     if ((int)sizeof(union _Bstr) <= len) {
-	if (STR_BIG < len) {
-	    val->str_len = STR_BIG;
-	}
 	val->str.str = strndup(str, len);
     } else if ((int)sizeof(val->str.ca) <= len) {
 	val->str.bstr = get_bstr(pi);
@@ -228,6 +229,7 @@ add_str(ParseInfo pi, const char *str, int len) {
 
     if (0 == parent) { // simple add
 	*pi->stack.head = get_str_val(pi, str, len);
+	
     } else {
 	switch (parent->expect) {
 	case NEXT_ARRAY_NEW:
@@ -792,7 +794,7 @@ ojc_parse(ParseInfo pi) {
 	    } else {
 		ojcVal	val = stack_head(&pi->stack);
 
-		if (0 != val) {
+		if (NULL != val) {
 		    if (pi->each_cb(&pi->err, val, pi->each_ctx)) {
 			pi_val_destroy(pi, val);
 		    }

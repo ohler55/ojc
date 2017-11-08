@@ -1015,11 +1015,11 @@ ojc_create_str(const char *str, size_t len) {
     if (0 >= len) {
 	len = strlen(str);
     }
+    if (STR_BIG < (int64_t)len){
+	len = (size_t)STR_BIG;
+    }
     val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
-	if (STR_BIG < len) {
-	    val->str_len = STR_BIG;
-	}
 	val->str.str = strndup(str, len);
     } else if (sizeof(val->str.ca) <= len) {
 	val->str.bstr = _ojc_bstr_create();
@@ -1078,11 +1078,11 @@ ojc_create_number(const char *num, size_t len) {
     if (0 >= len) {
 	len = strlen(num);
     }
+    if (STR_BIG < (int64_t)len){
+	len = STR_BIG;
+    }
     val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
-	if (STR_BIG < len) {
-	    val->str_len = STR_BIG;
-	}
 	val->str.str = strndup(num, len);
     } else if (sizeof(val->str.ca) <= len) {
 	val->str.bstr = _ojc_bstr_create();

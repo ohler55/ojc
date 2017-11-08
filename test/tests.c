@@ -890,6 +890,8 @@ wire_size_test() {
 	{ "[1,2,3]", 12 },
 	{ "{\"abc\":1,\"def\":2}", 20 },
 	{ "{\"abc\":1,\"def\":[1,2]}", 24 },
+	{ "\"123e4567-e89b-12d3-a456-426655440000\"", 21 },
+	{ "\"2017-03-14T15:09:26.123456789Z\"", 13 },
 	{ NULL, 0 }};
 
     for (Jlen jl = data; NULL != jl->json; jl++) {
@@ -900,6 +902,143 @@ wire_size_test() {
 	}
 	ut_same_int(jl->len, ojc_wire_size(val), "%s", jl->json);
     }
+}
+
+static ojcVal
+build_sample() {
+    struct _ojcErr	err = OJC_ERR_INIT;
+    ojcVal		val = ojc_parse_str(&err, "{\n\
+  \"nil\":null,\n\
+  \"yes\":true,\n\
+  \"no\":false,\n\
+  \"int\":12345,\n\
+  \"array\":[\n\
+    -23,\n\
+    1.23,\n\
+    \"string\",\n\
+    \"123e4567-e89b-12d3-a456-426655440000\",\n\
+    \"2017-03-14T15:09:26.123456789Z\"\n\
+  ]\n\
+}", 0, 0);
+
+    if (ut_handle_error(&err)) {
+	return NULL;
+    }
+    return val;
+}
+
+static const char	*expect_sample_dump = "\
+00 00 00 4E 7B 73 03 6E  69 6C 5A 73 03 79 65 73   ...N{s.n ilZs.yes\n\
+74 73 02 6E 6F 66 73 03  69 6E 74 6A 30 39 73 05   ts.nofs. intj09s.\n\
+61 72 72 61 79 5B 69 E9  64 04 31 2E 32 33 73 06   array[i. d.1.23s.\n\
+73 74 72 69 6E 67 75 12  3E 45 67 E8 9B 12 D3 A4   stringu. >Eg.....\n\
+56 42 66 55 44 00 00 54  14 AB C8 25 B9 40 C9 15   VBfUD..T ...%.@..\n\
+5D 7D                                              ]}\n";
+
+static void
+wire_fill_test() {
+    ojcVal	val = build_sample();
+
+    if (NULL == val) {
+	return;
+    }
+    uint8_t	wire[1024];
+    size_t	size = ojc_wire_fill(val, wire, 0);
+    char	buf[1024];
+
+    ut_hexDumpBuf(wire, (int)size, buf);
+    ut_same(expect_sample_dump, buf);
+    ojc_destroy(val);
+}
+
+static void
+wire_mem_test() {
+    ojcVal	val = build_sample();
+
+    if (NULL == val) {
+	return;
+    }
+    struct _ojcErr	err = OJC_ERR_INIT;
+    uint8_t		*wire = ojc_wire_mem(&err, val);
+    char		buf[1024];
+
+    ut_hexDumpBuf(wire, (int)ojc_wire_size(val), buf);
+    ut_same(expect_sample_dump, buf);
+    ojc_destroy(val);
+    free(wire);
+}
+
+static void
+wire_file_test() {
+    ojcVal	val = build_sample();
+
+    if (NULL == val) {
+	return;
+    }
+    FILE		*f = fopen("tmp.wire", "w");
+    struct _ojcErr	err = OJC_ERR_INIT;
+
+    ojc_wire_file(&err, val, f);
+    fclose(f);
+    if (ut_handle_error(&err)) {
+	return;
+    }
+    char	*wire = ut_loadFile("tmp.wire");
+    char	buf[1024];
+
+    ut_hexDumpBuf((uint8_t*)wire, (int)ojc_wire_size(val), buf);
+    ut_same(expect_sample_dump, buf);
+    ojc_destroy(val);
+    free(wire);
+}
+
+static int
+wire_build_sample(ojcWire wire) {
+    struct _ojcErr	err = OJC_ERR_INIT;
+    
+    ojc_wire_push_object(&err, wire);
+
+    ojc_wire_push_key(&err, wire, "nil", -1);
+    ojc_wire_push_null(&err, wire);
+
+    ojc_wire_push_key(&err, wire, "yes", -1);
+    ojc_wire_push_bool(&err, wire, true);
+    
+    ojc_wire_push_key(&err, wire, "no", -1);
+    ojc_wire_push_bool(&err, wire, false);
+
+    ojc_wire_push_key(&err, wire, "int", -1);
+    ojc_wire_push_int(&err, wire, 12345);
+
+    ojc_wire_push_key(&err, wire, "array", -1);
+    ojc_wire_push_array(&err, wire);
+    
+    ojc_wire_push_int(&err, wire, -23);
+    ojc_wire_push_double(&err, wire, 1.23);
+    ojc_wire_push_string(&err, wire, "string", -1);
+    ojc_wire_push_uuid_string(&err, wire, "123e4567-e89b-12d3-a456-426655440000");
+    ojc_wire_push_time(&err, wire, 1489504166123456789LL);
+
+    ojc_wire_finish(&err, wire);
+    if (ut_handle_error(&err)) {
+	return err.code;
+    }
+    return OJC_OK;
+}
+
+static void
+wire_build_buf_test() {
+    struct _ojcWire	wire;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    uint8_t		data[1024];
+    
+    ojc_wire_init(&err, &wire, data, sizeof(data));
+    wire_build_sample(&wire);
+
+    char	buf[1024];
+
+    ut_hexDumpBuf(data, (int)ojc_wire_length(&wire), buf);
+    ut_same(expect_sample_dump, buf);
 }
 
 // TBD other wire tests
@@ -1052,6 +1191,10 @@ static struct _Test	tests[] = {
     { "cmp",		cmp_test },
 
     { "wire.size",	wire_size_test },
+    { "wire.fill",	wire_fill_test },
+    { "wire.mem",	wire_mem_test },
+    { "wire.file",	wire_file_test },
+    { "wire.build.buf",	wire_build_buf_test },
 
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },

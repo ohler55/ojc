@@ -4,9 +4,8 @@
 ^c^s show subtree
 
 - plan
- - write to buf, file, fildes
-
-
+ - parse
+ 
 
 
 - wire
@@ -14,29 +13,6 @@
  - callback struct for responses
  - just copy needed headers to include dir
 
- - format - mix of length and term chars
-  - faster to parse and write
-  - saves some space
-  - allows pre-alloc
-
-  - start with 4 byte length
-  - byte for type indicator
-   - {
-   - [
-   - int (1,2,4,8 bytes)
-   - string (1,2,4 byte length plus content)
-   - double
-   - number
-   - true
-   - false
-   - null
-   - uuid
-   - time
-   - } - close object
-   - ] - close array
-  
-  - 0009{s3abci7}
-   - {"abc":7}
 
  - layout
   - move code to src/ojc/ and headers to ojc/ojc.h

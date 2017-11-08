@@ -43,12 +43,9 @@
 
 #define LIST_INIT	{ NULL, NULL, ATOMIC_FLAG_INIT }
 
-#define STR_SMALL	16
-#define BSTR_MAX	256
-#define KEY_SMALL	8
-#define KEY_NONE	0xffff
-#define KEY_BIG		((int)0xfffe)
-#define STR_BIG		((int)0xffffffff)
+#define KEY_NONE	((int)0x0000ffffU)
+#define KEY_BIG		((int)0x0000fffeU)
+#define STR_BIG		((int64_t)0x00000000ffffffffULL)
 
 typedef enum {
     NEXT_NONE		= 0,
