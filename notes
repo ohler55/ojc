@@ -5,21 +5,11 @@
 
 - plan
  - parse
+  - callback struct for responses
  
 
+- just copy needed headers to include dir
 
-- wire
- - methods to build
- - callback struct for responses
- - just copy needed headers to include dir
-
-
- - layout
-  - move code to src/ojc/ and headers to ojc/ojc.h
-  - wire.[ch]
- - should function names change?
-  - stream -> file
-  - socket -> fd or fildes
 
 
 - make sure follow works

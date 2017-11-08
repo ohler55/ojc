@@ -959,7 +959,7 @@ wire_mem_test() {
 	return;
     }
     struct _ojcErr	err = OJC_ERR_INIT;
-    uint8_t		*wire = ojc_wire_mem(&err, val);
+    uint8_t		*wire = ojc_wire_write_mem(&err, val);
     char		buf[1024];
 
     ut_hexDumpBuf(wire, (int)ojc_wire_size(val), buf);
@@ -978,7 +978,7 @@ wire_file_test() {
     FILE		*f = fopen("tmp.wire", "w");
     struct _ojcErr	err = OJC_ERR_INIT;
 
-    ojc_wire_file(&err, val, f);
+    ojc_wire_write_file(&err, val, f);
     fclose(f);
     if (ut_handle_error(&err)) {
 	return;
@@ -1039,6 +1039,22 @@ wire_build_buf_test() {
 
     ut_hexDumpBuf(data, (int)ojc_wire_length(&wire), buf);
     ut_same(expect_sample_dump, buf);
+    ojc_wire_cleanup(&wire);
+}
+
+static void
+wire_build_alloc_test() {
+    struct _ojcWire	wire;
+    struct _ojcErr	err = OJC_ERR_INIT;
+    
+    ojc_wire_init(&err, &wire, NULL, 0);
+    wire_build_sample(&wire);
+
+    char	buf[1024];
+
+    ut_hexDumpBuf(wire.buf, (int)ojc_wire_length(&wire), buf);
+    ut_same(expect_sample_dump, buf);
+    ojc_wire_cleanup(&wire);
 }
 
 // TBD other wire tests
@@ -1195,6 +1211,7 @@ static struct _Test	tests[] = {
     { "wire.mem",	wire_mem_test },
     { "wire.file",	wire_file_test },
     { "wire.build.buf",	wire_build_buf_test },
+    { "wire.build.alloc",wire_build_alloc_test },
 
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },

@@ -69,10 +69,11 @@ extern "C" {
     } *ojcWireCallbacks;
 
     extern int		ojc_wire_size(ojcVal val);
-    extern uint8_t*	ojc_wire_mem(ojcErr err, ojcVal val);
+    extern uint8_t*	ojc_wire_write_mem(ojcErr err, ojcVal val);
     extern size_t	ojc_wire_fill(ojcVal val, uint8_t *wire, size_t size);
-    extern int		ojc_wire_file(ojcErr err, ojcVal val, FILE *file);
-    extern int		ojc_wire_fd(ojcErr err, ojcVal val, int fd);
+    extern int		ojc_wire_write_file(ojcErr err, ojcVal val, FILE *file);
+    extern int		ojc_wire_write_fd(ojcErr err, ojcVal val, int fd);
+    extern size_t	ojc_wire_buf_size(uint8_t *wire);
 
     extern int		ojc_wire_init(ojcErr err, ojcWire wire, uint8_t *buf, size_t size);
     extern void		ojc_wire_cleanup(ojcWire wire);
@@ -93,9 +94,7 @@ extern "C" {
     extern int		ojc_wire_push_uuid_string(ojcErr err, ojcWire wire, const char *value);
     extern int		ojc_wire_push_time(ojcErr err, ojcWire wire, uint64_t value);
 
-    extern int		ojc_wire_to_json(ojcErr err, struct _Buf *buf, const uint8_t *wire);
-
-    extern ojcVal	ojc_wire_parse_str(ojcErr err, const uint8_t *wire);
+    extern ojcVal	ojc_wire_parse_mem(ojcErr err, const uint8_t *wire);
     extern ojcVal	ojc_wire_parse_file(ojcErr err, FILE *file);
     extern ojcVal	ojc_wire_parse_fd(ojcErr err, int fd);
 

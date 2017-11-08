@@ -183,6 +183,43 @@ bench_wire_fill(int64_t iter) {
     return 0;
 }
 
+static int
+bench_wire_write(const char *filename, int64_t iter) {
+    FILE		*f;
+    struct _ojcErr	err;
+    int64_t		i;
+    int64_t		dt;
+    int64_t		start;
+    ojcVal		obj;
+    int			fd;
+
+    obj = ojc_create_object();
+    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
+    ojc_object_append(&err, obj, "message",
+		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
+    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
+    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
+    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
+    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
+    ojc_object_append(&err, obj, "version", ojc_create_int(1));
+
+    start = clock_micro();
+    ojc_err_init(&err);
+    f = fopen(filename, "w");
+    fd = fileno(f);
+    for (i = 0; i < iter; i++) {
+	ojc_wire_write_fd(&err, obj, fd);
+    }
+    fclose(f);
+    dt = clock_micro() - start;
+    if (OJC_OK != err.code) {
+	printf("*** Error: %s\n", err.msg);
+	return -1;
+    }
+    printf("ojc_wire_fd      %lld entries in %0.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    return 0;
+}
 
 int
 main(int argc, char **argv) {
@@ -195,6 +232,7 @@ main(int argc, char **argv) {
     bench_parse(filename, iter);
 
     bench_wire_fill(iter * 10);
+    bench_wire_write(filename, iter);
 
     return 0;
 }

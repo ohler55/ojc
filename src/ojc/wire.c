@@ -30,6 +30,7 @@
 
 #include <errno.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "buf.h"
 #include "wire.h"
@@ -37,6 +38,8 @@
 
 #define NO_TIME		0xffffffffffffffffULL
 #define WIRE_INC	4096
+#define MAX_STACK_BUF	4096
+#define MIN_WIRE_BUF	1024
 
 typedef enum {
     WIRE_NULL	= (uint8_t)'Z',
@@ -118,55 +121,6 @@ fill_uint64(uint8_t *b, uint64_t n) {
     return b;
 }
 
-static int
-fwrite_uint8(ojcErr err, int fd, uint8_t n) {
-    if (1 != write(fd, &n, 1)) {
-	err->code = OJC_WRITE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	return err->code;
-    }
-    return 0;
-}
-
-static int
-fwrite_uint16(ojcErr err, int fd, uint16_t n) {
-    uint8_t	buf[8];
-    
-    fill_uint16(buf, n);
-    if (2 != write(fd, buf, 2)) {
-	err->code = OJC_WRITE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	return err->code;
-    }
-    return 0;
-}
-
-static int
-fwrite_uint32(ojcErr err, int fd, uint32_t n) {
-    uint8_t	buf[8];
-    
-    fill_uint32(buf, n);
-    if (4 != write(fd, buf, 4)) {
-	err->code = OJC_WRITE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	return err->code;
-    }
-    return 0;
-}
-
-static int
-fwrite_uint64(ojcErr err, int fd, uint64_t n) {
-    uint8_t	buf[8];
-    
-    fill_uint64(buf, n);
-    if (8 != write(fd, buf, 8)) {
-	err->code = OJC_WRITE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	return err->code;
-    }
-    return 0;
-}
-
 static uint8_t*
 fill_str(uint8_t *w, const char *str, size_t len) {
     if (len <= 127) {
@@ -185,27 +139,6 @@ fill_str(uint8_t *w, const char *str, size_t len) {
     return w;
 }
 
-static int
-fwrite_str(ojcErr err, int fd, const char *str, size_t len) {
-    if (len <= 127) {
-	fwrite_uint8(err, fd, WIRE_STR1);
-	fwrite_uint8(err, fd, (uint8_t)len);
-    } else if (len <= 32767) {
-	fwrite_uint8(err, fd, WIRE_STR2);
-	fwrite_uint16(err, fd, (uint16_t)len);
-    } else {
-	fwrite_uint8(err, fd, WIRE_STR4);
-	fwrite_uint32(err, fd, (uint32_t)len);
-    }
-    if (OJC_OK == err->code) {
-	if (len != write(fd, str, len)) {
-	    err->code = OJC_WRITE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	}
-    }
-    return err->code;
-}
-
 static uint8_t*
 fill_num(uint8_t *w, const char *str, size_t len) {
     if (len <= 127) {
@@ -222,27 +155,6 @@ fill_num(uint8_t *w, const char *str, size_t len) {
     w += len;
 
     return w;
-}
-
-static int
-fwrite_num(ojcErr err, int fd, const char *str, size_t len) {
-    if (len <= 127) {
-	fwrite_uint8(err, fd, WIRE_NUM1);
-	fwrite_uint8(err, fd, (uint8_t)len);
-    } else if (len <= 32767) {
-	fwrite_uint8(err, fd, WIRE_NUM2);
-	fwrite_uint16(err, fd, (uint16_t)len);
-    } else {
-	fwrite_uint8(err, fd, WIRE_NUM4);
-	fwrite_uint32(err, fd, (uint32_t)len);
-    }
-    if (OJC_OK == err->code) {
-	if (len != write(fd, str, len)) {
-	    err->code = OJC_WRITE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	}
-    }
-    return err->code;
 }
 
 static uint8_t*
@@ -270,19 +182,6 @@ fill_uuid(uint8_t *w, const char *str) {
 	}
     }
     return w;
-}
-
-static int
-fwrite_uuid(ojcErr err, int fd, const char *str) {
-    uint8_t	buf[32];
-    
-    fill_uuid(buf, str);
-    if (17 != write(fd, buf, 17)) {
-	err->code = OJC_WRITE_ERR;
-	snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	return err->code;
-    }
-    return 0;
 }
 
 static bool
@@ -548,118 +447,6 @@ wire_fill(ojcVal val, uint8_t *w) {
     return w;
 }
 
-static int
-wire_fwrite(ojcErr err, ojcVal val, int fd) {
-    if (OJC_OK != err->code) {
-	return err->code;
-    }
-    switch (val->type) {
-    case OJC_NULL:
-	fwrite_uint8(err, fd, WIRE_NULL);
-	break;
-    case OJC_TRUE:
-	fwrite_uint8(err, fd, WIRE_TRUE);
-	break;
-    case OJC_FALSE:
-	fwrite_uint8(err, fd, WIRE_FALSE);
-	break;
-    case OJC_STRING: {
-	const char	*str;
-	uint64_t	t;
-
-	if ((int)sizeof(union _Bstr) <= val->str_len) {
-	    str = val->str.str;
-	} else if ((int)sizeof(val->str.ca) <= val->str_len) {
-	    str = val->str.bstr->ca;
-	} else {
-	    str = val->str.ca;
-	}
-	if (36 == val->str_len && detect_uuid(val->str.bstr->ca, 36)) {
-	    fwrite_uuid(err, fd, str);
-	} else if (30 == val->str_len && NO_TIME != (t = time_parse(val->str.bstr->ca, 30))) {
-	    fwrite_uint8(err, fd, WIRE_TIME);
-	    fwrite_uint64(err, fd, t);
-	} else {
-	    fwrite_str(err, fd, str, val->str_len);
-	}
-	break;
-    }
-    case OJC_NUMBER:
-	if ((int)sizeof(union _Bstr) <= val->str_len) {
-	    fwrite_num(err, fd, val->str.str, val->str_len);
-	} else if ((int)sizeof(val->str.ca) <= val->str_len) {
-	    fwrite_num(err, fd, val->str.bstr->ca, val->str_len);
-	} else {
-	    fwrite_num(err, fd, val->str.ca, val->str_len);
-	}
-	break;
-    case OJC_FIXNUM:
-	if (-128 <= val->fixnum && val->fixnum <= 127) {
-	    fwrite_uint8(err, fd, WIRE_INT1);
-	    fwrite_uint8(err, fd, (uint8_t)(int8_t)val->fixnum);
-	} else if (-32768 <= val->fixnum && val->fixnum <= 32767) {
-	    fwrite_uint8(err, fd, WIRE_INT2);
-	    fwrite_uint16(err, fd, (uint16_t)(int16_t)val->fixnum);
-	} else if (-2147483648 <= val->fixnum && val->fixnum <= 2147483647) {
-	    fwrite_uint8(err, fd, WIRE_INT4);
-	    fwrite_uint32(err, fd, (uint32_t)(int32_t)val->fixnum);
-	} else {
-	    fwrite_uint8(err, fd, WIRE_INT8);
-	    fwrite_uint64(err, fd, (uint64_t)(int64_t)val->fixnum);
-	}
-	break;
-    case OJC_DECIMAL: {
-	char	str[64];
-	int	cnt;
-
-	fwrite_uint8(err, fd, WIRE_DEC);
-	if (val->dub == (double)(int64_t)val->dub) {
-	    cnt = snprintf(str, sizeof(str) - 1, "%.1f", val->dub);
-	} else {
-	    cnt = snprintf(str, sizeof(str) - 1, "%0.15g", val->dub);
-	}
-	fwrite_uint8(err, fd, (uint8_t)cnt);
-	if (cnt != write(fd, str, cnt)) {
-	    err->code = OJC_WRITE_ERR;
-	    snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
-	    return err->code;
-	}
-	break;
-    }
-    case OJC_ARRAY:
-	fwrite_uint8(err, fd, WIRE_ABEG);
-	for (ojcVal m = val->members.head; NULL != m; m = m->next) {
-	    if (OJC_OK != wire_fwrite(err, m, fd)) {
-		return err->code;
-	    }
-	}
-	fwrite_uint8(err, fd, WIRE_AEND);
-	break;
-    case OJC_OBJECT:
-	fwrite_uint8(err, fd, WIRE_OBEG);
-	for (ojcVal m = val->members.head; NULL != m; m = m->next) {
-	    if ((int)sizeof(union _Bstr) <= m->key_len) {
-		fwrite_str(err, fd, m->key.str, m->key_len);
-	    } else if ((int)sizeof(m->key.ca) <= m->key_len) {
-		fwrite_str(err, fd, m->key.bstr->ca, m->key_len);
-	    } else {
-		fwrite_str(err, fd, m->key.ca, m->key_len);
-	    }
-	    if (OJC_OK != wire_fwrite(err, m, fd)) {
-		return err->code;
-	    }
-	}
-	fwrite_uint8(err, fd, WIRE_OEND);
-	break;
-    case OJC_WORD:
-	break;
-    default:
-	break;
-    }
-
-    return err->code;
-}
-
 int
 ojc_wire_size(ojcVal val) {
     if (NULL == val) {
@@ -668,8 +455,18 @@ ojc_wire_size(ojcVal val) {
     return wire_size(val) + 4;
 }
 
+size_t
+ojc_wire_buf_size(uint8_t *wire) {
+    size_t	size = 0;
+
+    for (int i = 4; 0 < i; i--, wire++) {
+	size = (size << 8) + (size_t)*wire;
+    }
+    return size;
+}
+
 uint8_t*
-ojc_wire_mem(ojcErr err, ojcVal val) {
+ojc_wire_write_mem(ojcErr err, ojcVal val) {
     if (NULL == val) {
 	err->code = OJC_ARG_ERR;
 	snprintf(err->msg, sizeof(err->msg), "NULL value");
@@ -711,44 +508,72 @@ ojc_wire_fill(ojcVal val, uint8_t *wire, size_t size) {
 }
 
 int
-ojc_wire_file(ojcErr err, ojcVal val, FILE *file) {
-    return ojc_wire_fd(err, val, fileno(file));
+ojc_wire_write_file(ojcErr err, ojcVal val, FILE *file) {
+    return ojc_wire_write_fd(err, val, fileno(file));
 }
 
 int
-ojc_wire_fd(ojcErr err, ojcVal val, int fd) {
-    int		size = wire_size(val);
+ojc_wire_write_fd(ojcErr err, ojcVal val, int fd) {
+    int		size = wire_size(val) + 4;
 
-    if (0 != fwrite_uint32(err, fd, (uint32_t)size)) {
-	return err->code;
+    if (MAX_STACK_BUF <= size) {
+	uint8_t	*buf = (uint8_t*)malloc(size);
+
+	ojc_wire_fill(val, buf, size);
+	if (size != write(fd, buf, size)) {
+	    err->code = OJC_WRITE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
+	}
+	free(buf);
+    } else {
+	uint8_t	buf[MAX_STACK_BUF];
+
+	ojc_wire_fill(val, buf, size);
+	if (size != write(fd, buf, size)) {
+	    err->code = OJC_WRITE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "write failed: %s", strerror(errno));
+	}
     }
-    wire_fwrite(err, val, fd);
-    
     return err->code;
 }
 
-int
-ojc_wire_to_json(ojcErr err, Buf buf, const uint8_t *wire) {
-    // TBD
-    return 0;
-}
-
 ojcVal
-ojc_wire_parse_str(ojcErr err, const uint8_t *wire) {
+ojc_wire_parse_mem(ojcErr err, const uint8_t *wire) {
     // TBD
     return 0;
 }
 
 ojcVal
 ojc_wire_parse_file(ojcErr err, FILE *file) {
-    // TBD
-    return 0;
+    return ojc_wire_parse_fd(err, fileno(file));
 }
 
 ojcVal
 ojc_wire_parse_fd(ojcErr err, int fd) {
-    // TBD
-    return 0;
+    off_t	here = lseek(fd, 0, SEEK_CUR);
+    off_t	size = lseek(fd, 0, SEEK_END) - here;
+    ojcVal	val = NULL;
+    
+    lseek(fd, here, SEEK_SET);
+    if (MAX_STACK_BUF <= size) {
+	uint8_t	*buf = (uint8_t*)malloc(size);
+
+	if (size != read(fd, buf, size)) {
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
+	}
+	val = ojc_wire_parse_mem(err, buf);
+	free(buf);
+    } else {
+	uint8_t	buf[MAX_STACK_BUF];
+
+	if (size != read(fd, buf, size)) {
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
+	}
+	val = ojc_wire_parse_mem(err, buf);
+    }
+    return val;
 }
 
 ///// builder
@@ -797,6 +622,9 @@ wire_push_str(ojcErr err, ojcWire wire, const char *str, size_t len) {
 int
 ojc_wire_init(ojcErr err, ojcWire wire, uint8_t *buf, size_t size) {
     if (NULL == buf) {
+	if (size < MIN_WIRE_BUF) {
+	    size = MIN_WIRE_BUF;
+	}
 	if (NULL == (wire->buf = (uint8_t*)malloc(size))) {
 	    err->code = OJC_MEMORY_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "memory allocation failed for size %lu", (unsigned long)size );
@@ -807,7 +635,7 @@ ojc_wire_init(ojcErr err, ojcWire wire, uint8_t *buf, size_t size) {
 	wire->buf = buf;
 	wire->own = false;
     }
-    wire->end = buf + size;
+    wire->end = wire->buf + size;
     wire->cur = wire->buf;
     memset(wire->stack, 0, sizeof(wire->stack));
     wire->top = wire->stack - 1;
