@@ -1,6 +1,6 @@
 # CHANGELOG
 
-### Release 3.0.0 - ???
+### Release 3.0.0 - November 8, 2017
 
 	- Reorganized files and directory structure.
 	- Added wire format for faster transmission of and stream handling.

@@ -12,7 +12,6 @@
 #include <math.h>
 
 #include "ut.h"
-#include "ojc.h"
 
 static const char	bench_json[] = "{\"a\":\"Alpha\",\"b\":true,\"c\":12345,\"d\":[true,[false,[-123456789,null],3.9676,[\"Something else.\",false],null]],\"e\":{\"zero\":null,\"one\":1,\"two\":2,\"three\":[3],\"four\":[0,1,2,3,4]},\"f\":null,\"h\":{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"g\":null}}}}}}},\"i\":[[[[[[[null]]]]]]]}";
 
@@ -247,7 +246,7 @@ file_parse_test() {
 
     ojc_err_init(&err);
     f = fopen("tmp.json", "r");
-    val = ojc_parse_stream(&err, f, 0, 0);
+    val = ojc_parse_file(&err, f, 0, 0);
     fclose(f);
     if (ut_handle_error(&err)) {
 	return;
@@ -288,7 +287,7 @@ follow_parse_test() {
 
     ojc_err_init(&err);
     f = fopen("tmp.json", "r");
-    ojc_parse_stream_follow(&err, f, follow_callback, &val);
+    ojc_parse_file_follow(&err, f, follow_callback, &val);
     fclose(f);
     if (ut_handle_error(&err)) {
 	return;
@@ -418,7 +417,7 @@ array_get_test() {
 static void
 object_get_test() {
     char		result[256];
-    ojcVal		array;
+    ojcVal		obj;
     ojcVal		val;
     struct _ojcErr	err;
     PathExp		pe;
@@ -435,12 +434,12 @@ object_get_test() {
 	{ 0, 0 } };
 
     ojc_err_init(&err);
-    array = ojc_parse_str(&err, json, 0, 0);
+    obj = ojc_parse_str(&err, json, 0, 0);
     if (ut_handle_error(&err)) {
 	return;
     }
     for (pe = data; 0 != pe->expect; pe++) {
-	val = ojc_get(array, pe->path);
+	val = ojc_get(obj, pe->path);
 	ojc_fill(&err, val, 0, result, sizeof(result));
 	ut_same(pe->expect, result);
     }
@@ -881,7 +880,7 @@ bench(int64_t iter, void *ctx) {
 
 static void
 benchmark_test() {
-    ut_benchmark("one at a time", 100000LL, bench, (void*)bench_json);
+    ut_benchmark("parse one at a time", 100000LL, bench, (void*)bench_json);
 }
 
 static bool
@@ -912,7 +911,7 @@ each_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each callback", 100000LL, each_bench, json);
 }
 
 static bool
@@ -944,7 +943,7 @@ free_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("free callback", 100000LL, free_bench, json);
+    ut_benchmark("parse and free callback", 100000LL, free_bench, json);
 }
 
 static void
@@ -960,7 +959,7 @@ each_str255_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each str255 callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each str255 callback", 100000LL, each_bench, json);
 }
 
 static void
@@ -976,8 +975,17 @@ each_str257_benchmark_test() {
 	*s++ = '\n';
     }
     *s = '\0';
-    ut_benchmark("each str257 callback", 100000LL, each_bench, json);
+    ut_benchmark("parse each str257 callback", 100000LL, each_bench, json);
 }
+
+extern void	wire_size_test();
+extern void	wire_fill_test();
+extern void	wire_mem_test();
+extern void	wire_file_test();
+extern void	wire_build_buf_test();
+extern void	wire_build_alloc_test();
+extern void	wire_parse_cb_test();
+extern void	wire_parse_test();
 
 static struct _Test	tests[] = {
     { "array",		array_test },
@@ -1014,11 +1022,21 @@ static struct _Test	tests[] = {
     { "equals",		equals_test },
     { "cmp",		cmp_test },
 
+    { "wire.size",	wire_size_test },
+    { "wire.fill",	wire_fill_test },
+    { "wire.mem",	wire_mem_test },
+    { "wire.file",	wire_file_test },
+    { "wire.build.buf",	wire_build_buf_test },
+    { "wire.build.alloc",wire_build_alloc_test },
+    { "wire.parse.cb",	wire_parse_cb_test },
+    { "wire.parse",	wire_parse_test },
+
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },
     { "free_benchmark",	free_benchmark_test },
     { "each_str255_benchmark",	each_str255_benchmark_test },
     { "each_str257_benchmark",	each_str257_benchmark_test },
+
     { 0, 0 } };
 
 int

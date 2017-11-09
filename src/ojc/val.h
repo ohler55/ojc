@@ -43,6 +43,10 @@
 
 #define LIST_INIT	{ NULL, NULL, ATOMIC_FLAG_INIT }
 
+#define KEY_NONE	((int)0x0000ffffU)
+#define KEY_BIG		((int)0x0000fffeU)
+#define STR_BIG		((int64_t)0x00000000ffffffffULL)
+
 typedef enum {
     NEXT_NONE		= 0,
     NEXT_ARRAY_NEW	= 'a',
@@ -95,9 +99,9 @@ struct _ojcVal {
 	double		dub;
 	void		*opaque;
     };
+    uint32_t		str_len;
+    uint16_t		key_len;
     uint8_t		type;	// ojcValType
-    uint8_t		key_type;
-    uint8_t		str_type;
     uint8_t		expect; // ValNext
 };
 

@@ -3,51 +3,7 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- wire
- - ojc_to_wire
-  - file, socket (fd), buf
-  - pre-calc size, first pass
- - ojc_wire_str - write json string
- - ojc_wire_parse
-  - from socket, file, string
 
- - format - mix of length and term chars
-  - faster to parse and write
-  - saves some space
-  - allows pre-alloc
-
-  - start with 4 byte length
-  - byte for type indicator
-   - {
-   - [
-   - int (1,2,4,8 bytes)
-   - string (1,2,4 byte length plus content)
-   - double
-   - number
-   - true
-   - false
-   - null
-   - uuid
-   - time
-   - } - close object
-   - ] - close array
-  
-  - 0009{s3abci7}
-   - {"abc":7}
-
- - layout
-  - move code to src/ojc/ and headers to ojc/ojc.h
-  - wire.[ch]
- - should function names change?
-  - stream -> file
-  - socket -> fd or fildes
-
-- plan
- - reorg
- - travis
- - wire header and stubs
- - write to buf, file, fildes
- 
 
 - make sure follow works
 - allow catchup on stream parser if with callbacks
@@ -57,8 +13,6 @@
   - catchup mode function
    - read until an close - white space - open is hit
     - } {    ][    }[   ] {
-
-
 
 
 - reader_next_non_white(ojcErr err, Reader reader) 

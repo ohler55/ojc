@@ -434,6 +434,48 @@ ut_hexDump(const unsigned char *data, int len) {
     }
 }
 
+// out must be 4.25 * len
+void
+ut_hexDumpBuf(const unsigned char *data, int len, char *out) {
+    const unsigned char	*b = data;
+    const unsigned char	*end = data + len;
+    char		buf[20];
+    char		*s = buf;
+    int			i;
+
+    for (; b < end; b++) {
+        out += sprintf(out, "%02X ", *b);
+	if (' ' <= *b && *b < 127) {
+	    *s++ = (char)*b;
+	} else {
+	    *s++ = '.';
+	}
+	i = (b - data) % 16;
+        if (7 == i) {
+	    *out++ = ' ';
+	    *s++ = ' ';
+        } else if (15 == i) {
+	    *s = '\0';
+            out += sprintf(out, "  %s\n", buf);
+	    s = buf;
+        }
+    }
+    i = (b - data) % 16;
+    if (0 != i) {
+	if (i < 8) {
+	    *out++ = ' ';
+	}
+	for (; i < 16; i++) {
+	    *out++ = ' ';
+	    *out++ = ' ';
+	    *out++ = ' ';
+	}
+	*s = '\0';
+	out += sprintf(out, "  %s\n", buf);
+    }
+    *out = '\0';
+}
+
 char*
 ut_toCodeStr(const unsigned char *data, int len) {
     const unsigned char	*d;

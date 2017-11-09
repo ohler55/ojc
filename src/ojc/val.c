@@ -58,8 +58,8 @@ _ojc_val_create(ojcValType type) {
 	atomic_flag_clear(&free_vals.busy);
     }
     val->next = NULL;
-    val->key_type = STR_NONE;
-    val->str_type = STR_NONE;
+    val->key_len = KEY_NONE;
+    val->str_len = 0;
     val->members.head = NULL;
     val->members.tail = NULL;
     val->type = type;
@@ -101,23 +101,20 @@ _ojc_val_create_batch(size_t cnt, List vals) {
 
 static void
 free_key(ojcVal val, MList freed_bstrs) {
-    switch (val->key_type) {
-    case STR_PTR:
-	free(val->key.str);
-	break;
-    case STR_BLOCK:
-	if (0 == freed_bstrs->head) {
-	    freed_bstrs->head = val->key.bstr;
-	} else {
-	    freed_bstrs->tail->next = val->key.bstr;
+    if (KEY_NONE != val->key_len) {
+	if ((int)sizeof(union _Bstr) <= val->key_len) {
+	    free(val->key.str);
+	} else if ((int)sizeof(val->key.ca) <= val->key_len) {
+	    if (0 == freed_bstrs->head) {
+		freed_bstrs->head = val->key.bstr;
+	    } else {
+		freed_bstrs->tail->next = val->key.bstr;
+	    }
+	    val->key.bstr->next = 0;
+	    freed_bstrs->tail = val->key.bstr;
 	}
-	val->key.bstr->next = 0;
-	freed_bstrs->tail = val->key.bstr;
-	break;
-    default:
-	break;
+	val->key_len = KEY_NONE;
     }
-    val->key_type = STR_NONE;
 }
 
 void
@@ -141,17 +138,18 @@ _ojc_set_key(ojcVal val, const char *key, int klen) {
 	if (0 >= klen) {
 	    klen = strlen(key);
 	}
+	val->key_len = (uint16_t)klen;
 	if ((int)sizeof(union _Bstr) <= klen) {
-	    val->key_type = STR_PTR;
+	    if ((int)KEY_BIG <= klen) {
+		val->key_len = KEY_BIG;
+	    }
 	    val->key.str = strndup(key, klen);
 	    val->key.str[klen] = '\0';
 	} else if ((int)sizeof(val->key.ca) <= klen) {
-	    val->key_type = STR_BLOCK;
 	    val->key.bstr = _ojc_bstr_create();
 	    memcpy(val->key.bstr->ca, key, klen);
 	    val->key.bstr->ca[klen] = '\0';
 	} else {
-	    val->key_type = STR_ARRAY;
 	    memcpy(val->key.ca, key, klen);
 	    val->key.ca[klen] = '\0';
 	}
@@ -167,11 +165,9 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
     }
     free_key(val, freed_bstrs);
     if (OJC_STRING == val->type || OJC_NUMBER == val->type) {
-	switch (val->str_type) {
-	case STR_PTR:
+	if ((int)sizeof(union _Bstr) <= val->str_len) {
 	    free(val->str.str);
-	    break;
-	case STR_BLOCK:
+	} else if ((int)sizeof(val->str.ca) <= val->str_len) {
 	    if (0 == freed_bstrs->head) {
 		freed_bstrs->head = val->str.bstr;
 	    } else {
@@ -179,9 +175,6 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
 	    }
 	    val->str.bstr->next = 0;
 	    freed_bstrs->tail = val->str.bstr;
-	    break;
-	default:
-	    break;
 	}
     }
     if (OJC_ARRAY == val->type || OJC_OBJECT == val->type) {
@@ -203,8 +196,8 @@ _ojc_val_destroy(ojcVal val, List freed, MList freed_bstrs) {
     }
     val->next = 0;
     val->type = OJC_FREE;
-    val->str_type = STR_NONE;
-    val->key_type = STR_NONE;
+    val->str_len = 0;
+    val->key_len = KEY_NONE;
     freed->tail = val;
 
     return 0;

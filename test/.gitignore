@@ -2,3 +2,4 @@ run_tests
 bench
 tmp.json
 log.json
+tmp.wire
