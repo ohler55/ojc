@@ -29,6 +29,7 @@
  */
 
 #include <errno.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -40,18 +41,23 @@
 #define WIRE_INC	4096
 #define MAX_STACK_BUF	4096
 #define MIN_WIRE_BUF	1024
+#define TIME_STR_LEN	30
+#define UUID_STR_LEN	36
 
 typedef enum {
     WIRE_NULL	= (uint8_t)'Z',
     WIRE_TRUE	= (uint8_t)'t',
     WIRE_FALSE	= (uint8_t)'f',
     WIRE_INT1	= (uint8_t)'i',
-    WIRE_INT2	= (uint8_t)'j',
-    WIRE_INT4	= (uint8_t)'k',
-    WIRE_INT8	= (uint8_t)'I',
+    WIRE_INT2	= (uint8_t)'2',
+    WIRE_INT4	= (uint8_t)'4',
+    WIRE_INT8	= (uint8_t)'8',
     WIRE_STR1	= (uint8_t)'s',
     WIRE_STR2	= (uint8_t)'S',
     WIRE_STR4	= (uint8_t)'B',
+    WIRE_KEY1	= (uint8_t)'k',
+    WIRE_KEY2	= (uint8_t)'K',
+    WIRE_KEY4	= (uint8_t)'X',
     WIRE_DEC	= (uint8_t)'d',
     WIRE_NUM1	= (uint8_t)'b',
     WIRE_NUM2	= (uint8_t)'n',
@@ -63,6 +69,15 @@ typedef enum {
     WIRE_ABEG	= (uint8_t)'[',
     WIRE_AEND	= (uint8_t)']',
 } ojcWireTag;
+
+typedef struct _ParseCtx {
+    ojcVal	top;
+    ojcVal	stack[WIRE_STACK_SIZE];
+    ojcVal	*cur;
+    ojcVal	*end;
+    const char	*key;
+    int		klen;
+} *ParseCtx;
 
 static const char	uuid_char_map[257] = "\
 ................................\
@@ -91,6 +106,43 @@ size_bytes(int64_t n) {
     }
     return cnt;
 }
+
+static const uint8_t*
+read_uint16(const uint8_t *b, uint16_t *nump) {
+    uint16_t	num = (uint16_t)*b++;
+
+    num = (num << 8) | (uint16_t)*b++;
+    *nump = num;
+    
+    return b;
+}
+
+static const uint8_t*
+read_uint32(const uint8_t *b, uint32_t *nump) {
+    const uint8_t	*end = b + 4;
+    uint32_t		num = 0;
+
+    for (; b < end; b++) {
+	num = (num << 8) | (uint32_t)*b;
+    }
+    *nump = num;
+    
+    return b;
+}
+
+static const uint8_t*
+read_uint64(const uint8_t *b, uint64_t *nump) {
+    const uint8_t	*end = b + 8;
+    uint64_t		num = 0;
+
+    for (; b < end; b++) {
+	num = (num << 8) | (uint64_t)*b;
+    }
+    *nump = num;
+    
+    return b;
+}
+
 
 static uint8_t*
 fill_uint16(uint8_t *b, uint16_t n) {
@@ -140,6 +192,24 @@ fill_str(uint8_t *w, const char *str, size_t len) {
 }
 
 static uint8_t*
+fill_key(uint8_t *w, const char *str, size_t len) {
+    if (len <= 127) {
+	*w++ = WIRE_KEY1;
+	*w++ = (uint8_t)len;
+    } else if (len <= 32767) {
+	*w++ = WIRE_KEY2;
+	w = fill_uint16(w, (uint16_t)len);
+    } else {
+	*w++ = WIRE_KEY4;
+	w = fill_uint32(w, (uint32_t)len);
+    }
+    memcpy(w, str, len);
+    w += len;
+
+    return w;
+}
+
+static uint8_t*
 fill_num(uint8_t *w, const char *str, size_t len) {
     if (len <= 127) {
 	*w++ = WIRE_NUM1;
@@ -160,7 +230,7 @@ fill_num(uint8_t *w, const char *str, size_t len) {
 static uint8_t*
 fill_uuid(uint8_t *w, const char *str) {
     const char	*s = str;
-    const char	*end = str + 36;
+    const char	*end = str + UUID_STR_LEN;
     int		digits = 0;
     uint8_t	b = 0;
 	    
@@ -186,7 +256,7 @@ fill_uuid(uint8_t *w, const char *str) {
 
 static bool
 detect_uuid(const char *str, int len) {
-    if (36 == len) {
+    if (UUID_STR_LEN == len) {
 	const char	*u = uuid_map;
 
 	for (; 0 < len; len--, str++, u++) {
@@ -293,9 +363,9 @@ wire_size(ojcVal val) {
     case OJC_FALSE:
 	break;
     case OJC_STRING:
-	if (36 == val->str_len && detect_uuid(val->str.bstr->ca, 36)) {
+	if (UUID_STR_LEN == val->str_len && detect_uuid(val->str.bstr->ca, UUID_STR_LEN)) {
 	    size += 16;
-	} else if (30 == val->str_len && NO_TIME != time_parse(val->str.bstr->ca, 30)) {
+	} else if (TIME_STR_LEN == val->str_len && NO_TIME != time_parse(val->str.bstr->ca, TIME_STR_LEN)) {
 	    size += 8;
 	} else {
 	    size += (int64_t)val->str_len + size_bytes((int64_t)val->str_len);
@@ -369,9 +439,9 @@ wire_fill(ojcVal val, uint8_t *w) {
 	} else {
 	    str = val->str.ca;
 	}
-	if (36 == val->str_len && detect_uuid(val->str.bstr->ca, 36)) {
+	if (UUID_STR_LEN == val->str_len && detect_uuid(val->str.bstr->ca, UUID_STR_LEN)) {
 	    w = fill_uuid(w, str);
-	} else if (30 == val->str_len && NO_TIME != (t = time_parse(val->str.bstr->ca, 30))) {
+	} else if (TIME_STR_LEN == val->str_len && NO_TIME != (t = time_parse(val->str.bstr->ca, TIME_STR_LEN))) {
 	    *w++ = WIRE_TIME;
 	    w = fill_uint64(w, t);
 	} else {
@@ -429,11 +499,11 @@ wire_fill(ojcVal val, uint8_t *w) {
 	*w++ = WIRE_OBEG;
 	for (ojcVal m = val->members.head; NULL != m; m = m->next) {
 	    if ((int)sizeof(union _Bstr) <= m->key_len) {
-		w = fill_str(w, m->key.str, m->key_len);
+		w = fill_key(w, m->key.str, m->key_len);
 	    } else if ((int)sizeof(m->key.ca) <= m->key_len) {
-		w = fill_str(w, m->key.bstr->ca, m->key_len);
+		w = fill_key(w, m->key.bstr->ca, m->key_len);
 	    } else {
-		w = fill_str(w, m->key.ca, m->key_len);
+		w = fill_key(w, m->key.ca, m->key_len);
 	    }
 	    w = wire_fill(m, w);
 	}
@@ -456,13 +526,13 @@ ojc_wire_size(ojcVal val) {
 }
 
 size_t
-ojc_wire_buf_size(uint8_t *wire) {
+ojc_wire_buf_size(const uint8_t *wire) {
     size_t	size = 0;
 
     for (int i = 4; 0 < i; i--, wire++) {
 	size = (size << 8) + (size_t)*wire;
     }
-    return size;
+    return size + 4;
 }
 
 uint8_t*
@@ -537,10 +607,246 @@ ojc_wire_write_fd(ojcErr err, ojcVal val, int fd) {
     return err->code;
 }
 
+///// parse
+
+static int
+push_parse_value(ojcErr err, ParseCtx pc, ojcVal val) {
+    if (pc->stack <= pc->cur) {
+	ojcVal	parent = *pc->cur;
+	
+	if (OJC_OBJECT == parent->type) {
+	    if (NULL == pc->key) {
+		err->code = OJC_PARSE_ERR;
+		snprintf(err->msg, sizeof(err->msg), "missing key");
+		return err->code;
+	    }
+	    ojc_object_nappend(err, parent, pc->key, pc->klen, val);
+	    pc->key = NULL;
+	    pc->klen = 0;
+	} else { // array
+	    ojc_array_append(err, parent, val);
+	}
+    } else {
+	pc->top = val;
+    }
+    return OJC_OK;
+}
+
+// Did not use the callbacks as that adds 10% to 20% over this more direct
+// approach.
 ojcVal
-ojc_wire_parse_mem(ojcErr err, const uint8_t *wire) {
-    // TBD
-    return 0;
+ojc_wire_parse(ojcErr err, const uint8_t *wire) {
+    const uint8_t	*end = wire + ojc_wire_buf_size(wire);
+    struct _ParseCtx	ctx;
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.top = NULL;
+    ctx.cur = ctx.stack - 1;
+    ctx.end = ctx.stack + WIRE_STACK_SIZE;
+    
+    wire += 4;
+    while (wire < end) {
+	switch (*wire++) {
+	case WIRE_NULL:
+	    push_parse_value(err, &ctx, ojc_create_null());
+	    break;
+	case WIRE_TRUE:
+	    push_parse_value(err, &ctx, ojc_create_bool(true));
+	    break;
+	case WIRE_FALSE:
+	    push_parse_value(err, &ctx, ojc_create_bool(false));
+	    break;
+	case WIRE_INT1:
+	    push_parse_value(err, &ctx, ojc_create_int((int64_t)(int8_t)*wire));
+	    wire++;
+	    break;
+	case WIRE_INT2: {
+	    uint16_t	num;;
+
+	    wire = read_uint16(wire, &num);
+	    push_parse_value(err, &ctx, ojc_create_int((int64_t)(int16_t)num));
+	    break;
+	}
+	case WIRE_INT4: {
+	    uint32_t	num;;
+
+	    wire = read_uint32(wire, &num);
+	    push_parse_value(err, &ctx, ojc_create_int((int64_t)(int32_t)num));
+	    break;
+	}
+	case WIRE_INT8: {
+	    uint64_t	num;
+
+	    wire = read_uint64(wire, &num);
+	    push_parse_value(err, &ctx, ojc_create_int((int64_t)num));
+	    break;
+	}
+	case WIRE_STR1: {
+	    uint8_t	len = *wire++;
+
+	    push_parse_value(err, &ctx, ojc_create_str((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_STR2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    push_parse_value(err, &ctx, ojc_create_str((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_STR4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    push_parse_value(err, &ctx, ojc_create_str((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY1: {
+	    uint8_t	len = *wire++;
+
+	    ctx.key = (const char*)wire;
+	    ctx.klen = len;
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    ctx.key = (const char*)wire;
+	    ctx.klen = len;
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    ctx.key = (const char*)wire;
+	    ctx.klen = len;
+	    wire += len;
+	    break;
+	}
+	case WIRE_DEC: {
+	    uint8_t	len = *wire++;
+	    char	buf[256];
+	    double	d;
+		
+	    memcpy(buf, wire, (size_t)len);
+	    buf[len] = '\0';
+	    d = strtod(buf, NULL);
+	    push_parse_value(err, &ctx, ojc_create_double(d));
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM1: {
+	    uint8_t	len = *wire++;
+
+	    push_parse_value(err, &ctx, ojc_create_number((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    push_parse_value(err, &ctx, ojc_create_str((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    push_parse_value(err, &ctx, ojc_create_str((const char*)wire, (int)len));
+	    wire += len;
+	    break;
+	}
+	case WIRE_UUID: {
+	    uint64_t	hi;
+	    uint64_t	lo;
+	    char	buf[40];
+	    
+	    wire = read_uint64(wire, &hi);
+	    wire = read_uint64(wire, &lo);
+	    sprintf(buf, "%08lx-%04lx-%04lx-%04lx-%012lx",
+		    (unsigned long)(hi >> 32),
+		    (unsigned long)((hi >> 16) & 0x000000000000FFFFUL),
+		    (unsigned long)(hi & 0x000000000000FFFFUL),
+		    (unsigned long)(lo >> 48),
+		    (unsigned long)(lo & 0x0000FFFFFFFFFFFFUL));
+
+	    push_parse_value(err, &ctx, ojc_create_str(buf, UUID_STR_LEN));
+	    break;
+	}
+	case WIRE_TIME: {
+	    uint64_t	nsec;
+	    
+	    wire = read_uint64(wire, &nsec);
+	    char	buf[64];
+	    struct tm	tm;
+	    time_t	t = (time_t)(nsec / 1000000000LL);
+	    long	frac = nsec - (int64_t)t * 1000000000LL;
+
+	    if (NULL == gmtime_r(&t, &tm)) {
+		err->code = OJC_PARSE_ERR;
+		snprintf(err->msg, sizeof(err->msg), "invalid time");
+		break;
+	    }
+	    sprintf(buf, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
+		    1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday,
+		    tm.tm_hour, tm.tm_min, tm.tm_sec, frac);
+	    push_parse_value(err, &ctx, ojc_create_str(buf, TIME_STR_LEN));
+	    break;
+	}
+	case WIRE_OBEG:
+	    if (ctx.end - 1 <= ctx.cur) {
+		err->code = OJC_PARSE_ERR;
+		snprintf(err->msg, sizeof(err->msg), "too deeply nested");
+	    } else {
+		ojcVal	obj = _ojc_val_create(OJC_OBJECT);
+
+		if (OJC_OK == push_parse_value(err, &ctx, obj)) {
+		    ctx.cur++;
+		    *ctx.cur = obj;
+		}
+	    }
+	    break;
+	case WIRE_ABEG:
+	    if (ctx.end - 1 <= ctx.cur) {
+		err->code = OJC_PARSE_ERR;
+		snprintf(err->msg, sizeof(err->msg), "too deeply nested");
+	    } else {
+		ojcVal	array = _ojc_val_create(OJC_ARRAY);
+
+		if (OJC_OK == push_parse_value(err, &ctx, array)) {
+		    ctx.cur++;
+		    *ctx.cur = array;
+		}
+	    }
+	    break;
+	case WIRE_OEND:
+	case WIRE_AEND:
+	    if (ctx.cur < ctx.stack) {
+		err->code = OJC_PARSE_ERR;
+		snprintf(err->msg, sizeof(err->msg), "too many closes");
+	    } else {
+		ctx.cur--;
+	    }
+	    break;
+	default:
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "corrupt wire format");
+	    break;
+	}
+	if (OJC_OK != err->code) {
+	    break;
+	}
+    }
+    return ctx.top;
 }
 
 ojcVal
@@ -562,7 +868,7 @@ ojc_wire_parse_fd(ojcErr err, int fd) {
 	    err->code = OJC_PARSE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
 	}
-	val = ojc_wire_parse_mem(err, buf);
+	val = ojc_wire_parse(err, buf);
 	free(buf);
     } else {
 	uint8_t	buf[MAX_STACK_BUF];
@@ -571,9 +877,284 @@ ojc_wire_parse_fd(ojcErr err, int fd) {
 	    err->code = OJC_PARSE_ERR;
 	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
 	}
-	val = ojc_wire_parse_mem(err, buf);
+	val = ojc_wire_parse(err, buf);
     }
     return val;
+}
+
+int
+ojc_wire_cbparse(ojcErr err, const uint8_t *wire, ojcWireCallbacks callbacks, void *ctx) {
+    const uint8_t	*end = wire + ojc_wire_buf_size(wire);
+    
+    wire += 4;
+    while (wire < end) {
+	switch (*wire++) {
+	case WIRE_NULL:
+	    if (NULL != callbacks->null) {
+		callbacks->null(err, ctx);
+	    }
+	    break;
+	case WIRE_TRUE:
+	    if (NULL != callbacks->boolean) {
+		callbacks->boolean(err, true, ctx);
+	    }
+	    break;
+	case WIRE_FALSE:
+	    if (NULL != callbacks->boolean) {
+		callbacks->boolean(err, false, ctx);
+	    }
+	    break;
+	case WIRE_INT1:
+	    if (NULL != callbacks->fixnum) {
+		callbacks->fixnum(err, (int64_t)(int8_t)*wire, ctx);
+	    }
+	    wire++;
+	    break;
+	case WIRE_INT2:
+	    if (NULL != callbacks->fixnum) {
+		uint16_t	num;;
+
+		wire = read_uint16(wire, &num);
+		callbacks->fixnum(err, (int64_t)(int16_t)num, ctx);
+	    } else {
+		wire += 2;
+	    }
+	    break;
+	case WIRE_INT4:
+	    if (NULL != callbacks->fixnum) {
+		uint32_t	num;;
+
+		wire = read_uint32(wire, &num);
+		callbacks->fixnum(err, (int64_t)(int32_t)num, ctx);
+	    } else {
+		wire += 4;
+	    }
+	    break;
+	case WIRE_INT8:
+	    if (NULL != callbacks->fixnum) {
+		uint64_t	num;
+
+		wire = read_uint64(wire, &num);
+		callbacks->fixnum(err, (int64_t)num, ctx);
+	    } else {
+		wire += 8;
+	    }
+	    break;
+	case WIRE_STR1: {
+	    uint8_t	len = *wire++;
+
+	    if (NULL != callbacks->string) {
+		callbacks->string(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_STR2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    if (NULL != callbacks->string) {
+		callbacks->string(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_STR4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    if (NULL != callbacks->string) {
+		callbacks->string(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY1: {
+	    uint8_t	len = *wire++;
+
+	    if (NULL != callbacks->key) {
+		callbacks->key(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    if (NULL != callbacks->key) {
+		callbacks->key(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_KEY4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    if (NULL != callbacks->key) {
+		callbacks->key(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_DEC: {
+	    uint8_t	len = *wire++;
+
+	    if (NULL != callbacks->decimal) {
+		char	buf[256];
+		double	d;
+		
+		memcpy(buf, wire, (size_t)len);
+		buf[len] = '\0';
+		d = strtod(buf, NULL);
+		callbacks->decimal(err, d, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM1: {
+	    uint8_t	len = *wire++;
+
+	    if (NULL != callbacks->number) {
+		callbacks->number(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM2: {
+	    uint16_t	len;
+	    
+	    wire = read_uint16(wire, &len);
+	    if (NULL != callbacks->number) {
+		callbacks->number(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_NUM4: {
+	    uint32_t	len;
+	    
+	    wire = read_uint32(wire, &len);
+	    if (NULL != callbacks->number) {
+		callbacks->number(err, (const char*)wire, (int)len, ctx);
+	    }
+	    wire += len;
+	    break;
+	}
+	case WIRE_UUID:
+	    if (NULL != callbacks->uuid || NULL != callbacks->uuid_str) {
+		uint64_t	hi;
+		uint64_t	lo;
+	    
+		wire = read_uint64(wire, &hi);
+		wire = read_uint64(wire, &lo);
+		if (NULL != callbacks->uuid) {
+		    callbacks->uuid(err, hi, lo, ctx);
+		} else {
+		    char	buf[40];
+
+		    sprintf(buf, "%08lx-%04lx-%04lx-%04lx-%012lx",
+			    (unsigned long)(hi >> 32),
+			    (unsigned long)((hi >> 16) & 0x000000000000FFFFUL),
+			    (unsigned long)(hi & 0x000000000000FFFFUL),
+			    (unsigned long)(lo >> 48),
+			    (unsigned long)(lo & 0x0000FFFFFFFFFFFFUL));
+		    callbacks->uuid_str(err, buf, ctx);
+		}
+	    } else {
+		wire += 16;
+	    }
+	    break;
+	case WIRE_TIME:
+	    if (NULL != callbacks->time || NULL != callbacks->time_str) {
+		uint64_t	nsec;
+	    
+		wire = read_uint64(wire, &nsec);
+		if (NULL != callbacks->time) {
+		    callbacks->time(err, nsec, ctx);
+		} else {
+		    char	buf[64];
+		    struct tm	tm;
+		    time_t	t = (time_t)(nsec / 1000000000LL);
+		    long	frac = nsec - (int64_t)t * 1000000000LL;
+
+		    if (NULL == gmtime_r(&t, &tm)) {
+			err->code = OJC_PARSE_ERR;
+			snprintf(err->msg, sizeof(err->msg), "invalid time");
+			break;
+		    }
+		    sprintf(buf, "%04d-%02d-%02dT%02d:%02d:%02d.%09ldZ",
+			    1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday,
+			    tm.tm_hour, tm.tm_min, tm.tm_sec, frac);
+		    callbacks->time_str(err, buf, ctx);
+		}
+	    } else {
+		wire += 8;
+	    }
+	    break;
+	case WIRE_OBEG:
+	    if (NULL != callbacks->begin_object) {
+		callbacks->begin_object(err, ctx);
+	    }
+	    break;
+	case WIRE_OEND:
+	    if (NULL != callbacks->end_object) {
+		callbacks->end_object(err, ctx);
+	    }
+	    break;
+	case WIRE_ABEG:
+	    if (NULL != callbacks->begin_array) {
+		callbacks->begin_array(err, ctx);
+	    }
+	    break;
+	case WIRE_AEND:
+	    if (NULL != callbacks->end_array) {
+		callbacks->end_array(err, ctx);
+	    }
+	    break;
+	default:
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "corrupt wire format");
+	    break;
+	}
+	if (OJC_OK != err->code) {
+	    break;
+	}
+    }
+    return err->code;
+}
+
+int
+ojc_wire_cbparse_file(ojcErr err, FILE *file, ojcWireCallbacks callbacks, void *ctx) {
+    return ojc_wire_cbparse_fd(err, fileno(file), callbacks, ctx);
+}
+
+int
+ojc_wire_cbparse_fd(ojcErr err, int fd, ojcWireCallbacks callbacks, void *ctx) {
+    off_t	here = lseek(fd, 0, SEEK_CUR);
+    off_t	size = lseek(fd, 0, SEEK_END) - here;
+    
+    lseek(fd, here, SEEK_SET);
+    if (MAX_STACK_BUF <= size) {
+	uint8_t	*buf = (uint8_t*)malloc(size);
+
+	if (size != read(fd, buf, size)) {
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
+	}
+	ojc_wire_cbparse(err, buf, callbacks, ctx);
+	free(buf);
+    } else {
+	uint8_t	buf[MAX_STACK_BUF];
+
+	if (size != read(fd, buf, size)) {
+	    err->code = OJC_PARSE_ERR;
+	    snprintf(err->msg, sizeof(err->msg), "read failed: %s", strerror(errno));
+	}
+	ojc_wire_cbparse(err, buf, callbacks, ctx);
+    }
+    return err->code;
 }
 
 ///// builder
@@ -615,6 +1196,16 @@ wire_push_str(ojcErr err, ojcWire wire, const char *str, size_t len) {
 	return err->code;
     }
     wire->cur = fill_str(wire->cur, str, len);
+
+    return OJC_OK;
+}
+    
+static int
+wire_push_key(ojcErr err, ojcWire wire, const char *str, size_t len) {
+    if (OJC_OK != wire_assure(err, wire, len + 5)) {
+	return err->code;
+    }
+    wire->cur = fill_key(wire->cur, str, len);
 
     return OJC_OK;
 }
@@ -738,7 +1329,7 @@ ojc_wire_push_key(ojcErr err, ojcWire wire, const char *key, int len) {
     if (0 >= len) {
 	len = strlen(key);
     }
-    if (OJC_OK != wire_push_str(err, wire, key, len)) {
+    if (OJC_OK != wire_push_key(err, wire, key, len)) {
 	return err->code;
     }
     return OJC_OK;

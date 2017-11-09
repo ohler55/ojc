@@ -11,7 +11,6 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "ojc/wire.h"
 #include "ut.h"
 
 static const char	bench_json[] = "{\"a\":\"Alpha\",\"b\":true,\"c\":12345,\"d\":[true,[false,[-123456789,null],3.9676,[\"Something else.\",false],null]],\"e\":{\"zero\":null,\"one\":1,\"two\":2,\"three\":[3],\"four\":[0,1,2,3,4]},\"f\":null,\"h\":{\"a\":{\"b\":{\"c\":{\"d\":{\"e\":{\"f\":{\"g\":null}}}}}}},\"i\":[[[[[[[null]]]]]]]}";
@@ -867,198 +866,6 @@ cmp_test() {
     }
 }
 
-typedef struct _Jlen {
-    const char	*json;
-    int		len;
-} *Jlen;
-
-static void
-wire_size_test() {
-    ojcVal		val;
-    struct _ojcErr	err;
-    struct _Jlen	data[] = {
-	{ "null", 5 },
-	{ "false", 5 },
-	{ "true", 5 },
-	{ "127", 6 },
-	{ "128", 7 },
-	{ "-40000", 9 },
-	{ "\"hello\"", 11 },
-	{ "12.3", 10 },
-	{ "{}", 6 },
-	{ "[]", 6 },
-	{ "[1,2,3]", 12 },
-	{ "{\"abc\":1,\"def\":2}", 20 },
-	{ "{\"abc\":1,\"def\":[1,2]}", 24 },
-	{ "\"123e4567-e89b-12d3-a456-426655440000\"", 21 },
-	{ "\"2017-03-14T15:09:26.123456789Z\"", 13 },
-	{ NULL, 0 }};
-
-    for (Jlen jl = data; NULL != jl->json; jl++) {
-	ojc_err_init(&err);
-	val = ojc_parse_str(&err, jl->json, 0, 0);
-	if (ut_handle_error(&err)) {
-	    continue;
-	}
-	ut_same_int(jl->len, ojc_wire_size(val), "%s", jl->json);
-    }
-}
-
-static ojcVal
-build_sample() {
-    struct _ojcErr	err = OJC_ERR_INIT;
-    ojcVal		val = ojc_parse_str(&err, "{\n\
-  \"nil\":null,\n\
-  \"yes\":true,\n\
-  \"no\":false,\n\
-  \"int\":12345,\n\
-  \"array\":[\n\
-    -23,\n\
-    1.23,\n\
-    \"string\",\n\
-    \"123e4567-e89b-12d3-a456-426655440000\",\n\
-    \"2017-03-14T15:09:26.123456789Z\"\n\
-  ]\n\
-}", 0, 0);
-
-    if (ut_handle_error(&err)) {
-	return NULL;
-    }
-    return val;
-}
-
-static const char	*expect_sample_dump = "\
-00 00 00 4E 7B 73 03 6E  69 6C 5A 73 03 79 65 73   ...N{s.n ilZs.yes\n\
-74 73 02 6E 6F 66 73 03  69 6E 74 6A 30 39 73 05   ts.nofs. intj09s.\n\
-61 72 72 61 79 5B 69 E9  64 04 31 2E 32 33 73 06   array[i. d.1.23s.\n\
-73 74 72 69 6E 67 75 12  3E 45 67 E8 9B 12 D3 A4   stringu. >Eg.....\n\
-56 42 66 55 44 00 00 54  14 AB C8 25 B9 40 C9 15   VBfUD..T ...%.@..\n\
-5D 7D                                              ]}\n";
-
-static void
-wire_fill_test() {
-    ojcVal	val = build_sample();
-
-    if (NULL == val) {
-	return;
-    }
-    uint8_t	wire[1024];
-    size_t	size = ojc_wire_fill(val, wire, 0);
-    char	buf[1024];
-
-    ut_hexDumpBuf(wire, (int)size, buf);
-    ut_same(expect_sample_dump, buf);
-    ojc_destroy(val);
-}
-
-static void
-wire_mem_test() {
-    ojcVal	val = build_sample();
-
-    if (NULL == val) {
-	return;
-    }
-    struct _ojcErr	err = OJC_ERR_INIT;
-    uint8_t		*wire = ojc_wire_write_mem(&err, val);
-    char		buf[1024];
-
-    ut_hexDumpBuf(wire, (int)ojc_wire_size(val), buf);
-    ut_same(expect_sample_dump, buf);
-    ojc_destroy(val);
-    free(wire);
-}
-
-static void
-wire_file_test() {
-    ojcVal	val = build_sample();
-
-    if (NULL == val) {
-	return;
-    }
-    FILE		*f = fopen("tmp.wire", "w");
-    struct _ojcErr	err = OJC_ERR_INIT;
-
-    ojc_wire_write_file(&err, val, f);
-    fclose(f);
-    if (ut_handle_error(&err)) {
-	return;
-    }
-    char	*wire = ut_loadFile("tmp.wire");
-    char	buf[1024];
-
-    ut_hexDumpBuf((uint8_t*)wire, (int)ojc_wire_size(val), buf);
-    ut_same(expect_sample_dump, buf);
-    ojc_destroy(val);
-    free(wire);
-}
-
-static int
-wire_build_sample(ojcWire wire) {
-    struct _ojcErr	err = OJC_ERR_INIT;
-    
-    ojc_wire_push_object(&err, wire);
-
-    ojc_wire_push_key(&err, wire, "nil", -1);
-    ojc_wire_push_null(&err, wire);
-
-    ojc_wire_push_key(&err, wire, "yes", -1);
-    ojc_wire_push_bool(&err, wire, true);
-    
-    ojc_wire_push_key(&err, wire, "no", -1);
-    ojc_wire_push_bool(&err, wire, false);
-
-    ojc_wire_push_key(&err, wire, "int", -1);
-    ojc_wire_push_int(&err, wire, 12345);
-
-    ojc_wire_push_key(&err, wire, "array", -1);
-    ojc_wire_push_array(&err, wire);
-    
-    ojc_wire_push_int(&err, wire, -23);
-    ojc_wire_push_double(&err, wire, 1.23);
-    ojc_wire_push_string(&err, wire, "string", -1);
-    ojc_wire_push_uuid_string(&err, wire, "123e4567-e89b-12d3-a456-426655440000");
-    ojc_wire_push_time(&err, wire, 1489504166123456789LL);
-
-    ojc_wire_finish(&err, wire);
-    if (ut_handle_error(&err)) {
-	return err.code;
-    }
-    return OJC_OK;
-}
-
-static void
-wire_build_buf_test() {
-    struct _ojcWire	wire;
-    struct _ojcErr	err = OJC_ERR_INIT;
-    uint8_t		data[1024];
-    
-    ojc_wire_init(&err, &wire, data, sizeof(data));
-    wire_build_sample(&wire);
-
-    char	buf[1024];
-
-    ut_hexDumpBuf(data, (int)ojc_wire_length(&wire), buf);
-    ut_same(expect_sample_dump, buf);
-    ojc_wire_cleanup(&wire);
-}
-
-static void
-wire_build_alloc_test() {
-    struct _ojcWire	wire;
-    struct _ojcErr	err = OJC_ERR_INIT;
-    
-    ojc_wire_init(&err, &wire, NULL, 0);
-    wire_build_sample(&wire);
-
-    char	buf[1024];
-
-    ut_hexDumpBuf(wire.buf, (int)ojc_wire_length(&wire), buf);
-    ut_same(expect_sample_dump, buf);
-    ojc_wire_cleanup(&wire);
-}
-
-// TBD other wire tests
-
 static void
 bench(int64_t iter, void *ctx) {
     struct _ojcErr	err;
@@ -1171,6 +978,15 @@ each_str257_benchmark_test() {
     ut_benchmark("parse each str257 callback", 100000LL, each_bench, json);
 }
 
+extern void	wire_size_test();
+extern void	wire_fill_test();
+extern void	wire_mem_test();
+extern void	wire_file_test();
+extern void	wire_build_buf_test();
+extern void	wire_build_alloc_test();
+extern void	wire_parse_cb_test();
+extern void	wire_parse_test();
+
 static struct _Test	tests[] = {
     { "array",		array_test },
     { "null",		null_test },
@@ -1212,6 +1028,8 @@ static struct _Test	tests[] = {
     { "wire.file",	wire_file_test },
     { "wire.build.buf",	wire_build_buf_test },
     { "wire.build.alloc",wire_build_alloc_test },
+    { "wire.parse.cb",	wire_parse_cb_test },
+    { "wire.parse",	wire_parse_test },
 
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },

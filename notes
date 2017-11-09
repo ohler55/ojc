@@ -3,13 +3,6 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- plan
- - parse
-  - callback struct for responses
- 
-
-- just copy needed headers to include dir
-
 
 
 - make sure follow works
@@ -20,8 +13,6 @@
   - catchup mode function
    - read until an close - white space - open is hit
     - } {    ][    }[   ] {
-
-
 
 
 - reader_next_non_white(ojcErr err, Reader reader) 
