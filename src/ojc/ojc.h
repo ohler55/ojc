@@ -339,6 +339,7 @@ extern double		ojc_double(ojcErr err, ojcVal val);
  * @return the C string value of the __val__ argument.
  */
 extern const char*	ojc_number(ojcErr err, ojcVal val);
+extern int		ojc_number_len(ojcErr err, ojcVal val);
 
 /**
  * Get the string value of a __ojcVal__ if it is of type __OJC_STRING__. If it
@@ -349,6 +350,8 @@ extern const char*	ojc_number(ojcErr err, ojcVal val);
  * @return the C string value of the __val__ argument.
  */
 extern const char*	ojc_str(ojcErr err, ojcVal val);
+
+extern int		ojc_str_len(ojcErr err, ojcVal val);
 
 /**
  * Get the string value of a __ojcVal__ if it is of type __OJC_WORD__. If it is
@@ -418,6 +421,7 @@ extern bool		ojc_has_key(ojcVal val);
  * @return the key associated with the __val__.
  */
 extern const char*	ojc_key(ojcVal val);
+extern int		ojc_key_len(ojcVal val);
 
 /**
  * Sets the __ojcVal__ key.
