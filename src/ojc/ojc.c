@@ -882,6 +882,14 @@ ojc_number(ojcErr err, ojcVal val) {
     return val->str.ca;
 }
 
+int
+ojc_number_len(ojcErr err, ojcVal val) {
+    if (!is_type_ok(err, val, OJC_NUMBER)) {
+	return 0;
+    }
+    return val->str_len;
+}
+
 const char*
 ojc_str(ojcErr err, ojcVal val) {
     if (!is_type_ok(err, val, OJC_STRING)) {
@@ -894,6 +902,14 @@ ojc_str(ojcErr err, ojcVal val) {
 	return val->str.bstr->ca;
     }
     return val->str.ca;
+}
+
+int
+ojc_str_len(ojcErr err, ojcVal val) {
+    if (!is_type_ok(err, val, OJC_STRING)) {
+	return 0;
+    }
+    return val->str_len;
 }
 
 const char*
@@ -986,6 +1002,14 @@ ojc_key(ojcVal val) {
 	return val->key.bstr->ca;
     }
     return val->key.ca;
+}
+
+int
+ojc_key_len(ojcVal val) {
+    if (KEY_NONE == val->key_len) {
+	return 0;
+    }
+    return val->key_len;
 }
 
 void

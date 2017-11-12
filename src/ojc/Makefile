@@ -10,7 +10,7 @@ SRC_DIR=.
 LIB_DIR=../../lib
 INC_DIR=../../include
 SRCS=$(shell find $(SRC_DIR) -type f -name "*.c" -print)
-HEADERS=ojc.h buf.h types.h wire.h
+HEADERS=ojc.h buf.h types.h
 OBJS=$(SRCS:.c=.o)
 TARGET=$(LIB_DIR)/libojc.a
 
