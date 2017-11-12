@@ -45,7 +45,7 @@ extern "C" {
 /**
  * Current version of OjC.
  */
-#define OJC_VERSION	"3.0.0"
+#define OJC_VERSION	"3.1.0"
 
 #define OJC_ERR_INIT	{ 0, { 0 } }
 

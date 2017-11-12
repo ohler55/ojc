@@ -978,15 +978,6 @@ each_str257_benchmark_test() {
     ut_benchmark("parse each str257 callback", 100000LL, each_bench, json);
 }
 
-extern void	wire_size_test();
-extern void	wire_fill_test();
-extern void	wire_mem_test();
-extern void	wire_file_test();
-extern void	wire_build_buf_test();
-extern void	wire_build_alloc_test();
-extern void	wire_parse_cb_test();
-extern void	wire_parse_test();
-
 static struct _Test	tests[] = {
     { "array",		array_test },
     { "null",		null_test },
@@ -1021,15 +1012,6 @@ static struct _Test	tests[] = {
     { "array_insert",	array_insert_test },
     { "equals",		equals_test },
     { "cmp",		cmp_test },
-
-    { "wire.size",	wire_size_test },
-    { "wire.fill",	wire_fill_test },
-    { "wire.mem",	wire_mem_test },
-    { "wire.file",	wire_file_test },
-    { "wire.build.buf",	wire_build_buf_test },
-    { "wire.build.alloc",wire_build_alloc_test },
-    { "wire.parse.cb",	wire_parse_cb_test },
-    { "wire.parse",	wire_parse_test },
 
     { "benchmark",	benchmark_test },
     { "each_benchmark",	each_benchmark_test },

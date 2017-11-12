@@ -22,8 +22,8 @@ clean:
 	$(RM) $(OBJS)
 	$(RM) $(TARGET)
 
-$(TARGET): tests.o wire_tests.o ut.o
-	$(CC) -o $@ tests.o wire_tests.o ut.o -L$(LIB_DIR) $(LIBS)
+$(TARGET): tests.o ut.o
+	$(CC) -o $@ tests.o ut.o -L$(LIB_DIR) $(LIBS)
 
 $(BENCH): benchmark.o
 	$(CC) -o $@ benchmark.o -L$(LIB_DIR)  $(LIBS)

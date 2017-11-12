@@ -1,6 +1,6 @@
 # CHANGELOG
 
-### Release 3.1.0 - future
+### Release 3.1.0 - November 11, 2017
 
 	- Removed wire format which is now in the `ohler55/opo-c` github repository.
 	- Added functions to support the external wire format.
