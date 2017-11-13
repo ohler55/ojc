@@ -1,0 +1,1188 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>OjC Client API</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" type="text/css" media="screen,print" href="ojc-api.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body onload="displayDesc(event,'Introduction')">
+    <div class="header">
+      <a href="https://github.com/ohler55/ojc" class="normal"><img src="ojc.svg" width="160"></a><span class="api">v3.1.0 API Documentation</span>
+    </div>
+    <div class="page">
+      <div class="index">
+        <button class="item level1" onclick="displayDesc(event,'Introduction')">Introduction</button>
+        <button class="item level1" onclick="displayDesc(event,'Guides')">Guides</button>
+
+        <span class="cat">Types</span>
+        <button class="item level2" onclick="displayDesc(event,'ojcErr')">ojcErr</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcErrCode')">ojcErrCode</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcParseCallback')">ojcParseCallback</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcReadFunc')">ojcReadFunc</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcVal')">ojcVal</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcValType')">ojcValType</button>
+
+        <span class="cat">Globals</span>
+	<button class="item level2" onclick="displayDesc(event,'ojc_case_insensitive')">ojc_case_insensitive</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_decimal_as_number')">ojc_decimal_as_number</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_newline_ok')">ojc_newline_ok</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_word_ok')">ojc_word_ok</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_write_end_with_newline')">ojc_write_end_with_newline</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_write_opaque')">ojc_write_opaque</button>
+
+        <span class="cat">Functions</span>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aappend')">ojc_aappend()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aget')">ojc_aget()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_append')">ojc_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aremove')">ojc_aremove()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_areplace')">ojc_areplace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_append')">ojc_array_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_insert')">ojc_array_insert()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_pop')">ojc_array_pop()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_push')">ojc_array_push()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_replace')">ojc_array_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aset')">ojc_aset()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_bool')">ojc_bool()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_buf')">ojc_buf()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_cleanup')">ojc_cleanup()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_cmp')">ojc_cmp()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_array')">ojc_create_array()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_bool')">ojc_create_bool()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_double')">ojc_create_double()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_int')">ojc_create_int()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_null')">ojc_create_null()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_number')">ojc_create_number()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_object')">ojc_create_object()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_opaque')">ojc_create_opaque()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_str')">ojc_create_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_word')">ojc_create_word()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_destroy')">ojc_destroy()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_double')">ojc_double()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_duplicate')">ojc_duplicate()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_equals')">ojc_equals()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_error_str')">ojc_error_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_fill')">ojc_fill()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_fwrite')">ojc_fwrite()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_get')">ojc_get()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_get_member')">ojc_get_member()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_has_key')">ojc_has_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_int')">ojc_int()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_key')">ojc_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_key_len')">ojc_key_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_member_count')">ojc_member_count()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_members')">ojc_members()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_merge')">ojc_merge()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_next')">ojc_next()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_number')">ojc_number()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_number_len')">ojc_number_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_append')">ojc_object_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_get_by_key')">ojc_object_get_by_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_insert')">ojc_object_insert()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_nappend')">ojc_object_nappend()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_remove_by_key')">ojc_object_remove_by_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_replace')">ojc_object_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_take')">ojc_object_take()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_opaque')">ojc_opaque()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_fd')">ojc_parse_fd()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_file')">ojc_parse_file()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_file_follow')">ojc_parse_file_follow()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_reader')">ojc_parse_reader()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_str')">ojc_parse_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_strp')">ojc_parse_strp()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_remove')">ojc_remove()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_remove_by_pos')">ojc_remove_by_pos()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_replace')">ojc_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_set')">ojc_set()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_set_key')">ojc_set_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_str')">ojc_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_str_len')">ojc_str_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_to_str')">ojc_to_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_type')">ojc_type()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_type_str')">ojc_type_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_version')">ojc_version()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_word')">ojc_word()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_write')">ojc_write()</button>
+      </div>
+
+      <div class="desc-pane">
+        <div id="Introduction" class="desc">
+          <div class="title">Introduction</div>
+
+        </div>
+
+        <div id="Guides" class="desc">
+          <div class="title">Guides</div>
+
+        </div>
+
+        <div id="ojcErr" class="desc">
+          <div class="title">ojcErr</div>
+          <div class="synopsis">typedef struct _ojcErr {
+    int		code;
+    char	msg[256];
+} *ojcErr;
+</div>
+          <p class="desc-text">
+            The struct used to report errors or status after a function
+            returns. The struct must be initialized before use as most calls
+            that take an err argument will return immediately if an error has
+            already occurred.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">code</span></td><td>Error code identifying the type of error.</td></tr>
+            <tr><td><span class="param">msg</span></td><td>Error message associated with a failure if the code is not <span class="code">OJC_OK</span>.</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcErrCode</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcErrCode" class="desc">
+          <div class="title">ojcErrCode</div>
+          <div class="synopsis">typedef enum {
+    OJC_OK		= 0,
+    OJC_TYPE_ERR	= 't',
+    OJC_PARSE_ERR	= 'p',
+    OJC_INCOMPLETE_ERR	= 'i',
+    OJC_OVERFLOW_ERR	= 'o',
+    OJC_WRITE_ERR	= 'w',
+    OJC_MEMORY_ERR	= 'm',
+    OJC_UNICODE_ERR	= 'u',
+    OJC_ABORT_ERR	= '@',
+    OJC_ARG_ERR		= 'a',
+} ojcErrCode;
+</div>
+          <p class="desc-text">
+            Error codes for the <span class="code">code</span> field in <span class="code">ojcErr</span> structs.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">OJC_OK</span></td><td>okay, no error</td></tr>
+            <tr><td><span class="param">OJC_TYPE_ERR</span></td><td>type error</td></tr>
+            <tr><td><span class="param">OJC_PARSE_ERR</span></td><td>parse error</td></tr>
+            <tr><td><span class="param">OJC_INCOMPLETE_ERR</span></td><td>incomplete parse error</td></tr>
+            <tr><td><span class="param">OJC_OVERFLOW_ERR</span></td><td>buffer overflow error</td></tr>
+            <tr><td><span class="param">OJC_WRITE_ERR</span></td><td>write error</td></tr>
+            <tr><td><span class="param">OJC_MEMORY_ERR</span></td><td>memory error</td></tr>
+            <tr><td><span class="param">OJC_UNICODE_ERR</span></td><td>unicode error</td></tr>
+            <tr><td><span class="param">OJC_ABORT_ERR</span></td><td>abort callback parsing</td></tr>
+            <tr><td><span class="param">OJC_ARG_ERR</span></td><td>argument error</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcErr</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcParseCallback" class="desc">
+          <div class="title">ojcParseCallback</div>
+          <div class="synopsis">typedef bool (*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);</div>
+          <p class="desc-text">
+            When using the parser callbacks, the callback must be of this
+            type. The arguments will be the context provided when calling the
+            parser and the value extracted from the JSON stream.
+          </p>
+          <p class="desc-text">
+            A return value of <span class="code">true</span> indicates the
+            parser should free the values after the callback returns. If the
+            return value is false then the callback is responsible for freeing
+            the value when no longer needed.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>error to be filled in if an error occurs</td></tr>
+            <tr><td><span class="param">val</span></td><td>messages parsed</td></tr>
+            <tr><td><span class="param">ctx</span></td><td>context provided in the call to parse</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojc_parse_str, ojc_parse_file, ojc_parse_fd</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcReadFunc" class="desc">
+          <div class="title">ojcReadFunc</div>
+          <div class="synopsis">typedef ssize_t (*ojcReadFunc)(void *src, char *buf, size_t size);</div>
+          <p class="desc-text">
+            Function type to use when providing a custom reader to the
+            parser. Useful for hooking up zlib or similar libraries.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">src</span></td><td>source</td></tr>
+            <tr><td><span class="param">buf</span></td><td>buffer to fill</td></tr>
+            <tr><td><span class="param">size</span></td><td>maximum size to place in the buffer</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojc_parse_reader</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcVal" class="desc">
+          <div class="title">ojcVal</div>
+          <div class="synopsis">typedef struct _ojcVal *ojcVal;</div>
+          <p class="desc-text">
+            The type representing a value in a JSON file. Values will be one of the
+            <span class="code">ojcValType</span> enum.
+          </p>
+          <table class="params">
+            <tr><td class="returns">See:</td><td><span class="code">ojcValType</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcValType" class="desc">
+          <div class="title">ojcValType</div>
+          <div class="synopsis">typedef enum {
+    OJC_NULL	= 0,
+    OJC_STRING	= 's',
+    OJC_NUMBER	= 'N',
+    OJC_FIXNUM	= 'n',
+    OJC_DECIMAL	= 'd',
+    OJC_TRUE	= 't',
+    OJC_FALSE	= 'f',
+    OJC_ARRAY	= 'a',
+    OJC_OBJECT	= 'o',
+    OJC_WORD	= 'w',
+    OJC_OPAQUE	= 'i',
+    OJC_FREE	= '#',
+} ojcValType;
+</div>
+          <p class="desc-text">
+            The value types found in JSON documents and in
+            the <span class="code">ojcVal</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">src</span></td><td>source</td></tr>
+            <tr><td><span class="param">OJC_NULL</span></td><td>null</td></tr>
+            <tr><td><span class="param">OJC_STRING</span></td><td>string</td></tr>
+            <tr><td><span class="param">OJC_NUMBER</span></td><td>number as a string</td></tr>
+            <tr><td><span class="param">OJC_FIXNUM</span></td><td>integer</td></tr>
+            <tr><td><span class="param">OJC_DECIMAL</span></td><td>decimal number</td></tr>
+            <tr><td><span class="param">OJC_TRUE</span></td><td>true</td></tr>
+            <tr><td><span class="param">OJC_FALSE</span></td><td>false</td></tr>
+            <tr><td><span class="param">OJC_ARRAY</span></td><td>array</td></tr>
+            <tr><td><span class="param">OJC_OBJECT</span></td><td>object</td></tr>
+            <tr><td><span class="param">OJC_WORD</span></td><td>word with a maximum of 15 characters</td></tr>
+            <tr><td><span class="param">OJC_OPAQUE</span></td><td>opaque which is ignored on write</td></tr>
+            <tr><td><span class="param">OJC_FREE</span></td><td>freed</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcVal</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_case_insensitive" class="desc">
+          <div class="title">ojc_case_insensitive</div>
+          <div class="synopsis">extern bool ojc_case_insensitive;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, searches are case
+            insensitive. Searches includes get and replace operations.
+          </p>
+        </div>
+
+        <div id="ojc_decimal_as_number" class="desc">
+          <div class="title">ojc_decimal_as_number</div>
+          <div class="synopsis">extern bool ojc_decimal_as_number;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, decimal numbers will be read as OJC_NUMBER instead of as a
+            OJC_DECIMAL.
+          </p>
+        </div>
+
+        <div id="ojc_newline_ok" class="desc">
+          <div class="title">ojc_newline_ok</div>
+          <div class="synopsis">extern bool ojc_newline_ok;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, new lines will not be escaped in the output. This is not a
+            JSON feature.
+          </p>
+        </div>
+
+        <div id="ojc_word_ok" class="desc">
+          <div class="title">ojc_word_ok</div>
+          <div class="synopsis">extern bool ojc_word_ok;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, non-quoted word will be returned as OJC_WORD types. This
+            is not a JSON feature.
+          </p>
+        </div>
+
+        <div id="ojc_write_end_with_newline" class="desc">
+          <div class="title">ojc_write_end_with_newline</div>
+          <div class="synopsis">extern bool ojc_write_end_with_newline;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, a write is terminated with a new line.
+          </p>
+        </div>
+
+        <div id="ojc_write_opaque" class="desc">
+          <div class="title">ojc_write_opaque</div>
+          <div class="synopsis">extern bool ojc_write_opaque;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, opaque values will be printed as a number. Note that
+            reading in this value will from a JSON string will result in a
+            OJC_FIXNUM type. This flag is intended for debugging and should be
+            set back to false after printing.
+          </p>
+        </div>
+
+        <div id="ojc_aappend" class="desc">
+          <div class="title">ojc_aappend()</div>
+          <div class="synopsis">extern void ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val);</div>
+          <p class="desc-text">
+            Appends an <span class="code">ojcVal</span> at the provided path where the path is a NULL
+            terminated array of strings that are keys or indices that form a path to a
+            target value. If any node does not exist on the path an Object is created for
+            that element of the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td></tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td></tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value relative to the anchor</td></tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_aget" class="desc">
+          <div class="title">ojc_aget()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_append" class="desc">
+          <div class="title">ojc_append()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_aremove" class="desc">
+          <div class="title">ojc_aremove()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_areplace" class="desc">
+          <div class="title">ojc_areplace()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_array_append" class="desc">
+          <div class="title">ojc_array_append()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_array_insert" class="desc">
+          <div class="title">ojc_array_insert()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_array_pop" class="desc">
+          <div class="title">ojc_array_pop()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_array_push" class="desc">
+          <div class="title">ojc_array_push()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_array_replace" class="desc">
+          <div class="title">ojc_array_replace()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_aset" class="desc">
+          <div class="title">ojc_aset()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_bool" class="desc">
+          <div class="title">ojc_bool()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_buf" class="desc">
+          <div class="title">ojc_buf()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_cleanup" class="desc">
+          <div class="title">ojc_cleanup()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_cmp" class="desc">
+          <div class="title">ojc_cmp()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_array" class="desc">
+          <div class="title">ojc_create_array()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_bool" class="desc">
+          <div class="title">ojc_create_bool()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_double" class="desc">
+          <div class="title">ojc_create_double()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_int" class="desc">
+          <div class="title">ojc_create_int()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_null" class="desc">
+          <div class="title">ojc_create_null()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_number" class="desc">
+          <div class="title">ojc_create_number()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_object" class="desc">
+          <div class="title">ojc_create_object()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_opaque" class="desc">
+          <div class="title">ojc_create_opaque()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_str" class="desc">
+          <div class="title">ojc_create_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_create_word" class="desc">
+          <div class="title">ojc_create_word()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_destroy" class="desc">
+          <div class="title">ojc_destroy()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_double" class="desc">
+          <div class="title">ojc_double()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_duplicate" class="desc">
+          <div class="title">ojc_duplicate()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_equals" class="desc">
+          <div class="title">ojc_equals()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_error_str" class="desc">
+          <div class="title">ojc_error_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_fill" class="desc">
+          <div class="title">ojc_fill()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_fwrite" class="desc">
+          <div class="title">ojc_fwrite()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_get" class="desc">
+          <div class="title">ojc_get()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_get_member" class="desc">
+          <div class="title">ojc_get_member()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_has_key" class="desc">
+          <div class="title">ojc_has_key()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_int" class="desc">
+          <div class="title">ojc_int()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_key" class="desc">
+          <div class="title">ojc_key()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_key_len" class="desc">
+          <div class="title">ojc_key_len()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_member_count" class="desc">
+          <div class="title">ojc_member_count()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_members()" class="desc">
+          <div class="title">ojc_members()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_merge()" class="desc">
+          <div class="title">ojc_merge()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_next" class="desc">
+          <div class="title">ojc_next()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_number" class="desc">
+          <div class="title">ojc_number()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_number_len" class="desc">
+          <div class="title">ojc_number_len()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_append" class="desc">
+          <div class="title">ojc_object_append()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_get_by_key" class="desc">
+          <div class="title">ojc_object_get_by_key()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_insert" class="desc">
+          <div class="title">ojc_object_insert()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_nappend" class="desc">
+          <div class="title">ojc_object_nappend()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_remove_by_key" class="desc">
+          <div class="title">ojc_object_remove_by_key()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_replace" class="desc">
+          <div class="title">ojc_object_replace()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_object_take" class="desc">
+          <div class="title">ojc_object_take()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_opaque" class="desc">
+          <div class="title">ojc_opaque()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_fd" class="desc">
+          <div class="title">ojc_parse_fd()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_file" class="desc">
+          <div class="title">ojc_parse_file()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_file_follow" class="desc">
+          <div class="title">ojc_parse_file_follow()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_reader" class="desc">
+          <div class="title">ojc_parse_reader()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_str" class="desc">
+          <div class="title">ojc_parse_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_parse_strp" class="desc">
+          <div class="title">ojc_parse_strp()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_remove" class="desc">
+          <div class="title">ojc_remove()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_remove_by_pos" class="desc">
+          <div class="title">ojc_remove_by_pos()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_replace" class="desc">
+          <div class="title">ojc_replace()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_set" class="desc">
+          <div class="title">ojc_set()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_set_key" class="desc">
+          <div class="title">ojc_set_key()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_str" class="desc">
+          <div class="title">ojc_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_str_len" class="desc">
+          <div class="title">ojc_str_len()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_to_str" class="desc">
+          <div class="title">ojc_to_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_type" class="desc">
+          <div class="title">ojc_type()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_type_str" class="desc">
+          <div class="title">ojc_type_str()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_version" class="desc">
+          <div class="title">ojc_version()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_word" class="desc">
+          <div class="title">ojc_word()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+        <div id="ojc_write" class="desc">
+          <div class="title">ojc_write()</div>
+          <div class="synopsis"></div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td><span class="code"></span></td></tr>
+          </table>
+
+        </div>
+
+      </div>
+    </div>
+    <script>
+function displayDesc(e,d){
+    var all = document.getElementsByClassName('desc');
+    for (var i = all.length - 1; 0 <= i; i--) {
+        all[i].style.display = 'none';
+    }
+    all = document.getElementsByClassName('item');
+    for (var i = all.length - 1; 0 <= i; i--) {
+        all[i].className = all[i].className.replace(' selected', '');
+    }
+    document.getElementById(d).style.display = 'block';  
+    e.currentTarget.className += ' selected';
+}
+    </script>
+  </body>
+</html>
