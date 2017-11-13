@@ -1,0 +1,139 @@
+.style {
+    padding: 0px;
+}
+body {
+    -webkit-text-size-adjust: none;
+    background: #white;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+    font-family: 'HelveticaNeue', 'Helvetica Neue', 'Arial', sans-serif;
+    text-align: left;
+}
+.bold {
+    font-weight: bold;
+}
+a.normal {
+    text-decoration: none;
+}
+a.selected {
+    text-decoration: none;
+}
+.header {
+    color: white;
+    width: 100%;
+    background-color: black;
+    font-family: 'HelveticaNeue-Bold', 'Helvetica Neue', 'Arial', sans-serif;
+    font-size: 30px;
+    font-style: italic;
+}
+.api {
+    position: relative;
+    bottom: 48px;
+}
+.page {
+    display: flex;
+    flex-direction: row;
+}
+.index {
+    width: 300px;
+    border: solid 1px #aaa;
+    padding: 8px 0px;
+    color: white;
+    background-color: #ddd;
+    font-family: 'HelveticaNeue-Bold', 'Helvetica Neue', 'Arial', sans-serif;
+    font-size: 14px;
+}
+.item {
+    width: 100%;
+    display: block;
+    padding: 2px;
+    margin: 0px;
+    color: black;
+    text-align: left;
+    background-color: #ddd;
+    text-decoration: none;
+    border: 0px;
+    font-family: 'HelveticaNeue-Bold', 'Helvetica Neue', 'Arial', sans-serif;
+    font-size: 14px;
+}
+.item:hover {
+    background-color: #aaa;
+    color: #008;
+}
+.level1 {
+    padding: 2px 2px 2px 16px;
+}
+.level2 {
+    padding: 2px 2px 2px 32px;
+}
+.level3 {
+    padding: 2px 2px 2px 48px;
+}
+.selected {
+    background-color: #468;
+    color: white;
+}
+.selected:hover {
+    background-color: #666;
+    color: white;
+}
+.cat {
+    color: #06c;
+    display: block;
+    font-style: italic;
+    padding: 2px 2px 2px 16px;
+}
+.desc-pane {
+    width: 100%;
+    color: black;
+    font-family: 'HelveticaNeue-Bold', 'Helvetica Neue', 'Arial', sans-serif;
+    font-size: 16px;
+}
+.desc {
+    display: block;
+    padding: 16px;
+    color: black;
+}
+.title {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+}
+.synopsis {
+    display: block;
+    font-family: monospace;
+    font-size: 18px;
+    white-space: pre;
+    margin: 16px 0px 8px 8px;
+    padding: 8px;
+    background: #eee;
+    border: 1px solid #c0d0e0;
+}
+.desc-text {
+    margin: 16px 0px 8px 8px;
+    padding: 8px;
+}
+table.params {
+    margin: 0px 0px 0px 16px;
+}
+.params td {
+    padding: 4px;
+    position: left;
+}
+.param {
+    font-family: monospace;
+    font-size: 16px;
+    padding: 4px;
+    white-space: pre;
+    background: #eee;
+    border: 1px solid #c0d0e0;
+}
+.returns {
+    font-weight: bold;
+    height: 60px;
+}
+.code {
+    font-family: monospace;
+    font-size: 16px;
+}

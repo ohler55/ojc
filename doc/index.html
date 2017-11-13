@@ -1,0 +1,1426 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>OjC Client API</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" type="text/css" media="screen,print" href="ojc-api.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body onload="displayDesc(event,'Introduction')">
+    <div class="header">
+      <a href="https://github.com/ohler55/ojc" class="normal"><img src="ojc.svg" width="160"></a><span class="api">v3.1.0 API Documentation</span>
+    </div>
+    <div class="page">
+      <div class="index">
+        <button class="item level1" onclick="displayDesc(event,'Introduction')">Introduction</button>
+        <button class="item level1" onclick="displayDesc(event,'Guides')">Guides</button>
+
+        <span class="cat">Types</span>
+        <button class="item level2" onclick="displayDesc(event,'ojcErr')">ojcErr</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcErrCode')">ojcErrCode</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcParseCallback')">ojcParseCallback</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcReadFunc')">ojcReadFunc</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcVal')">ojcVal</button>
+        <button class="item level2" onclick="displayDesc(event,'ojcValType')">ojcValType</button>
+
+        <span class="cat">Globals</span>
+	<button class="item level2" onclick="displayDesc(event,'ojc_case_insensitive')">ojc_case_insensitive</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_decimal_as_number')">ojc_decimal_as_number</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_newline_ok')">ojc_newline_ok</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_word_ok')">ojc_word_ok</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_write_end_with_newline')">ojc_write_end_with_newline</button>
+	<button class="item level2" onclick="displayDesc(event,'ojc_write_opaque')">ojc_write_opaque</button>
+
+        <span class="cat">Functions</span>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aappend')">ojc_aappend()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aget')">ojc_aget()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_append')">ojc_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aremove')">ojc_aremove()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_areplace')">ojc_areplace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_append')">ojc_array_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_insert')">ojc_array_insert()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_pop')">ojc_array_pop()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_push')">ojc_array_push()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_array_replace')">ojc_array_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_aset')">ojc_aset()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_bool')">ojc_bool()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_buf')">ojc_buf()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_cleanup')">ojc_cleanup()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_cmp')">ojc_cmp()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_array')">ojc_create_array()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_bool')">ojc_create_bool()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_double')">ojc_create_double()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_int')">ojc_create_int()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_null')">ojc_create_null()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_number')">ojc_create_number()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_object')">ojc_create_object()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_opaque')">ojc_create_opaque()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_str')">ojc_create_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_create_word')">ojc_create_word()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_destroy')">ojc_destroy()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_double')">ojc_double()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_duplicate')">ojc_duplicate()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_equals')">ojc_equals()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_error_str')">ojc_error_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_fill')">ojc_fill()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_fwrite')">ojc_fwrite()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_get')">ojc_get()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_get_member')">ojc_get_member()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_has_key')">ojc_has_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_int')">ojc_int()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_key')">ojc_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_key_len')">ojc_key_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_member_count')">ojc_member_count()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_members')">ojc_members()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_merge')">ojc_merge()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_next')">ojc_next()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_number')">ojc_number()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_number_len')">ojc_number_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_append')">ojc_object_append()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_get_by_key')">ojc_object_get_by_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_insert')">ojc_object_insert()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_nappend')">ojc_object_nappend()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_remove_by_key')">ojc_object_remove_by_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_replace')">ojc_object_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_object_take')">ojc_object_take()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_opaque')">ojc_opaque()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_fd')">ojc_parse_fd()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_file')">ojc_parse_file()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_file_follow')">ojc_parse_file_follow()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_reader')">ojc_parse_reader()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_str')">ojc_parse_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_parse_strp')">ojc_parse_strp()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_remove')">ojc_remove()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_remove_by_pos')">ojc_remove_by_pos()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_replace')">ojc_replace()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_set')">ojc_set()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_set_key')">ojc_set_key()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_str')">ojc_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_str_len')">ojc_str_len()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_to_str')">ojc_to_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_type')">ojc_type()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_type_str')">ojc_type_str()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_version')">ojc_version()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_word')">ojc_word()</button>
+        <button class="item level2" onclick="displayDesc(event,'ojc_write')">ojc_write()</button>
+      </div>
+
+      <div class="desc-pane">
+        <div id="Introduction" class="desc">
+          <div class="title">Introduction</div>
+          <p class="desc-text">
+            Optimized JSON in C (OjC), as the name implies, was written to provide speed
+            optimized JSON handling. It is derived from the underlying C parser in
+            [Oj](http://www.ohler.com/oj). The intended use is for applications that need
+            the maximum performance when reading large JSON document from a file or socket.
+          </p>
+          <p class="desc-text">
+            Besides being a true streaming parser OjC produces a structure that handles all
+            JSON constructs. It does not use a Hash or Map to represent the JSON object type
+            but keeps all occurances of a pairs in the object element. Duplicates are
+            allowed just as they are in JSON documents.
+          </p>
+          <p class="desc-text">
+            Multiple JSON elements are allowed in a single stream or from a socket. A
+            callback mechanism is provided to return full JSON elements for each entry in a
+            JSON stream.
+          </p>
+        </div>
+
+        <div id="Guides" class="desc">
+          <div class="title">Guides</div>
+          <h3>Simple JSON Parsing Example</h3>
+          <div class="synopsis">typedef enum {include "ojc/ojc.h"
+
+void
+sample() {
+    char                buf[256];
+    ojcVal              val;
+    struct _ojcErr      err;
+    const char          *json = "[null,true,\"word\",{\"a\":1234}";
+
+    ojc_err_init(&err);
+    // no callback
+    val = ojc_parse_str(&err, json, 0, 0);
+    ojc_fill(&err, val, 0, buf, sizeof(buf));
+    if (OJC_OK != err) {
+        printf("error: %s\n", err.msg);
+        return;
+    }
+    printf("parsed json '%s'\n", buf);
+    ojc_destroy(val);
+}
+</div>
+
+          <h3>Callback JSON Parsing Example</h3>
+          <div class="synopsis">typedef enum {include "ojc/ojc.h"
+
+static bool
+each__callback(ojcVal val, void *ctx) {
+    char                buf[64];
+    struct _ojcErr      err;
+    
+    ojc_err_init(&err);
+    ojc_fill(&err, val, 0, buf, sizeof(buf));
+    if (OJC_OK != err) {
+        printf("error: %s\n", err.msg);
+    } else {
+        printf("parsed json '%s'\n", buf);
+    }
+    return true;
+}
+
+void
+sample() {
+    struct _ojcErr      err;
+    const char          *json = "{\"a\":111} {\"b\":222} {\"c\":333}";
+
+    ojc_err_init(&err);
+    ojc_parse_str(&err, json, each_callback, 0);
+    if (OJC_OK != err) {
+        printf("error: %s\n", err.msg);
+    }
+}
+</div>
+        </div>
+
+        <div id="ojcErr" class="desc">
+          <div class="title">ojcErr</div>
+          <div class="synopsis">typedef struct _ojcErr {
+    int		code;
+    char	msg[256];
+} *ojcErr;
+</div>
+          <p class="desc-text">
+            The struct used to report errors or status after a function
+            returns. The struct must be initialized before use as most calls
+            that take an err argument will return immediately if an error has
+            already occurred.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">code</span></td><td>Error code identifying the type of error.</td></tr>
+            <tr><td><span class="param">msg</span></td><td>Error message associated with a failure if the code is not <span class="code">OJC_OK</span>.</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcErrCode</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcErrCode" class="desc">
+          <div class="title">ojcErrCode</div>
+          <div class="synopsis">typedef enum {
+    OJC_OK		= 0,
+    OJC_TYPE_ERR	= 't',
+    OJC_PARSE_ERR	= 'p',
+    OJC_INCOMPLETE_ERR	= 'i',
+    OJC_OVERFLOW_ERR	= 'o',
+    OJC_WRITE_ERR	= 'w',
+    OJC_MEMORY_ERR	= 'm',
+    OJC_UNICODE_ERR	= 'u',
+    OJC_ABORT_ERR	= '@',
+    OJC_ARG_ERR		= 'a',
+} ojcErrCode;
+</div>
+          <p class="desc-text">
+            Error codes for the <span class="code">code</span> field in <span class="code">ojcErr</span> structs.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">OJC_OK</span></td><td>okay, no error</td></tr>
+            <tr><td><span class="param">OJC_TYPE_ERR</span></td><td>type error</td></tr>
+            <tr><td><span class="param">OJC_PARSE_ERR</span></td><td>parse error</td></tr>
+            <tr><td><span class="param">OJC_INCOMPLETE_ERR</span></td><td>incomplete parse error</td></tr>
+            <tr><td><span class="param">OJC_OVERFLOW_ERR</span></td><td>buffer overflow error</td></tr>
+            <tr><td><span class="param">OJC_WRITE_ERR</span></td><td>write error</td></tr>
+            <tr><td><span class="param">OJC_MEMORY_ERR</span></td><td>memory error</td></tr>
+            <tr><td><span class="param">OJC_UNICODE_ERR</span></td><td>unicode error</td></tr>
+            <tr><td><span class="param">OJC_ABORT_ERR</span></td><td>abort callback parsing</td></tr>
+            <tr><td><span class="param">OJC_ARG_ERR</span></td><td>argument error</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcErr</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcParseCallback" class="desc">
+          <div class="title">ojcParseCallback</div>
+          <div class="synopsis">typedef bool (*ojcParseCallback)(ojcErr err, ojcVal val, void *ctx);</div>
+          <p class="desc-text">
+            When using the parser callbacks, the callback must be of this
+            type. The arguments will be the context provided when calling the
+            parser and the value extracted from the JSON stream.
+          </p>
+          <p class="desc-text">
+            A return value of <span class="code">true</span> indicates the
+            parser should free the values after the callback returns. If the
+            return value is false then the callback is responsible for freeing
+            the value when no longer needed.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>error to be filled in if an error occurs</td></tr>
+            <tr><td><span class="param">val</span></td><td>messages parsed</td></tr>
+            <tr><td><span class="param">ctx</span></td><td>context provided in the call to parse</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojc_parse_str, ojc_parse_file, ojc_parse_fd</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcReadFunc" class="desc">
+          <div class="title">ojcReadFunc</div>
+          <div class="synopsis">typedef ssize_t (*ojcReadFunc)(void *src, char *buf, size_t size);</div>
+          <p class="desc-text">
+            Function type to use when providing a custom reader to the
+            parser. Useful for hooking up zlib or similar libraries.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">src</span></td><td>source</td></tr>
+            <tr><td><span class="param">buf</span></td><td>buffer to fill</td></tr>
+            <tr><td><span class="param">size</span></td><td>maximum size to place in the buffer</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojc_parse_reader</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcVal" class="desc">
+          <div class="title">ojcVal</div>
+          <div class="synopsis">typedef struct _ojcVal *ojcVal;</div>
+          <p class="desc-text">
+            The type representing a value in a JSON file. Values will be one of the
+            <span class="code">ojcValType</span> enum.
+          </p>
+          <table class="params">
+            <tr><td class="returns">See:</td><td><span class="code">ojcValType</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojcValType" class="desc">
+          <div class="title">ojcValType</div>
+          <div class="synopsis">typedef enum {
+    OJC_NULL	= 0,
+    OJC_STRING	= 's',
+    OJC_NUMBER	= 'N',
+    OJC_FIXNUM	= 'n',
+    OJC_DECIMAL	= 'd',
+    OJC_TRUE	= 't',
+    OJC_FALSE	= 'f',
+    OJC_ARRAY	= 'a',
+    OJC_OBJECT	= 'o',
+    OJC_WORD	= 'w',
+    OJC_OPAQUE	= 'i',
+    OJC_FREE	= '#',
+} ojcValType;
+</div>
+          <p class="desc-text">
+            The value types found in JSON documents and in
+            the <span class="code">ojcVal</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">src</span></td><td>source</td></tr>
+            <tr><td><span class="param">OJC_NULL</span></td><td>null</td></tr>
+            <tr><td><span class="param">OJC_STRING</span></td><td>string</td></tr>
+            <tr><td><span class="param">OJC_NUMBER</span></td><td>number as a string</td></tr>
+            <tr><td><span class="param">OJC_FIXNUM</span></td><td>integer</td></tr>
+            <tr><td><span class="param">OJC_DECIMAL</span></td><td>decimal number</td></tr>
+            <tr><td><span class="param">OJC_TRUE</span></td><td>true</td></tr>
+            <tr><td><span class="param">OJC_FALSE</span></td><td>false</td></tr>
+            <tr><td><span class="param">OJC_ARRAY</span></td><td>array</td></tr>
+            <tr><td><span class="param">OJC_OBJECT</span></td><td>object</td></tr>
+            <tr><td><span class="param">OJC_WORD</span></td><td>word with a maximum of 15 characters</td></tr>
+            <tr><td><span class="param">OJC_OPAQUE</span></td><td>opaque which is ignored on write</td></tr>
+            <tr><td><span class="param">OJC_FREE</span></td><td>freed</td></tr>
+            <tr><td class="returns">See:</td><td><span class="code">ojcVal</span></td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_case_insensitive" class="desc">
+          <div class="title">ojc_case_insensitive</div>
+          <div class="synopsis">bool ojc_case_insensitive;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, searches are case
+            insensitive. Searches includes get and replace operations.
+          </p>
+        </div>
+
+        <div id="ojc_decimal_as_number" class="desc">
+          <div class="title">ojc_decimal_as_number</div>
+          <div class="synopsis">bool ojc_decimal_as_number;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, decimal numbers will be read as OJC_NUMBER instead of as a
+            OJC_DECIMAL.
+          </p>
+        </div>
+
+        <div id="ojc_newline_ok" class="desc">
+          <div class="title">ojc_newline_ok</div>
+          <div class="synopsis">bool ojc_newline_ok;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, new lines will not be escaped in the output. This is not a
+            JSON feature.
+          </p>
+        </div>
+
+        <div id="ojc_word_ok" class="desc">
+          <div class="title">ojc_word_ok</div>
+          <div class="synopsis">bool ojc_word_ok;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, non-quoted word will be returned as OJC_WORD types. This
+            is not a JSON feature.
+          </p>
+        </div>
+
+        <div id="ojc_write_end_with_newline" class="desc">
+          <div class="title">ojc_write_end_with_newline</div>
+          <div class="synopsis">bool ojc_write_end_with_newline;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, a write is terminated with a new line.
+          </p>
+        </div>
+
+        <div id="ojc_write_opaque" class="desc">
+          <div class="title">ojc_write_opaque</div>
+          <div class="synopsis">bool ojc_write_opaque;</div>
+          <p class="desc-text">
+            If <span class="code">true</span>, opaque values will be printed as a number. Note that
+            reading in this value will from a JSON string will result in a
+            OJC_FIXNUM type. This flag is intended for debugging and should be
+            set back to false after printing.
+          </p>
+        </div>
+
+        <div id="ojc_aappend" class="desc">
+          <div class="title">ojc_aappend()</div>
+          <div class="synopsis">void ojc_aappend(ojcErr err, ojcVal anchor, const char **path, ojcVal val);</div>
+          <p class="desc-text">
+            Appends an <span class="code">ojcVal</span> at the provided path where the path is a <span class="code">NULL</span>
+            terminated array of strings that are keys or indices that form a path to a
+            target value. If any node does not exist on the path an Object is created for
+            that element of the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td></tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td></tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value relative to the anchor</td></tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_aget" class="desc">
+          <div class="title">ojc_aget()</div>
+          <div class="synopsis">ojcVal ojc_aget(ojcVal val, const char **path);</div>
+          <p class="desc-text">
+            Gets an <span class="code">ojcVal</span> located by the provided path where the path is a <span class="code">NULL</span>
+            terminated array of strings that are keys or indices that form a path to a
+            target value. If the element does not exist a <span class="code">NULL</span> value is returned. A <span class="code">NULL</span>
+            path returns the <span class="code">val</span> argument.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td class="returns">Returns:</td><td>the value identified by the path or <span class="code">NULL</span> if it does not exist.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_append" class="desc">
+          <div class="title">ojc_append()</div>
+          <div class="synopsis">void ojc_append(ojcErr err, ojcVal anchor, const char *path, ojcVal val);</div>
+          <p class="desc-text">
+            Appends an <span class="code">ojcVal</span> at the provided path where the path is a sequence of
+            keys or indices separated by the / or . character. If any node does not exist
+            on the path an Object or Array is created for that element of the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value relative to the anchor</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_aremove" class="desc">
+          <div class="title">ojc_aremove()</div>
+          <div class="synopsis">bool ojc_aremove(ojcErr err, ojcVal anchor, const char **path);</div>
+          <p class="desc-text">
+            Removes an <span class="code">ojcVal</span> at the provided path where the path is a
+            <span class="code">NULL</span> terminated array of strings that are keys or indices that form a path to
+            a target value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was removed and false if it was not.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_areplace" class="desc">
+          <div class="title">ojc_areplace()</div>
+          <div class="synopsis">bool ojc_areplace(ojcErr err, ojcVal anchor, const char **path, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces of appends an <span class="code">ojcVal</span> at the provided path where the path is a
+            <span class="code">NULL</span> terminated array of strings that are keys or indices that form a path to
+            a target value. If any node does not exist on the path an Object is created
+            for that element of the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_array_append" class="desc">
+          <div class="title">ojc_array_append()</div>
+          <div class="synopsis">void ojc_array_append(ojcErr err, ojcVal array, ojcVal val);</div>
+          <p class="desc-text">
+            Appends a <span class="code">val</span> to a JSON array. The <span class="code">err</span> struct is set if the
+            <span class="code">object</span> is not an <span class="code">OJC</span>ARRAY<span class="code"> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr<span class="code"> struct.</td><tr>
+            <tr><td><span class="param">array</span></td><td>array to append <span class="code">val<span class="code"> to</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to append</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_array_insert" class="desc">
+          <div class="title">ojc_array_insert()</div>
+          <div class="synopsis">void ojc_array_insert(ojcErr err, ojcVal array, int pos, ojcVal val);</div>
+          <p class="desc-text">
+            Inserts a <span class="code">val</span> in a JSON array before the <span class="code">pos<span class="code">. The <span class="code">err</span> struct is
+            set if the <span class="code">array</span> is not an <span class="code">OJC<span class="code">ARRAY</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">array</span></td><td>array to insert <span class="code">val</span> into</td><tr>
+            <tr><td><span class="param">pos</span></td><td>position to insert the new value</td><tr>
+            <tr><td><span class="param">val</span></td><td>new value</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_array_pop" class="desc">
+          <div class="title">ojc_array_pop()</div>
+          <div class="synopsis">ojcVal ojc_array_pop(ojcErr err, ojcVal array);</div>
+          <p class="desc-text">
+            Removes and returns a <span class="code">val</span> from the front of a JSON array. The <span class="code">err</span>
+            struct is set if the <span class="code">object</span> is not an <span class="code">OJC</span>ARRAY</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">array</span></td><td>array to append <span class="code">val</span> to</td><tr>
+            <tr><td class="returns">Returns:</td><td>the first element in an array.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_array_push" class="desc">
+          <div class="title">ojc_array_push()</div>
+          <div class="synopsis">void ojc_array_push(ojcErr err, ojcVal array, ojcVal val);</div>
+          <p class="desc-text">
+            Pushes a <span class="code">val</span> to the front of a JSON array. The <span class="code">err</span> struct is set if
+            the <span class="code">object</span> is not an <span class="code">OJC<span class="code">ARRAY</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">array</span></td><td>array to append <span class="code">val</span> to</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to push</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_array_replace" class="desc">
+          <div class="title">ojc_array_replace()</div>
+          <div class="synopsis">bool ojc_array_replace(ojcErr err, ojcVal array, int pos, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces a <span class="code">val</span> in a JSON object for the specified <span class="code">pos</span>. The <span class="code">err</span>
+            struct is set if the <span class="code">array</span> is not an <span class="code">OJC</span>ARRAY</span> type. If the <span class="code">pos<span class="code">
+            is negative the position is counted from the end of the array unless the
+            value is less than the length of the array and then it is pushed onto the
+            array. If the <span class="code">pos</span> is larger than the length the <span class="code">val</span> is appended to
+            the array.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">array</span></td><td>array to replace the value with <span class="code">val<span class="code"></td><tr>
+            <tr><td><span class="param">pos</span></td><td>the position of the value to replace in the array</td><tr>
+            <tr><td><span class="param">val</span></td><td>new value</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was pushed or appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_aset" class="desc">
+          <div class="title">ojc_areplace()</div>
+          <div class="synopsis">bool ojc_aset(ojcErr err, ojcVal anchor, const char **path, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces of appends an <span class="code">ojcVal</span> at the provided path where the path is a
+            <span class="code">NULL</span> terminated array of strings that are keys or indices that form a path to
+            a target value. If any node does not exist on the path an Object is created
+            for that element of the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_bool" class="desc">
+          <div class="title">ojc_bool()</div>
+          <div class="synopsis">bool ojc_bool(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the boolean value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_TRUE</span> or
+            <span class="code">OJC_FALSE<span class="code">. If it is not the correct type a type error is returned in the
+            <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the boolean from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the boolean value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_buf" class="desc">
+          <div class="title">ojc_buf()</div>
+          <div class="synopsis">void ojc_buf(struct _Buf *buf, ojcVal val, int indent, int depth);</div>
+          <p class="desc-text">
+            Fills a Buf with <span class="code">val</span> as a JSON formated string in the buffer
+            provided. The <span class="code">indent</span> argument is used indentation of elements in the
+            output.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">buf</span></td><td>pointer to an <span class="code">Buf</span> struct.</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to convert to JSON</td><tr>
+            <tr><td><span class="param">indent</span></td><td>indentation in spaces to use</td><tr>
+            <tr><td><span class="param">depth</span></td><td>initial indentaion depth</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_cleanup" class="desc">
+          <div class="title">ojc_cleanup()</div>
+          <div class="synopsis">void ojc_cleanup();</div>
+          <p class="desc-text">
+            Cleans up re-use memory pools.
+          </p>
+        </div>
+
+        <div id="ojc_cmp" class="desc">
+          <div class="title">ojc_cmp()</div>
+          <div class="synopsis">int ojc_cmp(ojcVal v1, ojcVal v2);</div>
+          <p class="desc-text">
+            Returns an integer greater than, equal to, or less than zero according if
+            <span class="code">v1</span> is greater than, equal to, or less than <span class="code">v2<span class="code">. A best effort is made
+            to compare dissimilar type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">v1</span></td><td><span class="code">ojcVal</span> an object to compare.</td><tr>
+            <tr><td><span class="param">v2</span></td><td><span class="code">ojcVal</span> an object to compare.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the result of the comparison.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_array" class="desc">
+          <div class="title">ojc_create_array()</div>
+          <div class="synopsis">ojcVal ojc_create_array(void);</div>
+          <p class="desc-text">
+            Creates a JSON array value.
+          </p>
+          <table class="params">
+            <tr><td class="returns">Returns:</td><td>the new array value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_bool" class="desc">
+          <div class="title">ojc_create_bool()</div>
+          <div class="synopsis">ojcVal ojc_create_bool(bool boo);</div>
+          <p class="desc-text">
+            Creates a boolean value or either <span class="code">true</span> or <span class="code">false<span class="code">.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">boo</span></td><td>value of the new instance</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new boolean value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_double" class="desc">
+          <div class="title">ojc_create_double()</div>
+          <div class="synopsis">ojcVal ojc_create_double(double num);</div>
+          <p class="desc-text">
+            Creates a double value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">num</span></td><td>value of the new instance</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new double value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_int" class="desc">
+          <div class="title">ojc_create_int()</div>
+          <div class="synopsis">ojcVal ojc_create_int(int64_t num);</div>
+          <p class="desc-text">
+            Creates a integer value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">num</span></td><td>value of the new instance</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new integer value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_null" class="desc">
+          <div class="title">ojc_create_null()</div>
+          <div class="synopsis">ojcVal ojc_create_null();</div>
+          <p class="desc-text">
+            Creates a null value.
+          </p>
+          <table class="params">
+            <tr><td class="returns">Returns:</td><td>the new null value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_number" class="desc">
+          <div class="title">ojc_create_number()</div>
+          <div class="synopsis">ojcVal ojc_create_number(const char *num, size_t len);</div>
+          <p class="desc-text">
+            Creates a number value that is represented as a string. This value type is
+            created when a number is encountered in a JSON document that is too large for
+            an int64_t or for a double.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">num</span></td><td>value of the new instance</td><tr>
+            <tr><td><span class="param">len</span></td><td>length of str or <0 to calculate</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new numeric string value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_object" class="desc">
+          <div class="title">ojc_create_object()</div>
+          <div class="synopsis">ojcVal ojc_create_object();</div>
+          <p class="desc-text">
+            Creates a JSON object value.
+          </p>
+          <table class="params">
+            <tr><td class="returns">Returns:</td><td>the new object value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_opaque" class="desc">
+          <div class="title">ojc_create_opaque()</div>
+          <div class="synopsis">ojcVal ojc_create_opaque(void *opaque);</div>
+          <p class="desc-text">
+            Creates an opaque value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">opaque</span></td><td>value of the new instance</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_str" class="desc">
+          <div class="title">ojc_create_str()</div>
+          <div class="synopsis">ojcVal ojc_create_str(const char *str, size_t len);</div>
+          <p class="desc-text">Creates a string value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">str</span></td><td>value of the new instance</td><tr>
+            <tr><td><span class="param">len</span></td><td>length of str or <0 to calculate</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new string value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_create_word" class="desc">
+          <div class="title">ojc_create_word()</div>
+          <div class="synopsis">ojcVal ojc_create_word(const char *str, size_t len);</div>
+          <p class="desc-text">
+            Creates a word value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">str</span></td><td>value of the new instance</td><tr>
+            <tr><td><span class="param">len</span></td><td>length of str or <0 to calculate</td><tr>
+            <tr><td class="returns">Returns:</td><td>the new word value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_destroy" class="desc">
+          <div class="title">ojc_destroy()</div>
+          <div class="synopsis">int ojc_destroy(ojcVal val);</div>
+          <p class="desc-text">
+            Frees memory used by a <span class="code">ojcVal<span class="code">.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td>value to free or destroy.</td><tr>
+            <tr><td class="returns">Returns:</td><td>0 on success or non-zero if already freed.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_double" class="desc">
+          <div class="title">ojc_double()</div>
+          <div class="synopsis">double ojc_double(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the decimal (double) value of a <span class="code">ojcVal</span> if it is of type
+            <span class="code">OJC_DECIMAL<span class="code">. If it is not the correct type a type error is returned in
+            the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the C double from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C double value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_duplicate" class="desc">
+          <div class="title">ojc_duplicate()</div>
+          <div class="synopsis">ojcVal ojc_duplicate(ojcVal val);</div>
+          <p class="desc-text">
+            Returns a deep copy of a <span class="code">ojcVal<span class="code">.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to duplicate.</td><tr>
+            <tr><td class="returns">Returns:</td><td>a deep copy of the <span class="code">val<span class="code">.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_equals" class="desc">
+          <div class="title">ojc_equals()</div>
+          <div class="synopsis">bool ojc_equals(ojcVal v1, ojcVal v2);</div>
+          <p class="desc-text">
+            Returns true if the two arguments have the same value. False is returned if
+            the argument are of different types or have different values.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">v1</span></td><td><span class="code">ojcVal</span> an object to compare.</td><tr>
+            <tr><td><span class="param">v2</span></td><td><span class="code">ojcVal</span> an object to compare.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the result of the comparison.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_error_str" class="desc">
+          <div class="title">ojc_error_str()</div>
+          <div class="synopsis">const char* ojc_error_str(ojcErrCode code);</div>
+          <p class="desc-text">
+            Returns a string representation of an error.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">code</span></td><td>error code to return a string for</td><tr>
+            <tr><td class="returns">Returns:</td><td>string representation of an error code.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_fill" class="desc">
+          <div class="title">ojc_fill()</div>
+          <div class="synopsis">int ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len);</div>
+          <p class="desc-text">
+            Converts <span class="code">val</span> to a JSON formated string in the buffer provided. The
+            <span class="code">indent</span> argument is used indentation of elements in the output.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to convert to JSON</td><tr>
+            <tr><td><span class="param">indent</span></td><td>indentation in spaces to use</td><tr>
+            <tr><td><span class="param">buf</span></td><td>char buffer to place the output in</td><tr>
+            <tr><td class="returns">Returns:</td><td>len size of the buffer.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_fwrite" class="desc">
+          <div class="title">ojc_fwrite()</div>
+          <div class="synopsis">int ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);</div>
+          <p class="desc-text">
+            Converts <span class="code">val</span> to a JSON formated string and streams the output to a
+            file. The <span class="code">indent</span> argument is used indentation of elements in the output.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to convert to JSON</td><tr>
+            <tr><td><span class="param">indent</span></td><td>indentation in spaces to use</td><tr>
+            <tr><td><span class="param">file</span></td><td>file to write to</td><tr>
+            <tr><td class="returns">Returns:</td><td>the number of bytes written.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_get" class="desc">
+          <div class="title">ojc_get()</div>
+          <div class="synopsis">ojcVal ojc_get(ojcVal val, const char *path);</div>
+          <p class="desc-text">
+            Gets an <span class="code">ojcVal</span> located by the provided path where the path is a sequence
+            of keys or indices separated by the / or . character. If the element does not
+            exist a <span class="code">NULL</span> value is returned. A <span class="code">NULL</span> path returns the <span class="code">val</span> argument.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td>anchor value for locating the target value</td><tr>
+              <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td class="returns">Returns:</td><td>the value identified by the path or <span class="code">NULL</span> if it does not exist.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_get_member" class="desc">
+          <div class="title">ojc_get_member()</div>
+          <div class="synopsis">ojcVal ojc_get_member(ojcErr err, ojcVal val, int pos);</div>
+          <p class="desc-text">
+            Gets a <span class="code">val</span> member in a JSON object at the specified <span class="code">pos<span class="code">. The <span class="code">err<span class="code">
+            struct is set if the <span class="code">object</span> is not an <span class="code">OJC<span class="code">ARRAY</span> or <span class="code">OJC</span>OBJECT<span class="code">
+            type. <span class="code">NULL</span> is returned if <span class="code">pos</span> is out of range.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">val</span></td><td>object to get the member from</td><tr>
+            <tr><td><span class="param">pos</span></td><td>zero based position of the member to get</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_has_key" class="desc">
+          <div class="title">ojc_has_key()</div>
+          <div class="synopsis">bool ojc_has_key(ojcVal val);</div>
+          <p class="desc-text">
+            Members of a <span class="code">OJC_OBJECT</span> have keys associated with them. This function
+            returns <span class="code">true</span> if the <span class="code">val</span> is a member of an object and thus has a key.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to check for a key.</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a member of a <span class="code">OJC_OBJECT</span> value and false otherwise.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_int" class="desc">
+          <div class="title">ojc_int()</div>
+          <div class="synopsis">int64_t ojc_int(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the integer value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_FIXNUM<span class="code">. If it
+            is not the correct type a type error is returned in the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the C int64_t from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C integer value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_key" class="desc">
+          <div class="title">ojc_key()</div>
+          <div class="synopsis">const char* ojc_key(ojcVal val);</div>
+          <p class="desc-text">
+            If a <span class="code">ojcVal</span> has a key this function returns that key. If it has no key
+            then <span class="code">NULL</span> is returned.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the key from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the key associated with the <span class="code">val<span class="code">.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_key_len" class="desc">
+          <div class="title">ojc_key_len()</div>
+          <div class="synopsis">int ojc_key_len(ojcVal val);</div>
+          <p class="desc-text">
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the key length of</td><tr>
+            <tr><td class="returns">Returns:</td><td>the length of the key</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_member_count" class="desc">
+          <div class="title">ojc_member_count()</div>
+          <div class="synopsis">int ojc_member_count(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get number of members of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_OBJECT</span> or
+            <span class="code">OJC_ARRAY<span class="code">. If it is not the correct type a type error is returned in the
+            <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the members count from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the number of member values of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_members" class="desc">
+          <div class="title">ojc_members()</div>
+          <div class="synopsis">ojcVal ojc_members(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the first child value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_OBJECT</span> or
+            <span class="code">OJC_ARRAY<span class="code">. If it is not the correct type a type error is returned in the
+            <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the members of</td><tr>
+            <tr><td class="returns">Returns:</td><td>the first member value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_merge" class="desc">
+          <div class="title">ojc_merge()</div>
+          <div class="synopsis">void ojc_merge(ojcErr err, ojcVal primary, ojcVal other);</div>
+          <p class="desc-text">
+            Merges the <span class="code">other</span> JSON object into the <span class="code">primary</span> JSON object. <span class="code">other<span class="code">
+            values override <span class="code">primary</span> values. Nested values are replaced recursively.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">primary</span></td><td><span class="code">ojcVal</span> base object</td><tr>
+            <tr><td><span class="param">other</span></td><td><span class="code">ojcVal</span> override object</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_next" class="desc">
+          <div class="title">ojc_next()</div>
+          <div class="synopsis">ojcVal ojc_next(ojcVal val);</div>
+          <p class="desc-text">
+            Get the next member value of a <span class="code">ojcVal<span class="code">. <span class="code">NULL</span> is returned if there are not
+            more members.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the next member from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the next member value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_number" class="desc">
+          <div class="title">ojc_number()</div>
+          <div class="synopsis">const char* ojc_number(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the number value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_NUMBER<span class="code">. If it
+            is not the correct type a type error is returned in the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the decimal as a string from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C string value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_number_len" class="desc">
+          <div class="title">ojc_number_len()</div>
+          <div class="synopsis">int ojc_number_len(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Returns the length of the number value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the length of the decimal as a string from</td><tr>
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td>the length of the numeric as a string.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_append" class="desc">
+          <div class="title">ojc_object_append()</div>
+          <div class="synopsis">void ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val);</div>
+          <p class="desc-text">
+            Appends a <span class="code">val</span> to a JSON object using the specified <span class="code">key<span class="code">. This does not
+            replace previous key-value pairs with the same key value. The <span class="code">err</span> struct
+            is set if the <span class="code">object</span> is not an <span class="code">OJC<span class="code">OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to append <span class="code">val</span> to</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to append</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_get_by_key" class="desc">
+          <div class="title">ojc_object_get_by_key()</div>
+          <div class="synopsis">ojcVal ojc_object_get_by_key(ojcErr err, ojcVal object, const char *key);</div>
+          <p class="desc-text">
+            Get the first <span class="code">val</span> in a JSON object with the specified <span class="code">key</span>. The
+            <span class="code">err</span> struct is set if the <span class="code">object</span> is not an <span class="code">OJC</span>OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to get the member from</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in finding the key-value pair</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_insert" class="desc">
+          <div class="title">ojc_object_insert()</div>
+          <div class="synopsis">void ojc_object_insert(ojcErr err, ojcVal object, int before, const char *key, ojcVal val);</div>
+          <p class="desc-text">
+            Inserts a <span class="code">val</span> in a JSON object with the specified <span class="code">key<span class="code">. The insert is
+            before the position specified. The <span class="code">err</span> struct is set if the <span class="code">object</span> is
+            not an <span class="code">OJC<span class="code">OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to append <span class="code">val</span> to</td><tr>
+            <tr><td><span class="param">before</span></td><td>position to insert the new value</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+            <tr><td><span class="param">val</span></td><td>new value</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_nappend" class="desc">
+          <div class="title">ojc_object_nappend()</div>
+          <div class="synopsis">void ojc_object_append(ojcErr err, ojcVal object, const char *key, ojcVal val);</div>
+          <p class="desc-text">
+            Appends a <span class="code">val</span> to a JSON object using the specified <span class="code">key</span>. This does not
+            replace previous key-value pairs with the same key value. The <span class="code">err</span> struct
+            is set if the <span class="code">object</span> is not an <span class="code">OJC</span>OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to append <span class="code">val</span> to</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to append</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_remove_by_key" class="desc">
+          <div class="title">ojc_object_remove_by_key()</div>
+          <div class="synopsis">bool ojc_object_remove_by_key(ojcErr err, ojcVal object, const char *key);</div>
+          <p class="desc-text">
+            Removes all members in a JSON object with the specified <span class="code">key<span class="code">. The <span class="code">err<span class="code">
+            struct is set if the <span class="code">object</span> is not an <span class="code">OJC<span class="code">OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to remove the member from</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_replace" class="desc">
+          <div class="title">ojc_object_replace()</div>
+          <div class="synopsis">bool ojc_object_replace(ojcErr err, ojcVal object, const char *key, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces a <span class="code">val</span> in a JSON object for the specified <span class="code">key</span>. Only the first
+            matching member is replaced. The <span class="code">err</span> struct is set if the <span class="code">object</span> is
+            not an <span class="code">OJC</span>OBJECT</span> type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to append <span class="code">val</span> to</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+            <tr><td><span class="param">val</span></td><td>new value</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_object_take" class="desc">
+          <div class="title">ojc_object_take()</div>
+          <div class="synopsis">ojcVal ojc_object_take(ojcErr err, ojcVal object, const char *key);</div>
+          <p class="desc-text">
+            Removes the first member in a JSON object with the specified <span class="code">key<span class="code">. The
+            <span class="code">err</span> struct is set if the <span class="code">object</span> is not an <span class="code">OJC<span class="code">OBJECT</span> type. The
+            removed member is not destroyed.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to remove the member from</td><tr>
+            <tr><td><span class="param">key</span></td><td>the key to use in the key-value pair</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_opaque" class="desc">
+          <div class="title">ojc_opaque()</div>
+          <div class="synopsis">void* ojc_opaque(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the opaque value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_OPAQUE</span>. If it
+            is not the correct type a type error is returned in the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the opaque from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C string value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_fd" class="desc">
+          <div class="title">ojc_parse_fd()</div>
+          <div class="synopsis">ojcVal ojc_parse_fd(ojcErr err, int socket, ojcParseCallback cb, void *ctx);</div>
+          <p class="desc-text">
+            Parses from a file descriptor or socket. An error will result in the
+            <span class="code">err</span> argument being set with an error code and message. The <span class="code">socket</span>
+            can contain more than one JSON element.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">socket</span></td><td>socket to parse</td><tr>
+            <tr><td><span class="param">cb</span></td><td>callback function or <span class="code">NULL</span> if no callbacks are desired</td><tr>
+            <tr><td><span class="param">ctx</span></td><td>context for the callback function if provided.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the parsed JSON as a <span class="code">ojcVal</span>.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_file" class="desc">
+          <div class="title">ojc_parse_file()</div>
+          <div class="synopsis">ojcVal ojc_parse_file(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx);</div>
+          <p class="desc-text">
+            Parses a the contents of a file. An error will result in the <span class="code">err</span> argument
+            being set with an error code and message. The <span class="code">file</span> can contain more than
+            one JSON element.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">file</span></td><td>file to parse</td><tr>
+            <tr><td><span class="param">cb</span></td><td>callback function or <span class="code">NULL</span> if no callbacks are desired</td><tr>
+            <tr><td><span class="param">ctx</span></td><td>context for the callback function if provided.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the parsed JSON as a <span class="code">ojcVal</span>.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_file_follow" class="desc">
+          <div class="title">ojc_parse_file_follow()</div>
+          <div class="synopsis">void ojc_parse_file_follow(ojcErr err, FILE *file, ojcParseCallback cb, void *ctx);</div>
+          <p class="desc-text">
+            Parses a the contents of a file without waiting on EOF. This is typically
+            used when tailing a file or redirected input. An error will result in the
+            <span class="code">err</span> argument being set with an error code and message. The <span class="code">file</span> can
+            contain more than one JSON element.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">file</span></td><td>file to parse</td><tr>
+            <tr><td><span class="param">cb</span></td><td>callback function or <span class="code">NULL</span> if no callbacks are desired</td><tr>
+            <tr><td><span class="param">ctx</span></td><td>context for the callback function if provided.</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_reader" class="desc">
+          <div class="title">ojc_parse_reader()</div>
+          <div class="synopsis">ojcVal ojc_parse_reader(ojcErr err, void *src, ojcReadFunc rf, ojcParseCallback cb, void *ctx);</div>
+          <p class="desc-text">
+            Parses from the provided <span class="code">src</span>. An error will result in the <span class="code">err</span>
+            argument being set with an error code and message. The <span class="code">socket</span> can contain
+            more than one JSON element. The <span class="code">read</span> function is used with the <span class="code">src</span> to
+            read characters for the parser.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">src</span></td><td>source to extract the json from</td><tr>
+            <tr><td><span class="param">rf</span></td><td>read function for the src</td><tr>
+            <tr><td><span class="param">cb</span></td><td>callback function or <span class="code">NULL</span> if no callbacks are desired</td><tr>
+            <tr><td><span class="param">ctx</span></td><td>context for the callback function if provided.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the parsed JSON as a <span class="code">ojcVal</span>.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_str" class="desc">
+          <div class="title">ojc_parse_str()</div>
+          <div class="synopsis">ojcVal ojc_parse_str(ojcErr err, const char *json, ojcParseCallback cb, void *ctx);</div>
+          <p class="desc-text">
+            Parses a string. An error will result in the <span class="code">err</span> argument being set with
+            an error code and message. The <span class="code">json</span> string can contain more than one JSON
+            element.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">json</span></td><td>JSON document to parse</td><tr>
+            <tr><td><span class="param">cb</span></td><td>callback function or <span class="code">NULL</span> if no callbacks are desired</td><tr>
+            <tr><td><span class="param">ctx</span></td><td>context for the callback function if provided.</td><tr>
+            <tr><td class="returns">Returns:</td><td>the parsed JSON as a <span class="code">ojcVal</span>.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_parse_strp" class="desc">
+          <div class="title">ojc_parse_strp()</div>
+          <div class="synopsis">ojcVal ojc_parse_strp(ojcErr err, const char **jsonp);</div>
+          <p class="desc-text">
+            Parses a string. An error will result in the <span class="code">err</span> argument being set with
+            an error code and message. The function returns after parsing a complete
+            <span class="code">json</span> element. The <span class="code">jsonp</span> will then point to the next character in the
+            original string.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">jsonp</span></td><td>pointer to the JSON document to parse</td><tr>
+            <tr><td class="returns">Returns:</td><td>the parsed JSON as a <span class="code">ojcVal</span>.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_remove" class="desc">
+          <div class="title">ojc_remove()</div>
+          <div class="synopsis">bool ojc_remove(ojcErr err, ojcVal anchor, const char *path);</div>
+          <p class="desc-text">
+            Removes and <span class="code">ojcVal</span> at the provided path where the path is a sequence of
+            keys or indices separated by the / or . character. If any node the call
+            returns false without removing a value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was removed and false if it was not.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_remove_by_pos" class="desc">
+          <div class="title">ojc_remove_by_pos()</div>
+          <div class="synopsis">bool ojc_remove_by_pos(ojcErr err, ojcVal object, int pos);</div>
+          <p class="desc-text">
+            Removes a member in a JSON object at the specified <span class="code">pos</span>. The <span class="code">err</span>
+            struct is set if the <span class="code">object</span> is not an <span class="code">OJC</span>OBJECT</span> type or if there is
+            no member at the position specified.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">object</span></td><td>object to remove the member from</td><tr>
+            <tr><td><span class="param">pos</span></td><td>zero based position of the member to remove</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_replace" class="desc">
+          <div class="title">ojc_replace()</div>
+          <div class="synopsis">bool ojc_replace(ojcErr err, ojcVal anchor, const char *path, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces or appends an <span class="code">ojcVal</span> at the provided path where the path is a
+            sequence of keys or indices separated by the / or . character. If any node
+            does not exist on the path an Object or Array is created for that element of
+            the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_set" class="desc">
+          <div class="title">ojc_set()</div>
+          <div class="synopsis">bool ojc_set(ojcErr err, ojcVal anchor, const char *path, ojcVal val);</div>
+          <p class="desc-text">
+            Replaces or appends an <span class="code">ojcVal</span> at the provided path where the path is a
+            sequence of keys or indices separated by the / or . character. If any node
+            does not exist on the path an Object or Array is created for that element of
+            the path.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">anchor</span></td><td>anchor value for locating the target value</td><tr>
+            <tr><td><span class="param">path</span></td><td>location of the target value</td><tr>
+            <tr><td><span class="param">val</span></td><td>value to place at the target location</td><tr>
+            <tr><td class="returns">Returns:</td><td>true if a value was replaced and false if it was appended.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_set_key" class="desc">
+          <div class="title">ojc_set_key()</div>
+          <div class="synopsis">void ojc_set_key(ojcVal val, const char *key);</div>
+          <p class="desc-text">
+            Sets the <span class="code">ojcVal</span> key.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to set the key on.</td><tr>
+            <tr><td><span class="param">key</span></td><td>value to set as the key</td><tr>
+          </table>
+        </div>
+
+        <div id="ojc_str" class="desc">
+          <div class="title">ojc_str()</div>
+          <div class="synopsis">const char* ojc_str(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the string value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_STRING<span class="code">. If it
+            is not the correct type a type error is returned in the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the C const char* from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C string value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_str_len" class="desc">
+          <div class="title">ojc_str_len()</div>
+          <div class="synopsis">int ojc_str_len(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Returns the length of the string value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the length of the string from</td><tr>
+            <tr><td><span class="param">zzz</span></td><td>zzz</td></tr>
+            <tr><td class="returns">Returns:</td><td>the length of the string.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_to_str" class="desc">
+          <div class="title">ojc_to_str()</div>
+          <div class="synopsis">char* ojc_to_str(ojcVal val, int indent);</div>
+          <p class="desc-text">
+            Converts <span class="code">val</span> to a JSON formated string. The <span class="code">indent</span> argument is used
+            indentation of elements in the output. The caller is expected to free the
+            returned string.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to convert to JSON</td><tr>
+            <tr><td><span class="param">indent</span></td><td>indentaiton in spaces to use</td><tr>
+            <tr><td class="returns">Returns:</td><td>JSON string represented by the <span class="code">val<span class="code">.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_type" class="desc">
+          <div class="title">ojc_type()</div>
+          <div class="synopsis">ojcValType ojc_type(ojcVal val);</div>
+          <p class="desc-text">
+            Returns the type of the value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">val</span></td><td>value to get the type of</td><tr>
+            <tr><td class="returns">Returns:</td><td>the type of the value.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_type_str" class="desc">
+          <div class="title">ojc_type_str()</div>
+          <div class="synopsis">const char* ojc_type_str(ojcValType type);</div>
+          <p class="desc-text">
+            Returns a string representation of a type.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">type</span></td><td>type to return a string for</td><tr>
+            <tr><td class="returns">Returns:</td><td>string representation.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_version" class="desc">
+          <div class="title">ojc_version()</div>
+          <div class="synopsis">const char* ojc_version();</div>
+          <table class="params">
+            <tr><td class="returns">Returns:</td><td>version of OjC.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_word" class="desc">
+          <div class="title">ojc_word()</div>
+          <div class="synopsis">const char* ojc_word(ojcErr err, ojcVal val);</div>
+          <p class="desc-text">
+            Get the string value of a <span class="code">ojcVal</span> if it is of type <span class="code">OJC_WORD<span class="code">. If it is
+            not the correct type a type error is returned in the <span class="code">err</span> value.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>structure to pass the status or an error back in</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to get the C const char* from</td><tr>
+            <tr><td class="returns">Returns:</td><td>the C string value of the <span class="code">val</span> argument.</td></tr>
+          </table>
+        </div>
+
+        <div id="ojc_write" class="desc">
+          <div class="title">ojc_write()</div>
+          <div class="synopsis">int ojc_write(ojcErr err, ojcVal val, int indent, int socket);</div>
+          <p class="desc-text">
+            Converts <span class="code">val</span> to a JSON formated string and streams the output to a file
+            descriptor or socket. The <span class="code">indent</span> argument is used indentation of
+            elements in the output.
+          </p>
+          <table class="params">
+            <tr><td><span class="param">err</span></td><td>pointer to an initialized <span class="code">ojcErr</span> struct.</td><tr>
+            <tr><td><span class="param">val</span></td><td><span class="code">ojcVal</span> to convert to JSON</td><tr>
+            <tr><td><span class="param">indent</span></td><td>indentation in spaces to use</td><tr>
+            <tr><td><span class="param">socket</span></td><td>socket to write to</td><tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+    <script>
+function displayDesc(e,d){
+    var all = document.getElementsByClassName('desc');
+    for (var i = all.length - 1; 0 <= i; i--) {
+        all[i].style.display = 'none';
+    }
+    all = document.getElementsByClassName('item');
+    for (var i = all.length - 1; 0 <= i; i--) {
+        all[i].className = all[i].className.replace(' selected', '');
+    }
+    document.getElementById(d).style.display = 'block';  
+    e.currentTarget.className += ' selected';
+}
+    </script>
+  </body>
+</html>
