@@ -8,7 +8,7 @@
   </head>
   <body onload="displayDesc(event,'Introduction')">
     <div class="header">
-      <a href="https://github.com/ohler55/ojc" class="normal"><img src="ojc.svg" width="160"></a><span class="api">v3.1.0 API Documentation</span>
+      <a href="https://github.com/ohler55/ojc" class="normal"><img src="ojc.svg" width="160"></a><span class="api">v3.1.1 API Documentation</span>
     </div>
     <div class="page">
       <div class="index">
@@ -672,7 +672,7 @@ sample() {
 
         <div id="ojc_create_number" class="desc">
           <div class="title">ojc_create_number()</div>
-          <div class="synopsis">ojcVal ojc_create_number(const char *num, size_t len);</div>
+          <div class="synopsis">ojcVal ojc_create_number(const char *num, int len);</div>
           <p class="desc-text">
             Creates a number value that is represented as a string. This value type is
             created when a number is encountered in a JSON document that is too large for
@@ -710,7 +710,7 @@ sample() {
 
         <div id="ojc_create_str" class="desc">
           <div class="title">ojc_create_str()</div>
-          <div class="synopsis">ojcVal ojc_create_str(const char *str, size_t len);</div>
+          <div class="synopsis">ojcVal ojc_create_str(const char *str, int len);</div>
           <p class="desc-text">Creates a string value.
           </p>
           <table class="params">
@@ -722,7 +722,7 @@ sample() {
 
         <div id="ojc_create_word" class="desc">
           <div class="title">ojc_create_word()</div>
-          <div class="synopsis">ojcVal ojc_create_word(const char *str, size_t len);</div>
+          <div class="synopsis">ojcVal ojc_create_word(const char *str, int len);</div>
           <p class="desc-text">
             Creates a word value.
           </p>
