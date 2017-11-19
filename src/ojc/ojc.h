@@ -93,11 +93,11 @@ extern "C" {
     extern void		ojc_set_key(ojcVal val, const char *key);
     extern ojcVal	ojc_create_object(void);
     extern ojcVal	ojc_create_array(void);
-    extern ojcVal	ojc_create_str(const char *str, size_t len);
-    extern ojcVal	ojc_create_word(const char *str, size_t len);
+    extern ojcVal	ojc_create_str(const char *str, int len);
+    extern ojcVal	ojc_create_word(const char *str, int len);
     extern ojcVal	ojc_create_int(int64_t num);
     extern ojcVal	ojc_create_double(double num);
-    extern ojcVal	ojc_create_number(const char *num, size_t len);
+    extern ojcVal	ojc_create_number(const char *num, int len);
     extern ojcVal	ojc_create_null(void);
     extern ojcVal	ojc_create_bool(bool boo);
     extern ojcVal	ojc_create_opaque(void *opaque);
@@ -117,7 +117,7 @@ extern "C" {
     extern bool		ojc_array_replace(ojcErr err, ojcVal array, int pos, ojcVal val);
     extern void		ojc_array_insert(ojcErr err, ojcVal array, int pos, ojcVal val);
     extern char*	ojc_to_str(ojcVal val, int indent);
-    extern int		ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len);
+    extern int		ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, int len);
     extern void		ojc_buf(struct _Buf *buf, ojcVal val, int indent, int depth);
     extern int		ojc_write(ojcErr err, ojcVal val, int indent, int socket);
     extern int		ojc_fwrite(ojcErr err, ojcVal val, int indent, FILE *file);

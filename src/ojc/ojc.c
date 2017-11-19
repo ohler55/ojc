@@ -1029,7 +1029,7 @@ ojc_create_array() {
 }
 
 ojcVal
-ojc_create_str(const char *str, size_t len) {
+ojc_create_str(const char *str, int len) {
     ojcVal	val = _ojc_val_create(OJC_STRING);
     
     if (NULL == str) {
@@ -1040,7 +1040,7 @@ ojc_create_str(const char *str, size_t len) {
 	len = strlen(str);
     }
     if (STR_BIG < (int64_t)len){
-	len = (size_t)STR_BIG;
+	len = (int)STR_BIG;
     }
     val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
@@ -1057,7 +1057,7 @@ ojc_create_str(const char *str, size_t len) {
 }
 
 ojcVal
-ojc_create_word(const char *str, size_t len) {
+ojc_create_word(const char *str, int len) {
     ojcVal	val = _ojc_val_create(OJC_WORD);
     
     if (0 >= len) {
@@ -1092,7 +1092,7 @@ ojc_create_double(double num) {
 }
 
 ojcVal
-ojc_create_number(const char *num, size_t len) {
+ojc_create_number(const char *num, int len) {
     ojcVal	val = _ojc_val_create(OJC_NUMBER);
 
     if (NULL == num) {
@@ -1103,7 +1103,7 @@ ojc_create_number(const char *num, size_t len) {
 	len = strlen(num);
     }
     if (STR_BIG < (int64_t)len){
-	len = STR_BIG;
+	len = (int)STR_BIG;
     }
     val->str_len = len;
     if (sizeof(union _Bstr) <= len) {
@@ -1993,7 +1993,7 @@ ojc_buf(Buf buf, ojcVal val, int indent, int depth) {
 }
 
 int
-ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, size_t len) {
+ojc_fill(ojcErr err, ojcVal val, int indent, char *buf, int len) {
     struct _Buf	b;
     
     if (0 != err && OJC_OK != err->code) {
