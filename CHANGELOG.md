@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### Release 3.1.1 - November 19, 2017
+
+	- Reverted len arg to in from size_t for create string.
+
 ### Release 3.1.0 - November 11, 2017
 
 	- Removed wire format which is now in the `ohler55/opo-c` github repository.
