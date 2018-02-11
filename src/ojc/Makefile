@@ -3,7 +3,7 @@ CV=$(shell if [ `uname` = "Darwin" ]; then echo "c11"; elif [ `uname` = "Linux" 
 ifeq ($(build),release)
 	CFLAGS=-c -Wall -O3 -std=$(CV) -pedantic
 else
-	CFLAGS=-c -Wall -g -Og -std=$(CV) -pedantic
+	CFLAGS=-c -Wall -g -O0 -std=$(CV) -pedantic
 endif
 
 SRC_DIR=.
