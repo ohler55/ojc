@@ -31,4 +31,4 @@ $(BENCH): benchmark.o
 	$(CC) -O3 -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
 
 test: all
-	$(TARGET)
+	./$(TARGET)
