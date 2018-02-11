@@ -8,7 +8,16 @@ install: true
 script:
   - make test
 
-compiler:
-  - clang
-  - gcc
-  
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+    - os: osx
+      compiler: clang
