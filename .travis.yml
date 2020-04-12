@@ -21,5 +21,6 @@ matrix:
             - g++-6
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - alias gcc=gcc-6
     - os: osx
       compiler: clang
