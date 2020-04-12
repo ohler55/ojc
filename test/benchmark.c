@@ -96,16 +96,19 @@ bench_write(const char *filename, int64_t iter) {
 }
 
 static int
-bench_read(const char *filename) {
+bench_read(const char *filename, int64_t iter) {
     FILE		*f;
     struct _ojcErr	err = OJC_ERR_INIT;
     int64_t		cnt = 0;
     int64_t		dt;
     int64_t		start = clock_micro();
 
-    f = fopen(filename, "r");
     ojc_err_init(&err);
-    ojc_parse_file(&err, f, each_cb, &cnt);
+    f = fopen(filename, "r");
+    for (int i = iter; 0 < i; i--) {
+	ojc_parse_file(&err, f, each_cb, &cnt);
+	fseek(f, 0, SEEK_SET);
+    }
     fclose(f);
     dt = clock_micro() - start;
     if (OJC_OK != err.code) {
@@ -158,9 +161,15 @@ main(int argc, char **argv) {
     const char	*filename = "log.json";
     int64_t	iter = 1000000LL;
 
+    if (1 < argc) {
+	filename = argv[1];
+	bench_read(filename, iter);
+	bench_parse(filename, iter);
+	return 0;
+    }
     bench_fill(iter);
     bench_write(filename, iter);
-    bench_read(filename);
+    bench_read(filename, iter);
     bench_parse(filename, iter);
 
     return 0;

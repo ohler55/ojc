@@ -1,4 +1,4 @@
-CC=$(shell if [ `uname` = "Darwin" ]; then echo "cc"; elif [ `uname` = "Linux" ]; then echo "gcc-6"; fi;)
+CC=$(shell if [ `uname` = "Darwin" ]; then echo "cc"; elif [ `uname` = "Linux" ]; then echo "gcc"; fi;)
 CV=$(shell if [ `uname` = "Darwin" ]; then echo "c11"; elif [ `uname` = "Linux" ]; then echo "gnu11"; fi;)
 ifeq ($(build),release)
 	CFLAGS=-c -Wall -O3 -std=$(CV) -pedantic
