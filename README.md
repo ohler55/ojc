@@ -1,18 +1,18 @@
 # OjC
 
-Optimized JSON in C 
+Optimized JSON in C
 
 ## Description
 
-Optimized JSON in C (OjC), as the name implies, was written to provide speed
+Optimized JSON in C (OjC), as the name implies, was written to provide
 optimized JSON handling. It is derived from the underlying C parser in
-[Oj](http://www.ohler.com/oj). The intended use is for applications that need
-the maximum performance when reading large JSON document from a file or socket.
+[Oj](http://www.ohler.com/oj). The intended use is for applications
+that need the maximum performance when reading large JSON document
+from a file or socket.
 
 Besides being a true streaming parser OjC produces a structure that handles all
 JSON constructs. It does not use a Hash or Map to represent the JSON object type
-but keeps all occurances of a pairs in the object element. Duplicates are
-allowed just as they are in JSON documents.
+but keeps all occurances of a pairs in the object element.
 
 Multiple JSON elements are allowed in a single stream or from a socket. A
 callback mechanism is provided to return full JSON elements for each entry in a
@@ -53,7 +53,7 @@ static bool
 each__callback(ojcVal val, void *ctx) {
     char                buf[64];
     struct _ojcErr      err;
-    
+
     ojc_err_init(&err);
     ojc_fill(&err, val, 0, buf, sizeof(buf));
     if (OJC_OK != err) {
@@ -77,6 +77,11 @@ sample() {
 }
 
 ```
+
+## Benchmarks
+
+No official benchmarks are available but in informal tests Oj is 30%
+faster that [simdjson](https://github.com/simdjson/simdjson).
 
 ## Documentation
 
