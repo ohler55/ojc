@@ -1,8 +1,8 @@
 # OjC
 
-Optimized JSON in C
-
 [![Build Status](https://img.shields.io/travis/ohler55/ojc/master.svg?logo=travis)](http://travis-ci.org/ohler55/ojc?branch=master)
+
+Optimized JSON in C
 
 ## Description
 
