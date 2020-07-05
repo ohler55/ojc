@@ -20,10 +20,3 @@ To build the ojcbench type:
 ```
 make
 ```
-
-Running each on resulting in:
-
-simdjson_parse   1000000 entries in 5119.579 msecs. (  195 iterations/msec)
-ojc_parse_str    1000000 entries in 1945.454 msecs. (  514 iterations/msec)
-
-OjC is 2.6 times faster.
