@@ -80,13 +80,6 @@ sample() {
 
 ```
 
-## Benchmarks
-
-No official benchmarks are available but a [simple
-benchmark](test/simdbench/README.md) in the test directory of this
-project shows OjC is faster than
-[simdjson](https://github.com/simdjson/simdjson).
-
 ## Documentation
 
 *Documentation*: http://www.ohler.com/ojc
