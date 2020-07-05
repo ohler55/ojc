@@ -82,7 +82,7 @@ bench_write(const char *filename, int64_t iter) {
     fd = fileno(f);
     for (i = 0; i < iter; i++) {
 	ojc_write(&err, obj, 0, fd);
-	if (write(fd, "\n", 1)) {}
+	//if (write(fd, "\n", 1)) {}
     }
     fclose(f);
     dt = clock_micro() - start;
@@ -105,10 +105,13 @@ bench_read(const char *filename, int64_t iter) {
 
     ojc_err_init(&err);
     f = fopen(filename, "r");
+    ojc_parse_file(&err, f, each_cb, &cnt);
+    /*
     for (int i = iter; 0 < i; i--) {
 	ojc_parse_file(&err, f, each_cb, &cnt);
 	fseek(f, 0, SEEK_SET);
     }
+    */
     fclose(f);
     dt = clock_micro() - start;
     if (OJC_OK != err.code) {

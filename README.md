@@ -82,8 +82,10 @@ sample() {
 
 ## Benchmarks
 
-No official benchmarks are available but in informal tests Oj is 30%
-faster that [simdjson](https://github.com/simdjson/simdjson).
+No official benchmarks are available but a [simple
+benchmark](test/simdbench/README.md) in the test directory of this
+project shows OjC is faster than
+[simdjson](https://github.com/simdjson/simdjson).
 
 ## Documentation
 
