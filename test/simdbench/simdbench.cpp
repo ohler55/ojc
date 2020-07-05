@@ -19,9 +19,10 @@ simd_parse(const char *str, int64_t iter) {
     simdjson::dom::parser	parser;
     int64_t			dt;
     int64_t			start = clock_micro();
+    long			len = (long)strlen(str);
 
     for (int i = iter; 0 < i; i--) {
-	simdjson::dom::element	doc = parser.parse(str, strlen(str));
+	simdjson::dom::element	doc = parser.parse(str, len, true);
     }
     dt = clock_micro() - start;
 
