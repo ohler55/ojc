@@ -3,7 +3,13 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-
+- redo parser
+ - callback
+ - like ojg
+ - redo structs to include hash of 8 slots
+ - APIs for callback or object
+  - also callback for multi-json
+ - validator with nil callbacks
 
 - make sure follow works
 - allow catchup on stream parser if with callbacks
@@ -15,7 +21,7 @@
     - } {    ][    }[   ] {
 
 
-- reader_next_non_white(ojcErr err, Reader reader) 
+- reader_next_non_white(ojcErr err, Reader reader)
  - ignore ANSI/VT100 escape sequences
   - will need to parse each code to determine length
 
