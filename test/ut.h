@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include "ojc/ojc.h"
+#include "oj/oj.h"
 
 typedef struct _Test {
     const char	*name;
@@ -35,6 +36,7 @@ extern void	ut_hexDump(const unsigned char *data, int len);
 extern void	ut_hexDumpBuf(const unsigned char *data, int len, char *out);
 extern char*	ut_toCodeStr(const unsigned char *data, int len);
 extern bool	ut_handle_error(ojcErr err);
+extern bool	ut_handle_oj_error(ojErr err);
 
 extern void	ut_benchmark(const char *label, int64_t iter, void (*func)(int64_t iter, void *ctx), void *ctx);
 

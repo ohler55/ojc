@@ -8,16 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-typedef struct _ojBuf {
-    char	*head;
-    char	*end;
-    char	*tail;
-    int		fd;
-    bool	realloc_ok;
-    ojStatus	err;
-    char	base[4096];
-} *ojBuf;
-
 inline static void
 buf_init(ojBuf buf, int fd) {
     buf->head = buf->base;
@@ -66,7 +56,7 @@ buf_append_string(ojBuf buf, const char *s, size_t slen) {
 	    size_t	len = buf->tail - buf->head;
 
 	    if (len != (size_t)write(buf->fd, buf->head, len)) {
-		buf->err = OJ_WRITE_ERR;
+		buf->err = OJ_ERR_WRITE;
 	    }
 	    buf->tail = buf->head;
 	} else if (buf->realloc_ok) {
@@ -85,7 +75,7 @@ buf_append_string(ojBuf buf, const char *s, size_t slen) {
 	    buf->end = buf->head + new_len - 2;
 	} else {
 	    slen = buf->end - buf->tail - 1;
-	    buf->err = OJ_OVERFLOW_ERR;
+	    buf->err = OJ_ERR_OVERFLOW;
 	    return;
 	}
     }
@@ -106,7 +96,7 @@ buf_append(ojBuf buf, char c) {
 	    size_t	len = buf->tail - buf->head;
 
 	    if (len != (size_t)write(buf->fd, buf->head, len)) {
-		buf->err = OJ_WRITE_ERR;
+		buf->err = OJ_ERR_WRITE;
 	    }
 	    buf->tail = buf->head;
 	} else if (buf->realloc_ok) {
@@ -123,7 +113,7 @@ buf_append(ojBuf buf, char c) {
 	    buf->tail = buf->head + toff;
 	    buf->end = buf->head + new_len - 2;
 	} else {
-	    buf->err = OJ_OVERFLOW_ERR;
+	    buf->err = OJ_ERR_OVERFLOW;
 	    return;
 	}
     }
@@ -145,7 +135,7 @@ buf_finish(ojBuf buf) {
 	size_t	len = buf->tail - buf->head;
 
 	if (0 < len && len != (size_t)write(buf->fd, buf->head, len)) {
-	    buf->err = OJ_WRITE_ERR;
+	    buf->err = OJ_ERR_WRITE;
 	}
 	buf->tail = buf->head;
     } else {

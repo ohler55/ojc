@@ -8,32 +8,45 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-//#include <stddef.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 #define OJ_VERSION	"3.1.1"
-#define OJ_ERR_INIT	{ .code = 0, .msg = { 0 } }
+#define OJ_ERR_INIT	{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
+#define OJ_ERR_START	300
+
+#define OJ_ERR_MEM(err, type) agoo_err_memory(err, type, __FILE__, __LINE__)
 
     typedef enum {
-	OJ_OK			= 0,
-	OJ_TYPE_ERR		= 't',
-	OJ_PARSE_ERR		= 'p',
-	OJ_INCOMPLETE_ERR	= 'i',
-	OJ_OVERFLOW_ERR		= 'o',
-	OJ_WRITE_ERR		= 'w',
-	OJ_MEMORY_ERR		= 'm',
-	OJ_UNICODE_ERR		= 'u',
-	OJ_ABORT_ERR		= '@',
-	OJ_ARG_ERR		= 'a',
+	OJ_OK		= 0,
+	OJ_ERR_MEMORY	= ENOMEM,
+	OJ_ERR_DENIED	= EACCES,
+	OJ_ERR_IMPL	= ENOSYS,
+	OJ_ERR_PARSE	= OJ_ERR_START,
+	OJ_ERR_READ,
+	OJ_ERR_WRITE,
+	OJ_ERR_OVERFLOW,
+	OJ_ERR_ARG,
+	OJ_ERR_NOT_FOUND,
+	OJ_ERR_THREAD,
+	OJ_ERR_NETWORK,
+	OJ_ERR_LOCK,
+	OJ_ERR_FREE,
+	OJ_ERR_IN_USE,
+	OJ_ERR_TOO_MANY,
+	OJ_ERR_TYPE,
+	OJ_ERR_EVAL,
+	OJ_ERR_TLS,
+	OJ_ERR_LAST
     } ojStatus;
 
     typedef enum {
-	OJ_NIL		= 'n',
+	OJ_NULL		= 'n',
 	OJ_TRUE		= 't',
 	OJ_FALSE	= 'f',
 	OJ_INT		= 'i',
-	OJ_FLOAT	= 'd',
+	OJ_DECIMAL	= 'd',
 	OJ_STRING	= 's',
 	OJ_OBJECT	= 'o',
 	OJ_ARRAY	= 'a',
@@ -48,10 +61,20 @@ extern "C" {
 	OJ_DEC_RAW	= 'd', // . or e in string
     } ojMod;
 
-#include "buf.h"
+    typedef struct _ojBuf {
+	char		*head;
+	char		*end;
+	char		*tail;
+	int		fd;
+	bool		realloc_ok;
+	ojStatus	err;
+	char		base[4096];
+    } *ojBuf;
 
     typedef struct _ojErr {
 	int	code;
+	int	line;
+	int	col;
 	char	msg[256];
     } *ojErr;
 
@@ -80,8 +103,6 @@ extern "C" {
 	    int64_t		fixnum;
 	    long double		dub;
 	};
-	uint32_t		str_len;
-	uint16_t		key_len;
 	uint8_t			type;	// ojType
 	uint8_t			mod;	// ojMod
     } *ojVal;
@@ -94,13 +115,19 @@ extern "C" {
 	void		(*pop)();
 	ojParseCallback	cb;
 	void		*ctx;
+
+	const char	*map;
+	struct _ojVal	val; // working val
 	struct _ojErr	err;
+	int		depth;
     } *ojParser;
 
     // General functions.
     extern const char*	oj_version(void);
     extern void		oj_cleanup(void);
     extern const char*	oj_type_str(ojType type);
+
+    extern void		oj_err_init(ojErr err);
     extern const char*	oj_status_str(ojStatus code);
 
     extern void		oj_validator(ojParser p);
@@ -127,12 +154,6 @@ extern "C" {
     extern size_t	oj_buf(ojBuf buf, ojVal val, int indent, int depth);
     extern size_t	oj_write(ojErr err, ojVal val, int indent, int socket);
     extern size_t	oj_fwrite(ojErr err, ojVal val, int indent, FILE *file);
-
-    static inline void
-    oj_err_init(ojErr err) {
-	err->code = OJ_OK;
-	*err->msg = '\0';
-    }
 
 #ifdef __cplusplus
 }

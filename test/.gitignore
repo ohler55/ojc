@@ -1,4 +1,5 @@
 run_tests
+oj_tests
 bench
 tmp.json
 log.json

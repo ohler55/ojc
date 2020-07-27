@@ -103,7 +103,7 @@ ut_done(void) {
     int		fail = 0;
     int		skip = 0;
     int		len, maxLen = 1;
-    
+
     for (t = tests; t->name != 0; t++) {
 	len = strlen(t->name);
 	if (maxLen < len) {
@@ -249,7 +249,7 @@ ut_same(const char *expected, const char *actual) {
 int
 ut_same_int(int64_t expected, int64_t actual, const char *format, ...) {
     int	pass = 0;
-    
+
     if (expected == actual) {
 	pass = 1;
     } else {
@@ -483,7 +483,7 @@ ut_toCodeStr(const unsigned char *data, int len) {
     int			clen = 0;
     char		*str;
     char		*s;
-    
+
     for (d = data; d < end; d++) {
 	if (*d < ' ' || 127 <= *d) {
 	    clen += 4;
@@ -511,7 +511,7 @@ ut_toCodeStr(const unsigned char *data, int len) {
 	}
     }
     *s = '\0';
-    
+
     return str;
 }
 
@@ -521,6 +521,22 @@ ut_handle_error(ojcErr err) {
 	ut_print("[%d] %s\n", err->code, err->msg);
 	ut_fail();
 	return true;
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = 1;
+    }
+    return false;
+}
+
+bool
+ut_handle_oj_error(ojErr err) {
+    if (OJ_OK != err->code) {
+	ut_print("[%d] %s\n", err->code, err->msg);
+	ut_fail();
+	return true;
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = 1;
     }
     return false;
 }
@@ -547,4 +563,3 @@ ut_benchmark(const char *label, int64_t iter, void (*func)(int64_t iter, void *c
     printf("%s: %lld iterations in %0.3f msecs. (%g iterations/msec)\n",
 	   label, (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
 }
-
