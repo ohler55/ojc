@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -20,6 +21,7 @@ clock_micro() {
     return (uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec;
 }
 
+#if 0
 static bool
 each_cb(ojcErr err, ojcVal val, void *ctx) {
     *((int64_t*)ctx) = *((int64_t*)ctx) + 1;
@@ -124,26 +126,44 @@ bench_read(const char *filename, int64_t iter) {
 
     return 0;
 }
+#endif
+
+static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be representative of an actual message.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 
 static int
 bench_parse(const char *filename, int64_t iter) {
     struct _ojcErr	err = OJC_ERR_INIT;
     int64_t		dt;
-    ojcVal		obj;
+    ojcVal		ojc;
+    const char		*str = json;
+    char		*buf = NULL;
 
-    obj = ojc_create_object();
-    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
-    ojc_object_append(&err, obj, "message",
-		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
-    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
-    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
-    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
-    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
-    ojc_object_append(&err, obj, "version", ojc_create_int(1));
+    if (NULL != filename) {
+	FILE	*f = fopen(filename, "r");
+	long	len;
 
-    char	*str = ojc_to_str(obj, 0);
+	if (NULL == f) {
+	    printf("*-*-* failed to open file %s\n", filename);
+	    exit(1);
+	}
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	if (NULL == (buf = malloc(len + 1))) {
+	    printf("*-*-* not enough memory to load file %s\n", filename);
+	    exit(1);
+	}
+	if (len != fread(buf, 1, len, f)) {
+	    printf("*-*-* reading file %s failed\n", filename);
+	    exit(1);
+	}
+	buf[len] = '\0';
+	fclose(f);
+	str = buf;
+    }
+
     int64_t	start = clock_micro();
-    ojcVal	ojc;
 
     for (int i = iter; 0 < i; i--) {
 	ojc = ojc_parse_str(&err, str, NULL, NULL);
@@ -157,23 +177,44 @@ bench_parse(const char *filename, int64_t iter) {
     printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
-    struct _ojValidator	v;
-    ojStatus	   	status = OJ_OK;
+    struct _ojErr	e = OJ_ERR_INIT;
 
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	if (OJ_OK != (status = oj_validate_str(&v, str))) {
+	if (OJ_OK != oj_validate_str(&e, str)) {
 	    break;
 	}
     }
     dt = clock_micro() - start;
-    if (OJ_OK != status) {
-	printf("*** Error: %s at %d:%d in %s\n", v.err.msg, v.err.line, v.err.col, str);
+    if (OJ_OK != e.code) {
+	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
+	return -1;
+    }
+    printf("oj_validate_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    struct _ojParser	p;
+    memset(&p, 0, sizeof(p));
+    start = clock_micro();
+    for (int i = iter; 0 < i; i--) {
+	oj_parser_reset(&p);
+	if (OJ_OK != oj_parse_str(&p, str)) {
+	    break;
+	}
+    }
+    dt = clock_micro() - start;
+    if (OJ_OK != e.code) {
+	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
     printf("oj_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
+    if (NULL != buf) {
+	free(buf);
+    }
     return 0;
 }
 
@@ -184,14 +225,14 @@ main(int argc, char **argv) {
 
     if (1 < argc) {
 	filename = argv[1];
-	bench_read(filename, iter);
-	bench_parse(filename, iter);
+	//bench_read(filename, iter);
+	bench_parse(filename, iter / 100);
 	return 0;
     }
     //bench_fill(iter);
     //bench_write(filename, iter);
     //bench_read(filename, iter);
-    bench_parse(filename, iter);
+    bench_parse(NULL, iter);
 
     return 0;
 }
