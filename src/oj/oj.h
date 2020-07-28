@@ -110,6 +110,14 @@ extern "C" {
     typedef bool		(*ojParseCallback)(ojErr err, ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
+    typedef struct _ojValidator {
+	const char	*map;
+	struct _ojErr	err;
+	int		depth;
+	// TBD change this stack to be expandable
+	char		stack[256];
+    } *ojValidator;
+
     typedef struct _ojParser {
 	void		(*push)(ojVal val);
 	void		(*pop)();
@@ -132,7 +140,9 @@ extern "C" {
     extern void		oj_err_init(ojErr err);
     extern const char*	oj_status_str(ojStatus code);
 
-    extern void		oj_validator(ojParser p);
+    extern ojStatus	oj_validate_str(ojValidator v, const char *json);
+
+    extern void		oj_parser_reset(ojParser p);
 
     extern ojStatus	oj_parse_str(ojParser p, const char *json);
     extern ojStatus	oj_parse_strp(ojParser p, const char **json);

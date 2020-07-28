@@ -318,6 +318,56 @@ byteError(ojParser p, int off, byte b) {
 }
 
 static ojStatus
+vbyteError(ojValidator v, int off, byte b) {
+    switch (v->map[256]) {
+    case 'N': // null_map
+	oj_err_set(&v->err, OJ_ERR_PARSE, "expected null");
+	break;
+    case 'T': // true_map
+	oj_err_set(&v->err, OJ_ERR_PARSE, "expected true");
+	break;
+    case 'F': // false_map
+	oj_err_set(&v->err, OJ_ERR_PARSE, "expected false");
+	break;
+    case 's': // string_map
+	oj_err_set(&v->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", b);
+	break;
+
+/*
+	case trueMap:
+		err.Message = "expected true"
+	case falseMap:
+		err.Message = "expected false"
+	case afterMap:
+		err.Message = fmt.Sprintf("expected a comma or close, not '%c'", b)
+	case key1Map:
+		err.Message = fmt.Sprintf("expected a string start or object close, not '%c'", b)
+	case keyMap:
+		err.Message = fmt.Sprintf("expected a string start, not '%c'", b)
+	case colonMap:
+		err.Message = fmt.Sprintf("expected a colon, not '%c'", b)
+	case negMap, zeroMap, digitMap, dotMap, fracMap, expSignMap, expZeroMap, expMap:
+		err.Message = "invalid number"
+	case stringMap:
+		err.Message = fmt.Sprintf("invalid JSON character 0x%02x", b)
+	case escMap:
+		err.Message = fmt.Sprintf("invalid JSON escape character '\\%c'", b)
+	case uMap:
+		err.Message = fmt.Sprintf("invalid JSON unicode character '%c'", b)
+	case spaceMap:
+		err.Message = fmt.Sprintf("extra characters after close, '%c'", b)
+	default:
+		err.Message = fmt.Sprintf("unexpected character '%c'", b)
+	}
+*/
+    default:
+	oj_err_set(&v->err, OJ_ERR_PARSE, "unexpected character '%c'", b);
+	break;
+    }
+    return v->err.code;
+}
+
+static ojStatus
 parse(ojParser p, const byte *json) {
 
     // TBD put starts stack on parser
@@ -576,11 +626,206 @@ parse(ojParser p, const byte *json) {
     return OJ_OK;
 }
 
+static ojStatus
+validate(ojValidator v, const byte *json) {
+    for (const byte *b = json; '\0' != *b; b++) {
+	//printf("*** op: %c  b: %c from %c\n", v->map[*b], *b, v->map[256]);
+	switch (v->map[*b]) {
+	case SKIP_NEWLINE:
+	    v->err.line++;
+	    v->err.col = b - json;
+	    for (; SKIP_CHAR == space_map[*b]; b++) {
+	    }
+	    continue;
+	case SKIP_CHAR:
+	    continue;
+	case VAL_QUOTE: {
+	    b++;
+	    if ('\0' == *b) {
+		// TBD end of buf, build string the hard way
+	    }
+	    for (; STR_OK == string_map[*b]; b++) {
+	    }
+	    switch (*b) {
+	    case '"': // normal termination
+		v->map = after_map;
+		break;
+	    case '\0':
+		// TBD string mode
+		// save from start to current if push
+	    case '\\':
+		// TBD esc mode
+		// save from start to current if push
+	    default:
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
+	    }
+	    break;
+	}
+	case KEY_QUOTE:
+	    b++;
+	    if ('\0' == *b) {
+		// TBD end of buf, build string the hard way
+	    }
+	    for (; STR_OK == string_map[*b]; b++) {
+	    }
+	    switch (*b) {
+	    case '"': // normal termination
+		v->map = colon_map;
+		break;
+	    case '\0':
+		// TBD string mode
+		// save from start to current if push
+	    case '\\':
+		// TBD esc mode
+		// save from start to current if push
+	    default:
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
+	    }
+	    break;
+	case COLON_COLON:
+	    v->map = value_map;
+	    break;
+	case OPEN_ARRAY:
+	    v->stack[v->depth] = '[';
+	    v->depth++;
+	    v->map = value_map;
+	    break;
+	case CLOSE_ARRAY:
+	    v->map = after_map;
+	    v->depth--;
+	    if (v->depth < 0 || '[' != v->stack[v->depth]) {
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "unexpected array close");
+	    }
+	    break;
+	case OPEN_OBJECT:
+	    v->stack[v->depth] = '{';
+	    v->depth++;
+	    v->map = key1_map;
+	    break;
+	case CLOSE_OBJECT:
+	    v->map = after_map;
+	    v->depth--;
+	    if (v->depth < 0 || '{' != v->stack[v->depth]) {
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "unexpected object close");
+	    }
+	    break;
+	case AFTER_COMMA:
+	    if (0 < v->depth && '{' == v->stack[v->depth-1]) {
+		v->map = key1_map;
+	    } else {
+		v->map = comma_map;
+	    }
+	    break;
+	case NUM_COMMA:
+	    // TBD add number
+	    if (0 < v->depth && '{' == v->stack[v->depth-1]) {
+		v->map = key1_map;
+	    } else {
+		v->map = comma_map;
+	    }
+	    break;
+	case VAL0:
+	    v->map = zero_map;
+	    break;
+	case VAL_NEG:
+	    v->map = neg_map;
+	    break;;
+	case VAL_DIGIT:
+	    v->map = digit_map;
+	    break;
+	case NUM_DIGIT:
+	    break;
+	case NUM_DOT:
+	    v->map = dot_map;
+	    break;
+	case NUM_FRAC:
+	    v->map = frac_map;
+	    break;
+	case FRAC_E:
+	    v->map = exp_sign_map;
+	    break;
+	case NUM_ZERO:
+	    v->map = zero_map;
+	    break;
+	case NEG_DIGIT:
+	    v->map = digit_map;
+	    break;
+	case EXP_SIGN:
+	    v->map = exp_zero_map;
+	    break;
+	case EXP_DIGIT:
+	    v->map = exp_map;
+	    break;
+	case NUM_SPC:
+	    v->map = after_map;
+	    break;
+	case NUM_NEWLINE:
+	    v->map = after_map;
+	    v->err.line++;
+	    v->err.col = b - json;
+	    for (; SKIP_CHAR == space_map[*b]; b++) {
+	    }
+	    continue;
+	case VAL_NULL:
+	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
+		b += 3;
+		v->map = after_map;
+	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+		v->map = null_map;
+		//p.ri = 0;
+	    } else {
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "expected null");
+	    }
+	    break;
+	case VAL_TRUE:
+	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
+		b += 3;
+		v->map = after_map;
+	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+		v->map = true_map;
+		//p.ri = 0;
+	    } else {
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "expected true");
+	    }
+	    break;
+	case VAL_FALSE:
+	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
+		b += 4;
+		v->map = after_map;
+	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
+		v->map = false_map;
+		//p.ri = 0;
+	    } else {
+		return oj_err_set(&v->err, OJ_ERR_PARSE, "expected false");
+	    }
+	    break;
+	case CHAR_ERR:
+	    return vbyteError(v, b - json, *b);
+	default:
+	    printf("*** internal error, unknown mode '%c'\n", v->map[*b]);
+	    break;
+	}
+    }
+    return OJ_OK;
+}
+
+ojStatus
+oj_validate_str(ojValidator v, const char *json) {
+    memset(v, 0, sizeof(struct _ojValidator));
+    v->map = value_map;
+    v->err.line = 1;
+    validate(v, (const byte*)json);
+
+    return v->err.code;
+}
+
 void
-oj_validator(ojParser p) {
-    memset(p, 0, sizeof(struct _ojParser));
+oj_parser_reset(ojParser p) {
     p->map = value_map;
     p->err.line = 1;
+    p->err.col = 0;
+    *p->err.msg = '\0';
+    p->depth = 0;
 }
 
 ojStatus

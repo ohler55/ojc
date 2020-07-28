@@ -157,19 +157,18 @@ bench_parse(const char *filename, int64_t iter) {
     printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
-    struct _ojParser	p;
-    ojStatus    	status;
+    struct _ojValidator	v;
+    ojStatus	   	status = OJ_OK;
 
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_validator(&p);
-	if (OJ_OK != (status = oj_parse_str(&p, str))) {
+	if (OJ_OK != (status = oj_validate_str(&v, str))) {
 	    break;
 	}
     }
     dt = clock_micro() - start;
     if (OJ_OK != status) {
-	printf("*** Error: %s at %d:%d in %s\n", p.err.msg, p.err.line, p.err.col, str);
+	printf("*** Error: %s at %d:%d in %s\n", v.err.msg, v.err.line, v.err.col, str);
 	return -1;
     }
     printf("oj_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
@@ -189,9 +188,9 @@ main(int argc, char **argv) {
 	bench_parse(filename, iter);
 	return 0;
     }
-    bench_fill(iter);
-    bench_write(filename, iter);
-    bench_read(filename, iter);
+    //bench_fill(iter);
+    //bench_write(filename, iter);
+    //bench_read(filename, iter);
     bench_parse(filename, iter);
 
     return 0;

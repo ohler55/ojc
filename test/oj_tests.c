@@ -10,19 +10,19 @@ struct _data {
 
 static void
 test_jsons(struct _data *dp) {
-    struct _ojParser	p;
+    struct _ojValidator	v;
     ojStatus    	status;
 
     for (; NULL != dp->json; dp++) {
-	oj_validator(&p);
-	status = oj_parse_str(&p, dp->json);
+	printf("*** test json: '%s'\n", dp->json);
+	status = oj_validate_str(&v, dp->json);
 	if (OJ_OK == dp->status) {
-	    if (ut_handle_oj_error(&p.err)) {
-		ut_print("error at %d:%d\n",  p.err.line, p.err.col);
+	    if (ut_handle_oj_error(&v.err)) {
+		ut_print("error at %d:%d\n",  v.err.line, v.err.col);
 		return;
 	    }
 	} else if (status != dp->status) {
-	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, p.err.code, p.err.msg);
+	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, v.err.code, v.err.msg);
 	    ut_fail();
 	}
     }
