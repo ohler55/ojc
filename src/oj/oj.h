@@ -120,6 +120,8 @@ extern "C" {
 	struct _ojVal	val; // working val
 	struct _ojErr	err;
 	int		depth;
+	// TBD change this stack to be expandable
+	char		stack[256];
     } *ojParser;
 
     // General functions.

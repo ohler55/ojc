@@ -9,6 +9,7 @@
 
 #include "ojc/buf.h"
 #include "ojc/ojc.h"
+#include "oj/oj.h"
 
 static uint64_t
 clock_micro() {
@@ -154,6 +155,24 @@ bench_parse(const char *filename, int64_t iter) {
 	return -1;
     }
     printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    struct _ojParser	p;
+    ojStatus    	status;
+
+    start = clock_micro();
+    for (int i = iter; 0 < i; i--) {
+	oj_validator(&p);
+	if (OJ_OK != (status = oj_parse_str(&p, str))) {
+	    break;
+	}
+    }
+    dt = clock_micro() - start;
+    if (OJ_OK != status) {
+	printf("*** Error: %s at %d:%d in %s\n", p.err.msg, p.err.line, p.err.col, str);
+	return -1;
+    }
+    printf("oj_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
     return 0;

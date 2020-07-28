@@ -18,6 +18,7 @@ test_jsons(struct _data *dp) {
 	status = oj_parse_str(&p, dp->json);
 	if (OJ_OK == dp->status) {
 	    if (ut_handle_oj_error(&p.err)) {
+		ut_print("error at %d:%d\n",  p.err.line, p.err.col);
 		return;
 	    }
 	} else if (status != dp->status) {
@@ -89,12 +90,40 @@ number_test() {
     test_jsons(cases);
 }
 
+static void
+array_test() {
+    struct _data	cases[] = {
+	{.json = "[]", .status = OJ_OK },
+	{.json = "[true]", .status = OJ_OK },
+	{.json = "[true,false]", .status = OJ_OK },
+	{.json = "[123 , 456]", .status = OJ_OK },
+	{.json = "[[], [ ]]", .status = OJ_OK },
+	{.json = "[}", .status = OJ_ERR_PARSE },
+	{.json = NULL }};
+
+    test_jsons(cases);
+}
+
+static void
+object_test() {
+    struct _data	cases[] = {
+	{.json = "{}", .status = OJ_OK },
+	{.json = "{\"x\":true}", .status = OJ_OK },
+	{.json = "{\"x\":1,\"y\":0}", .status = OJ_OK },
+	{.json = "{]", .status = OJ_ERR_PARSE },
+	{.json = NULL }};
+
+    test_jsons(cases);
+}
+
 static struct _Test	tests[] = {
     { "null",		null_test },
     { "true",		true_test },
     { "false",		false_test },
     { "string",		string_test },
     { "number",		number_test },
+    { "array",		array_test },
+    { "object",		object_test },
 
     { 0, 0 } };
 

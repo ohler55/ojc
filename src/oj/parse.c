@@ -129,7 +129,7 @@ a.p.............................\
 
 static const char	colon_map[257] = "\
 .........ab..a..................\
-a.p.......................q.....\
+a.........................q.....\
 ................................\
 ................................\
 ................................\
@@ -323,7 +323,7 @@ parse(ojParser p, const byte *json) {
     // TBD put starts stack on parser
 
     for (const byte *b = json; '\0' != *b; b++) {
-	//printf("*** op: %c  b: %c\n", p->map[*b], *b);
+	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	switch (p->map[*b]) {
 	case SKIP_NEWLINE:
 	    p->err.line++;
@@ -343,6 +343,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    switch (*b) {
 	    case '"': // normal termination
+		p->map = after_map;
 		if (NULL != p->push) {
 		    printf("*** start: %ld\n", start - json);
 		    // TBD build string val as needed
@@ -355,39 +356,77 @@ parse(ojParser p, const byte *json) {
 		// TBD esc mode
 		// save from start to current if push
 	    default:
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid JSON charactere 0x%02x", *b);
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
 	    }
 	    break;
 	}
+	case KEY_QUOTE:
+	    b++;
+	    if ('\0' == *b) {
+		// TBD end of buf, build string the hard way
+	    }
+	    const byte	*start = b;
+	    for (; STR_OK == string_map[*b]; b++) {
+	    }
+	    switch (*b) {
+	    case '"': // normal termination
+		p->map = colon_map;
+		if (NULL != p->push) {
+		    printf("*** start: %ld\n", start - json);
+		    // TBD build string val as needed
+		}
+		break;
+	    case '\0':
+		// TBD string mode
+		// save from start to current if push
+	    case '\\':
+		// TBD esc mode
+		// save from start to current if push
+	    default:
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
+	    }
+	    break;
+	case COLON_COLON:
+	    p->map = value_map;
+	    break;
 	case OPEN_ARRAY:
-	    // TBD
-	    //p.starts = append(p.starts, -1)
+	    p->stack[p->depth] = '[';
 	    p->depth++;
-	    p->map = after_map;
+	    p->map = value_map;
 	    break;
 	case CLOSE_ARRAY:
 	    p->map = after_map;
 	    p->depth--;
-	    /*
-	    if (depth < 0 || 0 <= p.starts[depth]) {
-		return p.newError(off, "unexpected object close");
+	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
 	    }
-	    */
 	    break;
 	case OPEN_OBJECT:
-	    // TBD
-	    //p.starts = append(p.starts, -1)
+	    p->stack[p->depth] = '{';
 	    p->depth++;
 	    p->map = key1_map;
 	    break;
 	case CLOSE_OBJECT:
 	    p->map = after_map;
 	    p->depth--;
-	    /*
-	    if (depth < 0 || 0 <= p.starts[depth]) {
-		return p.newError(off, "unexpected object close");
+	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
 	    }
-	    */
+	    break;
+	case AFTER_COMMA:
+	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
+		p->map = key1_map;
+	    } else {
+		p->map = comma_map;
+	    }
+	    break;
+	case NUM_COMMA:
+	    // TBD add number
+	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
+		p->map = key1_map;
+	    } else {
+		p->map = comma_map;
+	    }
 	    break;
 	case VAL0:
 	    p->map = zero_map;
@@ -397,7 +436,7 @@ parse(ojParser p, const byte *json) {
 		*p->val.str.val = '\1'; // one character, 0
 		p->val.str.val[1] = '0';
 	    }
-	    continue;
+	    break;
 	case VAL_NEG:
 	    p->map = neg_map;
 	    if (NULL != p->push) {
@@ -406,7 +445,7 @@ parse(ojParser p, const byte *json) {
 		*p->val.str.val = '\1'; // one character, -
 		p->val.str.val[1] = '-';
 	    }
-	    continue;
+	    break;;
 	case VAL_DIGIT:
 	    p->map = digit_map;
 	    if (NULL != p->push) {
