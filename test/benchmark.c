@@ -129,6 +129,7 @@ bench_read(const char *filename, int64_t iter) {
 #endif
 
 static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be representative of an actual message.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
+//static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 
 static int
 bench_parse(const char *filename, int64_t iter) {
@@ -191,7 +192,7 @@ bench_parse(const char *filename, int64_t iter) {
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("oj_validate_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+    printf("oj_validate_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
     struct _ojParser	p;
@@ -209,7 +210,7 @@ bench_parse(const char *filename, int64_t iter) {
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("oj_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+    printf("oj_parse_str    %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
     if (NULL != buf) {

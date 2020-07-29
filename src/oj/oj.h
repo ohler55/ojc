@@ -85,9 +85,9 @@ extern "C" {
     } *ojExt;
 
     union _ojStr {
-	char		val[64]; 	// first char is the length
+	char		val[128]; 	// first char is the length
 	struct {
-	    char	start[48]; 	// start of string, first char is 0x7f
+	    char	start[112]; 	// start of string, first char is 0xff
 	    int		len;		// length of combines string blocks
 	    ojExt	more;		// additional string blocks
 	};
@@ -99,7 +99,7 @@ extern "C" {
 	union {
 	    union _ojStr	str;
 	    struct _ojVal	*list;
-	    struct _ojVal	*hash[8];
+	    struct _ojVal	*hash[16];
 	    int64_t		fixnum;
 	    long double		dub;
 	};
@@ -111,10 +111,12 @@ extern "C" {
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
     typedef struct _ojParser {
-	void		(*push)(ojVal val);
-	void		(*pop)();
+	void		(*push)(ojVal val, void *ctx);
+	void		(*pop)(void *ctx);
+	void		*pp_ctx; // push and pop context
+
 	ojParseCallback	cb;
-	void		*ctx;
+	void		*cb_ctx;
 
 	const char	*map;
 	const char	*next_map;
@@ -123,7 +125,7 @@ extern "C" {
 	int		depth;
 	int		ri;
 	// TBD change this stack to be expandable
-	char		stack[256];
+	char		stack[1024];
     } *ojParser;
 
     // General functions.

@@ -331,6 +331,8 @@ byteError(ojErr err, const char *map, int off, byte b) {
 
 static ojStatus
 parse(ojParser p, const byte *json) {
+    int		len;
+
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	switch (p->map[*b]) {
@@ -347,7 +349,17 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case KEY_QUOTE:
 	    b++;
+	    const byte *start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
+	    }
+	    if ('"' == *b) {
+		len = b - start;
+		if (len < sizeof(p->val.key.val)) {
+		    *p->val.key.val = (char)len;
+		    memcpy(p->val.key.val + 1, start, len);
+		} else {
+		    // TBD build key
+		}
 	    }
 	    b--;
 	    p->map = string_map;
@@ -364,38 +376,33 @@ parse(ojParser p, const byte *json) {
 	    b++;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
-#if 0
-	    switch (*b) {
-	    case '"': // normal termination
-		p->map = after_map;
-		// TBD push after val setup
-		break;
-	    case '\0':
-		p->map = string_map;
-		p->next_map = after_map;
-	    case '\\':
-		p->map = esc_map;
-		p->next_map = after_map;
-		break;
-	    default:
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
+	    if ('"' == *b) {
+		len = b - start;
+		if (len < sizeof(p->val.str.val)) {
+		    *p->val.str.val = (char)len;
+		    memcpy(p->val.str.val + 1, start, len);
+		    p->val.type = OJ_STRING;
+		    p->val.mod = OJ_STR_INLINE;
+		} else {
+		    // TBD build string
+		    printf("*** long string\n");
+		}
 	    }
-#else
 	    b--;
 	    p->map = string_map;
 	    p->next_map = after_map;
-#endif
 	    break;
 	case OPEN_OBJECT:
 	    // TBD check depth vs stack len
 	    p->stack[p->depth] = '{';
 	    p->depth++;
+	    // TBD if num val then push, must reset after other push
 	    p->map = key1_map;
 	    break;
 	case CLOSE_OBJECT:
 	    p->map = after_map;
 	    p->depth--;
+	    // TBD if num val then push, must reset after other push
 	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
@@ -405,17 +412,20 @@ parse(ojParser p, const byte *json) {
 	    // TBD check depth vs stack len
 	    p->stack[p->depth] = '[';
 	    p->depth++;
+	    // TBD if numval then push, must reset after other push
 	    p->map = value_map;
 	    break;
 	case CLOSE_ARRAY:
 	    p->map = after_map;
 	    p->depth--;
+	    // TBD if num val then push, must reset after other push
 	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
 	    }
 	    break;
 	case NUM_COMMA:
+	    // TBD push
 	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
 		p->map = key_map;
 	    } else {
@@ -462,9 +472,11 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_SPC:
 	    p->map = after_map;
+	    // TBD push
 	    break;
 	case NUM_NEWLINE:
 	    p->map = after_map;
+	    // TBD push
 	    p->err.line++;
 	    p->err.col = b - json;
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
@@ -477,6 +489,9 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case STR_QUOTE:
 	    p->map = p->next_map;
+	    if (':' != p->map[256]) {
+		p->push(&p->val, p->pp_ctx);
+	    }
 	    break;
 	case ESC_U:
 	    p->map = u_map;
@@ -496,7 +511,7 @@ parse(ojParser p, const byte *json) {
 		b += 3;
 		p->map = after_map;
 		p->val.type = OJ_NULL;
-		p->push(&p->val);
+		p->push(&p->val, p->pp_ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = null_map;
 		p->ri = 0;
@@ -510,7 +525,7 @@ parse(ojParser p, const byte *json) {
 		b += 3;
 		p->map = after_map;
 		p->val.type = OJ_TRUE;
-		p->push(&p->val);
+		p->push(&p->val, p->pp_ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = true_map;
 		p->ri = 0;
@@ -524,7 +539,7 @@ parse(ojParser p, const byte *json) {
 		b += 4;
 		p->map = after_map;
 		p->val.type = OJ_FALSE;
-		p->push(&p->val);
+		p->push(&p->val, p->pp_ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
 		p->map = false_map;
 		p->ri = 0;
@@ -779,11 +794,12 @@ oj_parser_reset(ojParser p) {
 }
 
 static void
-no_push(ojVal val) {
+no_push(ojVal val, void *ctx) {
+    //printf("*** push %s\n", oj_type_str(val->type));
 }
 
 static void
-no_pop() {
+no_pop(void *ctx) {
 }
 
 ojStatus
