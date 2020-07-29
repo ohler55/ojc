@@ -4,7 +4,9 @@
 ^c^s show subtree
 
 - redo parser
- - callback, need context or maybe parser and ctx on parser
+ - test parser push/pop
+  - fill buf with results
+   - need function to fill a val
  - validation unit test for mixed with error
 
  - redo structs to include hash of 8 slots

@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 inline static void
-buf_init(ojBuf buf, int fd) {
+oj_buf_init(ojBuf buf, int fd) {
     buf->head = buf->base;
     buf->end = buf->base + sizeof(buf->base) - 1;
     buf->tail = buf->head;
@@ -19,7 +19,7 @@ buf_init(ojBuf buf, int fd) {
 }
 
 inline static void
-buf_finit(ojBuf buf, char *str, size_t slen) {
+oj_buf_finit(ojBuf buf, char *str, size_t slen) {
     buf->head = str;
     buf->end = str + slen;
     buf->tail = buf->head;
@@ -29,25 +29,26 @@ buf_finit(ojBuf buf, char *str, size_t slen) {
 }
 
 inline static void
-buf_reset(ojBuf buf) {
+oj_buf_reset(ojBuf buf) {
     buf->head = buf->base;
     buf->tail = buf->head;
+    buf->err = OJ_OK;
 }
 
 inline static void
-buf_cleanup(ojBuf buf) {
+oj_buf_cleanup(ojBuf buf) {
     if (buf->base != buf->head && !buf->realloc_ok) {
         free(buf->head);
     }
 }
 
 inline static size_t
-buf_len(ojBuf buf) {
+oj_buf_len(ojBuf buf) {
     return buf->tail - buf->head;
 }
 
 inline static void
-buf_append_string(ojBuf buf, const char *s, size_t slen) {
+oj_buf_append_string(ojBuf buf, const char *s, size_t slen) {
     if (OJ_OK != buf->err) {
 	return;
     }
@@ -87,7 +88,7 @@ buf_append_string(ojBuf buf, const char *s, size_t slen) {
 }
 
 inline static void
-buf_append(ojBuf buf, char c) {
+oj_buf_append(ojBuf buf, char c) {
     if (OJ_OK != buf->err) {
 	return;
     }
@@ -122,12 +123,12 @@ buf_append(ojBuf buf, char c) {
 }
 
 inline static void
-buf_backup(ojBuf buf) {
+oj_buf_backup(ojBuf buf) {
     buf->tail--;
 }
 
 inline static void
-buf_finish(ojBuf buf) {
+oj_buf_finish(ojBuf buf) {
     if (OJ_OK != buf->err) {
 	return;
     }
@@ -144,7 +145,7 @@ buf_finish(ojBuf buf) {
 }
 
 inline static char*
-buf_take_string(ojBuf buf) {
+oj_buf_take_string(ojBuf buf) {
     char	*str = buf->head;
 
     if (buf->base != buf->head && !buf->realloc_ok) {

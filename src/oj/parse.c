@@ -332,6 +332,7 @@ byteError(ojErr err, const char *map, int off, byte b) {
 static ojStatus
 parse(ojParser p, const byte *json) {
     int		len;
+    const byte *start;
 
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
@@ -349,7 +350,7 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case KEY_QUOTE:
 	    b++;
-	    const byte *start = b;
+	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if ('"' == *b) {
@@ -374,6 +375,7 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case VAL_QUOTE:
 	    b++;
+	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if ('"' == *b) {
@@ -396,13 +398,22 @@ parse(ojParser p, const byte *json) {
 	    // TBD check depth vs stack len
 	    p->stack[p->depth] = '{';
 	    p->depth++;
-	    // TBD if num val then push, must reset after other push
+	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->push(&p->val, p->pp_ctx);
+		p->val.type = OJ_NULL;
+	    }
+	    p->val.type = OJ_OBJECT;
+	    p->push(&p->val, p->pp_ctx);
 	    p->map = key1_map;
 	    break;
 	case CLOSE_OBJECT:
 	    p->map = after_map;
 	    p->depth--;
-	    // TBD if num val then push, must reset after other push
+	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->push(&p->val, p->pp_ctx);
+		p->val.type = OJ_NULL;
+	    }
+	    p->pop(p->pp_ctx);
 	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
@@ -412,20 +423,30 @@ parse(ojParser p, const byte *json) {
 	    // TBD check depth vs stack len
 	    p->stack[p->depth] = '[';
 	    p->depth++;
-	    // TBD if numval then push, must reset after other push
+	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->push(&p->val, p->pp_ctx);
+		p->val.type = OJ_NULL;
+	    }
+	    p->val.type = OJ_ARRAY;
+	    p->push(&p->val, p->pp_ctx);
 	    p->map = value_map;
 	    break;
 	case CLOSE_ARRAY:
 	    p->map = after_map;
 	    p->depth--;
-	    // TBD if num val then push, must reset after other push
+	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->push(&p->val, p->pp_ctx);
+		p->val.type = OJ_NULL;
+	    }
+	    p->pop(p->pp_ctx);
 	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
 	    }
 	    break;
 	case NUM_COMMA:
-	    // TBD push
+	    p->push(&p->val, p->pp_ctx);
+	    p->val.type = OJ_NULL;
 	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
 		p->map = key_map;
 	    } else {
@@ -433,50 +454,87 @@ parse(ojParser p, const byte *json) {
 	    }
 	    break;
 	case VAL0:
+	    p->val.type = OJ_INT;
+	    p->val.mod = OJ_INT_RAW;
+	    *p->val.str.val = 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = zero_map;
 	    break;
 	case VAL_NEG:
+	    p->val.type = OJ_INT;
+	    p->val.mod = OJ_INT_RAW;
+	    *p->val.str.val = 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = neg_map;
 	    break;;
 	case VAL_DIGIT:
+	    p->val.type = OJ_INT;
+	    p->val.mod = OJ_INT_RAW;
 	    p->map = digit_map;
+	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+		*p->val.str.val = *p->val.str.val + 1;
+		p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    }
+	    b--;
 	    break;
 	case NUM_DIGIT:
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+		*p->val.str.val = *p->val.str.val + 1;
+		p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    }
 	    b--;
 	    break;
 	case NUM_DOT:
+	    p->val.type = OJ_DECIMAL;
+	    p->val.mod = OJ_DEC_RAW;
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = dot_map;
 	    break;
 	case NUM_FRAC:
 	    p->map = frac_map;
 	    for (; NUM_FRAC == frac_map[*b]; b++) {
+		*p->val.str.val = *p->val.str.val + 1;
+		p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    }
 	    b--;
 	    break;
 	case FRAC_E:
+	    p->val.type = OJ_DECIMAL;
+	    p->val.mod = OJ_DEC_RAW;
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = exp_sign_map;
 	    break;
 	case NUM_ZERO:
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = zero_map;
 	    break;
 	case NEG_DIGIT:
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = digit_map;
 	    break;
 	case EXP_SIGN:
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = exp_zero_map;
 	    break;
 	case EXP_DIGIT:
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = *b;
 	    p->map = exp_map;
 	    break;
 	case NUM_SPC:
 	    p->map = after_map;
-	    // TBD push
+	    p->push(&p->val, p->pp_ctx);
+	    p->val.type = OJ_NULL;
 	    break;
 	case NUM_NEWLINE:
 	    p->map = after_map;
-	    // TBD push
+	    p->push(&p->val, p->pp_ctx);
+	    p->val.type = OJ_NULL;
 	    p->err.line++;
 	    p->err.col = b - json;
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
@@ -651,6 +709,9 @@ validate(ojValidator v, const byte *json) {
 	    v->map = neg_map;
 	    break;;
 	case VAL_DIGIT:
+	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+	    }
+	    b--;
 	    v->map = digit_map;
 	    break;
 	case NUM_DIGIT:
