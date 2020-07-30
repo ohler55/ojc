@@ -43,6 +43,7 @@ enum {
     STR_OK		= 'R',
     ESC_U		= 'U',
     CHAR_ERR		= '.',
+    DONE		= 'X',
 };
 
 typedef struct _ojValidator {
@@ -59,7 +60,7 @@ typedef struct _ojValidator {
 /*
 0123456789abcdef0123456789abcdef */
 static const char	value_map[257] = "\
-.........ab..a..................\
+X........ab..a..................\
 a.i..........f..ghhhhhhhhh......\
 ...........................k.m..\
 ......e.......c.....d......l.n..\
@@ -109,7 +110,7 @@ a.i..........f..ghhhhhhhhh......\
 ................................,";
 
 static const char	after_map[257] = "\
-.........ab..a..................\
+X........ab..a..................\
 a...........o...................\
 .............................m..\
 .............................n..\
@@ -404,7 +405,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    p->val.type = OJ_OBJECT;
 	    p->val.mod = OJ_OBJ_RAW;
-	    p->val.list = NULL;
+	    p->val.list.head = NULL;
 	    p->push(&p->val, p->pp_ctx);
 	    p->map = key1_map;
 	    break;
@@ -430,7 +431,7 @@ parse(ojParser p, const byte *json) {
 		p->val.type = OJ_NULL;
 	    }
 	    p->val.type = OJ_ARRAY;
-	    p->val.list = NULL;
+	    p->val.list.head = NULL;
 	    p->push(&p->val, p->pp_ctx);
 	    p->map = value_map;
 	    break;
@@ -781,6 +782,7 @@ validate(ojValidator v, const byte *json) {
 	    v->map = string_map;
 	    break;
 	case VAL_NULL:
+	    //if (*(uint32_t*)b == *(uint32_t*)"null") {
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
 		v->map = after_map;
@@ -793,6 +795,7 @@ validate(ojValidator v, const byte *json) {
 	    }
 	    break;
 	case VAL_TRUE:
+	    //if (*(uint32_t*)b == *(uint32_t*)"true") {
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
 		v->map = after_map;
@@ -805,6 +808,7 @@ validate(ojValidator v, const byte *json) {
 	    }
 	    break;
 	case VAL_FALSE:
+	    //if (*(uint32_t*)b == *(uint32_t*)"fals" && 'e' == b[4]) {
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
 		v->map = after_map;
@@ -842,7 +846,7 @@ oj_validate_str(ojErr err, const char *json) {
 }
 
 ojStatus
-oj_validate_strx(ojValidator v, const char *json) {
+oj_validate_strzzz(ojValidator v, const char *json) {
     memset(v, 0, sizeof(struct _ojValidator));
     v->map = value_map;
     v->err.line = 1;

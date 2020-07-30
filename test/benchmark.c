@@ -151,7 +151,7 @@ bench_parse(const char *filename, int64_t iter) {
 	len = ftell(f);
 	fseek(f, 0, SEEK_SET);
 
-	if (NULL == (buf = malloc(len + 1))) {
+	if (NULL == (buf = calloc(1, len + 16))) {
 	    printf("*-*-* not enough memory to load file %s\n", filename);
 	    exit(1);
 	}
@@ -159,7 +159,7 @@ bench_parse(const char *filename, int64_t iter) {
 	    printf("*-*-* reading file %s failed\n", filename);
 	    exit(1);
 	}
-	buf[len] = '\0';
+	//buf[len] = '\0';
 	fclose(f);
 	str = buf;
     }
@@ -195,14 +195,12 @@ bench_parse(const char *filename, int64_t iter) {
     printf("oj_validate_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
-    struct _ojParser	p;
-    memset(&p, 0, sizeof(p));
+    ojVal	v;
+
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_parser_reset(&p);
-	if (OJ_OK != oj_parse_str(&p, str)) {
-	    break;
-	}
+	v = oj_val_parse_str(&e, str);
+	oj_destroy(v);
     }
     dt = clock_micro() - start;
     if (OJ_OK != e.code) {
@@ -227,7 +225,7 @@ main(int argc, char **argv) {
     if (1 < argc) {
 	filename = argv[1];
 	//bench_read(filename, iter);
-	bench_parse(filename, iter / 100);
+	bench_parse(filename, iter / 10);
 	return 0;
     }
     //bench_fill(iter);

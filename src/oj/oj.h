@@ -94,12 +94,18 @@ extern "C" {
 	};
     } *ojStr;
 
+    typedef struct _ojList {
+	// pointer is volatile
+	struct _ojVal	*volatile head;
+	struct _ojVal	*volatile tail;
+    } *ojList;
+
     typedef struct _ojVal {
 	struct _ojVal		*next;
 	union _ojStr		key;
 	union {
 	    union _ojStr	str;
-	    struct _ojVal	*list;
+	    struct _ojList	list;
 	    struct _ojVal	*hash[16];
 	    int64_t		fixnum;
 	    long double		dub;
@@ -107,12 +113,6 @@ extern "C" {
 	uint8_t			type;	// ojType
 	uint8_t			mod;	// ojMod
     } *ojVal;
-
-    typedef struct _ojList {
-	// pointer is volatile
-	struct _ojVal	*volatile head;
-	struct _ojVal	*volatile tail;
-    } *ojList;
 
     typedef bool		(*ojParseCallback)(ojErr err, ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
@@ -163,8 +163,8 @@ extern "C" {
 
     // TBD val access functions
     // TBD val creation functions
-    extern ojVal	oj_val_create(ojType type, ojMod mod);
-    extern ojStatus	oj_destroy(ojVal val);
+    extern ojVal	oj_val_create();
+    extern void		oj_destroy(ojVal val);
 
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);

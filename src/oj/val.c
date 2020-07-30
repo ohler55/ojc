@@ -6,7 +6,7 @@
 #include "buf.h"
 
 static struct _ojList	free_vals = { .head = NULL, .tail = NULL };
-static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
+//static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
 
 ojVal
 oj_val_create() {
@@ -14,84 +14,65 @@ oj_val_create() {
 
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
-    if (NULL == free_vals.head || free_vals.head == free_vals.tail) {
+    if (NULL == free_vals.head) {
 	val = (ojVal)calloc(1, sizeof(struct _ojVal));
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
 	// flag.
-	while (atomic_flag_test_and_set(&val_busy)) {
-	}
-	if (NULL == free_vals.head || free_vals.head == free_vals.tail) {
+	//while (atomic_flag_test_and_set(&val_busy)) {
+	//}
+	if (NULL == free_vals.head) {
 	    val = (ojVal)calloc(1, sizeof(struct _ojVal));
 	} else {
 	    val = free_vals.head;
 	    free_vals.head = free_vals.head->next;
 	}
-	atomic_flag_clear(&val_busy);
+	//atomic_flag_clear(&val_busy);
     }
     return val;
 }
 
-// TBD redo this to handle batches
-ojStatus
+void
 oj_destroy(ojVal val) {
-    if (NULL != val) {
-	if (OJ_FREE == val->type) {
-	    printf("*** already freed\n");
-	    return OJ_ERR_MEMORY;
-	}
-    }
-    switch (val->type) {
-    case OJ_STRING:
-	break;
-    case OJ_INT:
-	// TBD if raw and ext then free the exts
-	break;
-    case OJ_DECIMAL:
-	// TBD if raw and ext then free the exts
-	break;
-    case OJ_OBJECT:
-	if (OJ_OBJ_RAW == val->mod) {
-	    ojVal	next = NULL;
-	    ojVal	v;
-	    ojStatus	status;
+    ojVal	tail = val;
+    ojVal	v = val;
 
-	    for (v = val->list; NULL != v; v = next) {
-		next = v->next;
-		if (OJ_OK != (status = oj_destroy(v))) {
-		    return status;
-		}
+    val->next = NULL;
+    for (; NULL != v; v = v->next) {
+	switch (v->type) {
+	case OJ_STRING:
+	    break;
+	case OJ_INT:
+	    // TBD if raw and ext then free the exts
+	    break;
+	case OJ_DECIMAL:
+	    // TBD if raw and ext then free the exts
+	    break;
+	case OJ_OBJECT:
+	    if (OJ_OBJ_RAW == v->mod) {
+		tail->next = v->list.head;
+		tail = v->list.tail;
+	    } else {
+		printf("*********** hash\n");
+		// TBD each hash bucket
 	    }
-	} else {
-	    // TBD each hash bucket
+	    break;
+	case OJ_ARRAY: {
+	    tail->next = v->list.head;
+	    tail = v->list.tail;
+	    break;
 	}
-	break;
-    case OJ_ARRAY: {
-	ojVal		next = NULL;
-	ojVal		v;
-	ojStatus	status;
-
-	for (v = val->list; NULL != v; v = next) {
-	    next = v->next;
-	    if (OJ_OK != (status = oj_destroy(v))) {
-		return status;
-	    }
+	default:
+	    break;
 	}
-	break;
-    }
-    default:
-	break;
+	v->type = OJ_FREE;
     }
     if (NULL == free_vals.head) {
 	free_vals.head = val;
     } else {
 	free_vals.tail->next = val;
     }
-    val->next = NULL;
-    val->type = OJ_FREE;
-    free_vals.tail = val;
-
-    return OJ_OK;
+    free_vals.tail = tail;
 }
 
 typedef struct _Stack {
@@ -102,11 +83,24 @@ typedef struct _Stack {
 
 static void
 push(ojVal val, void *ctx) {
-    //Stack	stack = (Stack)ctx;
+    Stack	stack = (Stack)ctx;
+    ojVal	v = oj_val_create();
 
-    // val create, copy/set
-    // TBD if end of stack is obj or array then add to list tail (for poc, the head is ok)
-    //
+    *v = *val;
+    if (0 < stack->depth) {
+	ojVal	p = stack->vals[stack->depth - 1];
+
+	if (NULL == p->list.head) {
+	    p->list.head = v;
+	} else {
+	    p->list.tail->next = v;
+	}
+	p->list.tail = v;
+    }
+    if (OJ_OBJECT == v->type || OJ_ARRAY == v->type) {
+	stack->vals[stack->depth] = v;
+	stack->depth++;
+    }
 }
 
 static void

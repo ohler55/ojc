@@ -4,6 +4,8 @@
 ^c^s show subtree
 
 - redo parser
+ - try maps of functions
+  - start with switch replacement in validator first
  - test parser push/pop
   - fill buf with results
    - need function to fill a val
