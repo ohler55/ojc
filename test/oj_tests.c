@@ -123,12 +123,12 @@ object_test() {
 static void
 push(ojVal val, void *ctx) {
     oj_buf((ojBuf)ctx, val, 0, 0);
-    oj_buf_append((ojBuf)ctx, '\n');
+    oj_buf_append((ojBuf)ctx, ' ');
 }
 
 static void
 pop(void *ctx) {
-    oj_buf_append_string((ojBuf)ctx, "pop\n", 4);
+    oj_buf_append_string((ojBuf)ctx, "pop ", 4);
 }
 
 static void
@@ -156,17 +156,16 @@ test_push_pop(struct _data *dp) {
 	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, err.code, err.msg);
 	    ut_fail();
 	}
-	oj_buf_finish(&buf);
-	printf("*** '%s'\n", buf.head);
+	ut_same(dp->expect, buf.head);
     }
 }
 
 static void
 push_pop_test() {
     struct _data	cases[] = {
-	{.json = "{}", .status = OJ_OK },
-	{.json = "{\"x\":true}", .status = OJ_OK },
-	{.json = "{\"x\":1,\"y\":0}", .status = OJ_OK },
+	{.json = "{}", .status = OJ_OK, .expect = "{} pop " },
+	{.json = "{\"x\":true}", .status = OJ_OK, .expect = "{} true pop " },
+	{.json = "{\"x\":1,\"y\":0}", .status = OJ_OK, .expect = "{} 1 0 pop " },
 	{.json = NULL }};
 
     test_push_pop(cases);

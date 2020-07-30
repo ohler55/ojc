@@ -403,6 +403,8 @@ parse(ojParser p, const byte *json) {
 		p->val.type = OJ_NULL;
 	    }
 	    p->val.type = OJ_OBJECT;
+	    p->val.mod = OJ_OBJ_RAW;
+	    p->val.list = NULL;
 	    p->push(&p->val, p->pp_ctx);
 	    p->map = key1_map;
 	    break;
@@ -428,6 +430,7 @@ parse(ojParser p, const byte *json) {
 		p->val.type = OJ_NULL;
 	    }
 	    p->val.type = OJ_ARRAY;
+	    p->val.list = NULL;
 	    p->push(&p->val, p->pp_ctx);
 	    p->map = value_map;
 	    break;
@@ -559,9 +562,12 @@ parse(ojParser p, const byte *json) {
 	    p->ri++;
 	    if (4 <= p->ri) {
 		p->map = string_map;
+		// TBD convert to UTF-8 and add
 	    }
 	    break;
 	case ESC_OK:
+	    *p->val.str.val = *p->val.str.val + 1;
+	    p->val.str.val[*(byte*)p->val.str.val] = esc_byte_map[*b];
 	    p->map = string_map;
 	    break;
 	case VAL_NULL:
@@ -872,6 +878,7 @@ oj_parse_str(ojParser p, const char *json) {
 	p->pop = no_pop;
     }
     p->err.line = 1;
+    p->map = value_map;
     parse(p, (const byte*)json);
 
     return p->err.code;

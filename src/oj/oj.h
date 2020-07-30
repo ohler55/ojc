@@ -7,10 +7,10 @@
 extern "C" {
 #endif
 
-#include <stdio.h>
 #include <errno.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #define OJ_VERSION	"3.1.1"
 #define OJ_ERR_INIT	{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
@@ -50,6 +50,7 @@ extern "C" {
 	OJ_STRING	= 's',
 	OJ_OBJECT	= 'o',
 	OJ_ARRAY	= 'a',
+	OJ_FREE		= 'X',
     } ojType;
 
     typedef enum {
@@ -107,6 +108,12 @@ extern "C" {
 	uint8_t			mod;	// ojMod
     } *ojVal;
 
+    typedef struct _ojList {
+	// pointer is volatile
+	struct _ojVal	*volatile head;
+	struct _ojVal	*volatile tail;
+    } *ojList;
+
     typedef bool		(*ojParseCallback)(ojErr err, ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
@@ -156,6 +163,8 @@ extern "C" {
 
     // TBD val access functions
     // TBD val creation functions
+    extern ojVal	oj_val_create(ojType type, ojMod mod);
+    extern ojStatus	oj_destroy(ojVal val);
 
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);
