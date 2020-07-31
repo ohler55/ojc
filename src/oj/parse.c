@@ -324,7 +324,7 @@ byteError(ojErr err, const char *map, int off, byte b) {
 	}
 */
     default:
-	oj_err_set(err, OJ_ERR_PARSE, "unexpected character '%c'", b);
+	oj_err_set(err, OJ_ERR_PARSE, "unexpected character '%c' in '%c' mode", b, map[256]);
 	break;
     }
     return err->code;
@@ -393,30 +393,30 @@ parse(ojParser p, const byte *json) {
 	    }
 	    b--;
 	    p->map = string_map;
-	    p->next_map = after_map;
+	    p->next_map = (0 == p->depth) ? value_map : after_map;
 	    break;
 	case OPEN_OBJECT:
 	    // TBD check depth vs stack len
 	    p->stack[p->depth] = '{';
 	    p->depth++;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
 	    p->val.type = OJ_OBJECT;
 	    p->val.mod = OJ_OBJ_RAW;
 	    p->val.list.head = NULL;
-	    p->push(&p->val, p->pp_ctx);
+	    p->push(&p->val, p->ctx);
 	    p->map = key1_map;
 	    break;
 	case CLOSE_OBJECT:
-	    p->map = after_map;
 	    p->depth--;
+	    p->map = (0 == p->depth) ? value_map : after_map;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
-	    p->pop(p->pp_ctx);
+	    p->pop(p->ctx);
 	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
@@ -427,29 +427,29 @@ parse(ojParser p, const byte *json) {
 	    p->stack[p->depth] = '[';
 	    p->depth++;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
 	    p->val.type = OJ_ARRAY;
 	    p->val.list.head = NULL;
-	    p->push(&p->val, p->pp_ctx);
+	    p->push(&p->val, p->ctx);
 	    p->map = value_map;
 	    break;
 	case CLOSE_ARRAY:
-	    p->map = after_map;
 	    p->depth--;
+	    p->map = (0 == p->depth) ? value_map : after_map;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
-	    p->pop(p->pp_ctx);
+	    p->pop(p->ctx);
 	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
 	    }
 	    break;
 	case NUM_COMMA:
-	    p->push(&p->val, p->pp_ctx);
+	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
 		p->map = key_map;
@@ -531,13 +531,13 @@ parse(ojParser p, const byte *json) {
 	    p->map = exp_map;
 	    break;
 	case NUM_SPC:
-	    p->map = after_map;
-	    p->push(&p->val, p->pp_ctx);
+	    p->map = (0 == p->depth) ? value_map : after_map;
+	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    break;
 	case NUM_NEWLINE:
-	    p->map = after_map;
-	    p->push(&p->val, p->pp_ctx);
+	    p->map = (0 == p->depth) ? value_map : after_map;
+	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    p->err.line++;
 	    p->err.col = b - json;
@@ -552,7 +552,7 @@ parse(ojParser p, const byte *json) {
 	case STR_QUOTE:
 	    p->map = p->next_map;
 	    if (':' != p->map[256]) {
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 	    }
 	    break;
 	case ESC_U:
@@ -574,9 +574,9 @@ parse(ojParser p, const byte *json) {
 	case VAL_NULL:
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
-		p->map = after_map;
+		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_NULL;
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = null_map;
 		p->ri = 0;
@@ -588,9 +588,9 @@ parse(ojParser p, const byte *json) {
 	case VAL_TRUE:
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
-		p->map = after_map;
+		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_TRUE;
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = true_map;
 		p->ri = 0;
@@ -602,9 +602,9 @@ parse(ojParser p, const byte *json) {
 	case VAL_FALSE:
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
-		p->map = after_map;
+		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_FALSE;
-		p->push(&p->val, p->pp_ctx);
+		p->push(&p->val, p->ctx);
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
 		p->map = false_map;
 		p->ri = 0;
@@ -660,14 +660,14 @@ validate(ojValidator v, const byte *json) {
 	    }
 	    switch (*b) {
 	    case '"': // normal termination
-		v->map = after_map;
+		v->map = (0 == v->depth) ? value_map : after_map;
 		break;
 	    case '\0':
 		v->map = string_map;
-		v->next_map = after_map;
+		v->next_map = (0 == v->depth) ? value_map : after_map;
 	    case '\\':
 		v->map = esc_map;
-		v->next_map = after_map;
+		v->next_map = (0 == v->depth) ? value_map : after_map;
 		break;
 	    default:
 		v->err.col = b - json - v->err.col;
@@ -681,8 +681,8 @@ validate(ojValidator v, const byte *json) {
 	    v->map = key1_map;
 	    break;
 	case CLOSE_OBJECT:
-	    v->map = after_map;
 	    v->depth--;
+	    v->map = (0 == v->depth) ? value_map : after_map;
 	    if (v->depth < 0 || '{' != v->stack[v->depth]) {
 		v->err.col = b - json - v->err.col;
 		return oj_err_set(&v->err, OJ_ERR_PARSE, "unexpected object close");
@@ -695,8 +695,8 @@ validate(ojValidator v, const byte *json) {
 	    v->map = value_map;
 	    break;
 	case CLOSE_ARRAY:
-	    v->map = after_map;
 	    v->depth--;
+	    v->map = (0 == v->depth) ? value_map : after_map;
 	    if (v->depth < 0 || '[' != v->stack[v->depth]) {
 		v->err.col = b - json - v->err.col;
 		return oj_err_set(&v->err, OJ_ERR_PARSE, "unexpected array close");
@@ -751,10 +751,10 @@ validate(ojValidator v, const byte *json) {
 	    v->map = exp_map;
 	    break;
 	case NUM_SPC:
-	    v->map = after_map;
+	    v->map = (0 == v->depth) ? value_map : after_map;
 	    break;
 	case NUM_NEWLINE:
-	    v->map = after_map;
+	    v->map = (0 == v->depth) ? value_map : after_map;
 	    v->err.line++;
 	    v->err.col = b - json;
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
@@ -785,7 +785,7 @@ validate(ojValidator v, const byte *json) {
 	    //if (*(uint32_t*)b == *(uint32_t*)"null") {
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
-		v->map = after_map;
+		v->map = (0 == v->depth) ? value_map : after_map;
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		v->map = null_map;
 		v->ri = 0;
@@ -798,7 +798,7 @@ validate(ojValidator v, const byte *json) {
 	    //if (*(uint32_t*)b == *(uint32_t*)"true") {
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
-		v->map = after_map;
+		v->map = (0 == v->depth) ? value_map : after_map;
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		v->map = true_map;
 		v->ri = 0;
@@ -811,7 +811,7 @@ validate(ojValidator v, const byte *json) {
 	    //if (*(uint32_t*)b == *(uint32_t*)"fals" && 'e' == b[4]) {
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
-		v->map = after_map;
+		v->map = (0 == v->depth) ? value_map : after_map;
 	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
 		v->map = false_map;
 		v->ri = 0;

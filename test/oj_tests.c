@@ -121,6 +121,15 @@ object_test() {
 }
 
 static void
+validate_test() {
+    struct _data	cases[] = {
+	{.json = "{\"x\":true}{\"y\":false}", .status = OJ_OK },
+	{.json = NULL }};
+
+    test_jsons(cases);
+}
+
+static void
 push(ojVal val, void *ctx) {
     oj_buf((ojBuf)ctx, val, 0, 0);
     oj_buf_append((ojBuf)ctx, ' ');
@@ -140,7 +149,7 @@ test_push_pop(struct _data *dp) {
 
     oj_buf_init(&buf, 0);
     memset(&p, 0, sizeof(p));
-    p.pp_ctx = &buf;
+    p.ctx = &buf;
     p.push = push;
     p.pop = pop;
     for (; NULL != dp->json; dp++) {
@@ -179,6 +188,7 @@ static struct _Test	tests[] = {
     { "number",		number_test },
     { "array",		array_test },
     { "object",		object_test },
+    { "validate",	validate_test },
 
     { "push-pop",	push_pop_test },
 

@@ -131,6 +131,39 @@ bench_read(const char *filename, int64_t iter) {
 static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be representative of an actual message.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 //static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 
+static bool
+noop_cb(ojcErr err, ojcVal val, void *ctx) {
+    return true;
+}
+
+static char*
+load_file(const char *filename) {
+    FILE	*f = fopen(filename, "r");
+    long	len;
+    char	*buf;
+
+    if (NULL == f) {
+	printf("*-*-* failed to open file %s\n", filename);
+	exit(1);
+    }
+    fseek(f, 0, SEEK_END);
+    len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    if (NULL == (buf = malloc(len + 1))) {
+	printf("*-*-* not enough memory to load file %s\n", filename);
+	exit(1);
+    }
+    if (len != fread(buf, 1, len, f)) {
+	printf("*-*-* reading file %s failed\n", filename);
+	exit(1);
+    }
+    buf[len] = '\0';
+    fclose(f);
+
+    return buf;
+}
+
 static int
 bench_parse(const char *filename, int64_t iter) {
     struct _ojcErr	err = OJC_ERR_INIT;
@@ -140,34 +173,13 @@ bench_parse(const char *filename, int64_t iter) {
     char		*buf = NULL;
 
     if (NULL != filename) {
-	FILE	*f = fopen(filename, "r");
-	long	len;
-
-	if (NULL == f) {
-	    printf("*-*-* failed to open file %s\n", filename);
-	    exit(1);
-	}
-	fseek(f, 0, SEEK_END);
-	len = ftell(f);
-	fseek(f, 0, SEEK_SET);
-
-	if (NULL == (buf = calloc(1, len + 16))) {
-	    printf("*-*-* not enough memory to load file %s\n", filename);
-	    exit(1);
-	}
-	if (len != fread(buf, 1, len, f)) {
-	    printf("*-*-* reading file %s failed\n", filename);
-	    exit(1);
-	}
-	//buf[len] = '\0';
-	fclose(f);
+	buf = load_file(filename);
 	str = buf;
     }
-
     int64_t	start = clock_micro();
 
     for (int i = iter; 0 < i; i--) {
-	ojc = ojc_parse_str(&err, str, NULL, NULL);
+	ojc = ojc_parse_str(&err, str, noop_cb, NULL);
 	ojc_destroy(ojc);
     }
     dt = clock_micro() - start;
@@ -199,7 +211,7 @@ bench_parse(const char *filename, int64_t iter) {
 
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&e, str);
+	v = oj_val_parse_str(&e, str, NULL, NULL);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
@@ -217,6 +229,72 @@ bench_parse(const char *filename, int64_t iter) {
     return 0;
 }
 
+static bool
+destroy_cb(ojVal val, void *ctx) {
+    oj_destroy(val);
+    *(long*)ctx = *(long*)ctx +1;
+    return true;
+}
+
+static int
+bench_parse_many(const char *filename) {
+    struct _ojcErr	err = OJC_ERR_INIT;
+    int64_t		dt;
+    ojcVal		ojc;
+    const char		*str = json;
+    char		*buf = NULL;
+    long		iter = 0;
+    struct _ojErr	e = OJ_ERR_INIT;
+
+    if (NULL != filename) {
+	buf = load_file(filename);
+	str = buf;
+    }
+    int64_t	start = clock_micro();
+
+    oj_val_parse_str(&e, str, destroy_cb, &iter);
+    dt = clock_micro() - start;
+    if (OJ_OK != e.code) {
+	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
+	return -1;
+    }
+    printf("oj_parse_str    %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    start = clock_micro();
+    if (OJ_OK != oj_validate_str(&e, str)) {
+	printf("*** Error: %s\n", e.msg);
+	return -1;
+    }
+
+    dt = clock_micro() - start;
+    if (OJ_OK != e.code) {
+	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
+	return -1;
+    }
+    printf("oj_validate_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    start = clock_micro();
+    ojc = ojc_parse_str(&err, str, noop_cb, NULL);
+    ojc_destroy(ojc);
+
+    dt = clock_micro() - start;
+    if (OJC_OK != err.code) {
+	printf("*** Error: %s\n", err.msg);
+	return -1;
+    }
+    printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    if (NULL != buf) {
+	free(buf);
+    }
+    return 0;
+}
+
 int
 main(int argc, char **argv) {
     const char	*filename = "log.json";
@@ -224,8 +302,16 @@ main(int argc, char **argv) {
 
     if (1 < argc) {
 	filename = argv[1];
+	if (2 < argc) {
+	    iter = strtoll(argv[2], NULL, 10);
+	}
 	//bench_read(filename, iter);
-	bench_parse(filename, iter / 10);
+	//bench_parse(filename, iter / 10);
+	if (1 == iter) {
+	    bench_parse_many(filename);
+	} else {
+	    bench_parse(filename, iter);
+	}
 	return 0;
     }
     //bench_fill(iter);

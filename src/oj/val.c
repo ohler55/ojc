@@ -1,12 +1,20 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <pthread.h>
 #include <stdatomic.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "oj.h"
 #include "buf.h"
 
+#define USE_MUTEX 0
+#define USE_ATOMIC 1
+
 static struct _ojList	free_vals = { .head = NULL, .tail = NULL };
-//static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
+static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
+
+bool oj_thread_safe = false;
 
 ojVal
 oj_val_create() {
@@ -19,15 +27,19 @@ oj_val_create() {
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
 	// flag.
-	//while (atomic_flag_test_and_set(&val_busy)) {
-	//}
+	if (oj_thread_safe) {
+	    while (atomic_flag_test_and_set(&val_busy)) {
+	    }
+	}
 	if (NULL == free_vals.head) {
 	    val = (ojVal)calloc(1, sizeof(struct _ojVal));
 	} else {
 	    val = free_vals.head;
 	    free_vals.head = free_vals.head->next;
 	}
-	//atomic_flag_clear(&val_busy);
+	if (oj_thread_safe) {
+	    atomic_flag_clear(&val_busy);
+	}
     }
     return val;
 }
@@ -67,18 +79,27 @@ oj_destroy(ojVal val) {
 	}
 	v->type = OJ_FREE;
     }
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+    }
     if (NULL == free_vals.head) {
 	free_vals.head = val;
     } else {
 	free_vals.tail->next = val;
     }
     free_vals.tail = tail;
+    if (oj_thread_safe) {
+	atomic_flag_clear(&val_busy);
+    }
 }
 
 typedef struct _Stack {
     // TBD change to be expandable
-    ojVal	vals[256];
-    int		depth;
+    ojVal		vals[256];
+    int			depth;
+    ojParseCallback	cb;
+    void		*ctx;
 } *Stack;
 
 static void
@@ -100,12 +121,20 @@ push(ojVal val, void *ctx) {
     if (OJ_OBJECT == v->type || OJ_ARRAY == v->type) {
 	stack->vals[stack->depth] = v;
 	stack->depth++;
+    } else if (0 == stack->depth && NULL != stack->cb) {
+	stack->cb(v, stack->ctx);
     }
 }
 
 static void
 pop(void *ctx) {
-    ((Stack)ctx)->depth--;
+    Stack	stack = (Stack)ctx;
+
+    stack->depth--;
+    if (0 == stack->depth && NULL != stack->cb) {
+	stack->cb(*stack->vals, stack->ctx);
+	*stack->vals = NULL;
+    }
 }
 
 void
@@ -113,21 +142,24 @@ oj_val_parser(ojParser p) {
     // TBD is this needed?
     p->push = push;
     p->pop = pop;
-    p->cb = NULL; // TBD set callback to set final result
-    p->cb_ctx = NULL; // TBD set to what ever is needed
     //p->pp_ctx = &stack;
     oj_err_init(&p->err);
 }
 
 ojVal
-oj_val_parse_str(ojErr err, const char *json) {
+oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
     struct _ojParser	p;
-    struct _Stack	stack = { .vals = { NULL }, .depth = 0 };
+    struct _Stack	stack = {
+	.vals = { NULL },
+	.depth = 0,
+	.cb = cb,
+	.ctx = ctx,
+    };
 
     memset(&p, 0, sizeof(p));
     p.push = push;
     p.pop = pop;
-    p.pp_ctx = &stack;
+    p.ctx = &stack;
 
     oj_parse_str(&p, json);
 

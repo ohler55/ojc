@@ -114,21 +114,18 @@ extern "C" {
 	uint8_t			mod;	// ojMod
     } *ojVal;
 
-    typedef bool		(*ojParseCallback)(ojErr err, ojVal val, void *ctx);
+    typedef bool		(*ojParseCallback)(ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
     typedef struct _ojParser {
-	void		(*push)(ojVal val, void *ctx);
-	void		(*pop)(void *ctx);
-	void		*pp_ctx; // push and pop context
-
-	ojParseCallback	cb;
-	void		*cb_ctx;
-
 	const char	*map;
 	const char	*next_map;
 	struct _ojVal	val; // working val
 	struct _ojErr	err;
+	void		(*push)(ojVal val, void *ctx);
+	void		(*pop)(void *ctx);
+	void		*ctx; // push and pop context
+
 	int		depth;
 	int		ri;
 	// TBD change this stack to be expandable
@@ -155,7 +152,9 @@ extern "C" {
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
     extern void		oj_val_parser(ojParser p);
-    extern ojVal	oj_val_parse_str(ojErr err, const char *json);
+    //extern ojVal	oj_val_parse_str(ojErr err, const char *json);
+    extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
     extern ojVal	oj_val_parse_file(ojErr err, FILE *file);
     extern ojVal	oj_val_parse_fd(ojErr err, int socket);
@@ -171,6 +170,8 @@ extern "C" {
     extern size_t	oj_buf(ojBuf buf, ojVal val, int indent, int depth);
     extern size_t	oj_write(ojErr err, ojVal val, int indent, int socket);
     extern size_t	oj_fwrite(ojErr err, ojVal val, int indent, FILE *file);
+
+    extern bool		oj_thread_safe;
 
 #ifdef __cplusplus
 }
