@@ -4,8 +4,9 @@
 ^c^s show subtree
 
 - redo parser
- - try thread safe destroy and create
-  - separate thread?
+ - file reading
+  - get simdjson setup to read as well.
+
  - test parser push/pop
   - fill buf with results
    - need function to fill a val

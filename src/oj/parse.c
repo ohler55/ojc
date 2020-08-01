@@ -5,6 +5,9 @@
 #include "oj.h"
 #include "intern.h"
 
+// Give better performance with indented JSON but worse with unindented.
+//#define SPACE_JUMP
+
 typedef uint8_t	byte;
 
 enum {
@@ -341,8 +344,14 @@ parse(ojParser p, const byte *json) {
 	case SKIP_NEWLINE:
 	    p->err.line++;
 	    p->err.col = b - json;
+	    b++;
+#ifdef SPACE_JUMP
+	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
+	    for (uint16_t *sj = (uint16_t*)b; 0x2020 == *sj; sj++) { b += 2; }
+#endif
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
 	    }
+	    b--;
 	    break;
 	case COLON_COLON:
 	    p->map = value_map;
@@ -541,8 +550,14 @@ parse(ojParser p, const byte *json) {
 	    p->val.type = OJ_NULL;
 	    p->err.line++;
 	    p->err.col = b - json;
+	    b++;
+#ifdef SPACE_JUMP
+	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
+	    for (uint16_t *sj = (uint16_t*)b; 0x2020 == *sj; sj++) { b += 2; }
+#endif
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
 	    }
+	    b--;
 	    break;
 	case STR_OK:
 	    break;
@@ -631,8 +646,14 @@ validate(ojValidator v, const byte *json) {
 	case SKIP_NEWLINE:
 	    v->err.line++;
 	    v->err.col = b - json;
+	    b++;
+#ifdef SPACE_JUMP
+	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
+	    for (uint16_t *sj = (uint16_t*)b; 0x2020 == *sj; sj++) { b += 2; }
+#endif
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
 	    }
+	    b--;
 	    break;
 	case COLON_COLON:
 	    v->map = value_map;
@@ -757,8 +778,14 @@ validate(ojValidator v, const byte *json) {
 	    v->map = (0 == v->depth) ? value_map : after_map;
 	    v->err.line++;
 	    v->err.col = b - json;
+	    b++;
+#ifdef SPACE_JUMP
+	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
+	    for (uint16_t *sj = (uint16_t*)b; 0x2020 == *sj; sj++) { b += 2; }
+#endif
 	    for (; SKIP_CHAR == space_map[*b]; b++) {
 	    }
+	    b--;
 	    break;
 	case STR_OK:
 	    break;

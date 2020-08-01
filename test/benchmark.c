@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 by Peter Ohler
+ * Copyright (c) 2014, 2020 by Peter Ohler
  * ALL RIGHTS RESERVED
  */
 
@@ -247,8 +247,12 @@ bench_parse_many(const char *filename) {
     struct _ojErr	e = OJ_ERR_INIT;
 
     if (NULL != filename) {
+
+	int64_t	t0 = clock_micro();
+
 	buf = load_file(filename);
 	str = buf;
+	printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
     }
     int64_t	start = clock_micro();
 
