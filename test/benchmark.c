@@ -3,6 +3,7 @@
  * ALL RIGHTS RESERVED
  */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -247,12 +248,11 @@ bench_parse_many(const char *filename) {
     struct _ojErr	e = OJ_ERR_INIT;
 
     if (NULL != filename) {
-
-	int64_t	t0 = clock_micro();
+	//int64_t	t0 = clock_micro();
 
 	buf = load_file(filename);
 	str = buf;
-	printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
+	//printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
     }
     int64_t	start = clock_micro();
 
@@ -299,13 +299,88 @@ bench_parse_many(const char *filename) {
     return 0;
 }
 
+struct depth_cnt {
+    long	cnt;
+    int		depth;
+};
+
+static void
+push_cnt(ojVal val, void *ctx) {
+    struct depth_cnt	*dc = (struct depth_cnt*)ctx;
+
+    switch (val->type) {
+    case OJ_OBJECT:
+	if (0 == dc->depth) {
+	    dc->cnt++;
+	}
+	dc->depth++;
+	break;
+    case OJ_ARRAY:
+	dc->depth++;
+	break;
+    }
+}
+
+static void
+pop_cnt(void *ctx) {
+    struct depth_cnt	*dc = (struct depth_cnt*)ctx;
+    dc->depth--;
+}
+/*
+static void*
+thread_test(void *ctx) {
+    int64_t	start = (int64_t)ctx;
+
+    int64_t	dt = clock_micro() - start;
+    printf("*** thread started in %lld usec\n", dt);
+    return NULL;
+}
+*/
+
+static int
+bench_parse_file(const char *filename) {
+    int64_t		dt;
+    FILE		*f = fopen(filename, "r");
+    struct _ojParser	p;
+    struct depth_cnt	dc = { .depth = 0, .cnt = 0 };
+
+    memset(&p, 0, sizeof(p));
+    p.push = push_cnt;
+    p.pop = pop_cnt;
+    p.ctx = &dc;
+
+    int64_t	start = clock_micro();
+    /*
+    pthread_t	t;
+    pthread_create(&t, NULL, thread_test, (void*)start);
+    */
+
+    oj_parse_file(&p, f);
+
+    dt = clock_micro() - start;
+    fclose(f);
+
+    if (OJ_OK != p.err.code) {
+	printf("*** Error: %s at %d:%d\n", p.err.msg, p.err.line, p.err.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
+	return -1;
+    }
+    printf("oj_parse_file   %ld entries in %8.3f msecs. (%5d iterations/msec)\n",
+	   dc.cnt, (double)dt / 1000.0, (int)((double)dc.cnt * 1000.0 / (double)dt));
+
+    return 0;
+}
+
 int
 main(int argc, char **argv) {
     const char	*filename = "log.json";
     int64_t	iter = 1000000LL;
 
-    if (1 < argc) {
+   if (1 < argc) {
 	filename = argv[1];
+
+	bench_parse_file(filename);
+
 	if (2 < argc) {
 	    iter = strtoll(argv[2], NULL, 10);
 	}

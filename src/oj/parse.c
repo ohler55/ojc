@@ -1,9 +1,12 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <pthread.h>
 #include <string.h>
 
 #include "oj.h"
 #include "intern.h"
+
+#define USE_THREAD_LIMIT	100000
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -388,13 +391,13 @@ parse(ojParser p, const byte *json) {
 	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
+	    p->val.type = OJ_STRING;
+	    p->val.mod = OJ_STR_INLINE;
 	    if ('"' == *b) {
 		len = b - start;
 		if (len < sizeof(p->val.str.val)) {
 		    *p->val.str.val = (char)len;
 		    memcpy(p->val.str.val + 1, start, len);
-		    p->val.type = OJ_STRING;
-		    p->val.mod = OJ_STR_INLINE;
 		} else {
 		    // TBD build string
 		    printf("*** long string\n");
@@ -893,7 +896,6 @@ oj_parser_reset(ojParser p) {
 
 static void
 no_push(ojVal val, void *ctx) {
-    //printf("*** push %s\n", oj_type_str(val->type));
 }
 
 static void
@@ -923,8 +925,45 @@ oj_parse_strp(ojParser p, const char **json) {
 
 ojStatus
 oj_parse_file(ojParser p, FILE *file) {
-    // TBD
-    return OJ_OK;
+    off_t	pos = ftello(file);
+    fseeko(file, 0, SEEK_END); // TBD check errors
+    off_t	fsize = ftello(file);
+    fseeko(file, pos, SEEK_SET); // TBD check errors
+    if (USE_THREAD_LIMIT < fsize) {
+	// Use threaded version.
+
+	// TBD create buf blocks
+	//  use mutex for each block, block when filling and block when parsing
+	//  start thread for loading, load first one primary thread with (is that safe for file pointer?)
+    }
+    byte	buf[16384];
+    size_t	size = sizeof(buf) - 1;
+    size_t	rsize;
+
+    if (NULL == p->push) {
+	p->push = no_push;
+    }
+    if (NULL == p->pop) {
+	p->pop = no_pop;
+    }
+    p->err.line = 1;
+    p->map = value_map;
+
+    for (; true; ) {
+	if (0 < (rsize = fread(buf, 1, size, file))) {
+	    buf[rsize] = '\0';
+	    if (OJ_OK != parse(p, buf)) {
+		break;
+	    }
+	}
+	if (rsize != size) {
+	    if (0 == rsize && !feof(file)) {
+		return oj_err_set(&p->err, ferror(file), "read error");
+	    }
+	    break;
+	}
+    }
+    return p->err.code;
 }
 
 ojStatus
