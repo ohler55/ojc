@@ -7,7 +7,7 @@ LIB_DIR=../lib
 INC_DIR=../include
 SRCS=$(shell find $(SRC_DIR) -type f -name "*.c" -print)
 OBJS=$(SRCS:.c=.o)
-LIBS=-lojc -loj -lm
+LIBS=-lojc -loj -lm -lpthread
 TARGET=run_tests
 OJ_TARGET=oj_tests
 BENCH=bench
