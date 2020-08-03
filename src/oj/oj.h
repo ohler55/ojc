@@ -38,7 +38,8 @@ extern "C" {
 	OJ_ERR_TYPE,
 	OJ_ERR_EVAL,
 	OJ_ERR_TLS,
-	OJ_ERR_LAST
+	OJ_ERR_EOF,
+	OJ_ERR_LAST,
     } ojStatus;
 
     typedef enum {
@@ -86,13 +87,23 @@ extern "C" {
     } *ojExt;
 
     union _ojStr {
-	char		val[128]; 	// first char is the length
+	char		val[128]; 	// first char is the length, '\0' terminated
 	struct {
 	    char	start[112]; 	// start of string, first char is 0xff
 	    int		len;		// length of combines string blocks
 	    ojExt	more;		// additional string blocks
 	};
     } *ojStr;
+
+    typedef struct _ojNum {
+	union {
+	    int64_t	fixnum;
+	    long double	dub;
+	};
+	int		len;
+	char		raw[96]; 	// '\0' terminated
+	ojExt		more;
+    } *ojNum;
 
     typedef struct _ojList {
 	// pointer is volatile
@@ -152,11 +163,10 @@ extern "C" {
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
     extern void		oj_val_parser(ojParser p);
-    //extern ojVal	oj_val_parse_str(ojErr err, const char *json);
     extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx);
 
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
-    extern ojVal	oj_val_parse_file(ojErr err, FILE *file);
     extern ojVal	oj_val_parse_fd(ojErr err, int socket);
     extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 

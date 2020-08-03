@@ -162,7 +162,12 @@ oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
     p.ctx = &stack;
 
     oj_parse_str(&p, json);
-
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
     return stack.vals[0];
 }
 
@@ -175,11 +180,28 @@ oj_val_parse_strp(ojErr err, const char **json) {
 }
 
 ojVal
-oj_val_parse_file(ojErr err, FILE *file) {
+oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+    struct _Stack	stack = {
+	.vals = { NULL },
+	.depth = 0,
+	.cb = cb,
+	.ctx = ctx,
+    };
 
-    // TBD
+    memset(&p, 0, sizeof(p));
+    p.push = push;
+    p.pop = pop;
+    p.ctx = &stack;
 
-    return NULL;
+    oj_parse_file(&p, file);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return stack.vals[0];
 }
 
 ojVal

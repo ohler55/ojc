@@ -10,7 +10,7 @@
 #pragma GCC diagnostic ignored "-Wsuggest-attribute=format"
 #endif
 
-int
+ojStatus
 oj_err_set(ojErr err, int code, const char *fmt, ...) {
     va_list	ap;
 
@@ -22,7 +22,7 @@ oj_err_set(ojErr err, int code, const char *fmt, ...) {
     return err->code;
 }
 
-int
+ojStatus
 oj_err_no(ojErr err, const char *fmt, ...) {
     int	cnt = 0;
 
@@ -75,6 +75,7 @@ oj_status_str(ojStatus code) {
 	case OJ_ERR_TYPE:	str = "type error";		break;
 	case OJ_ERR_EVAL:	str = "eval error";		break;
 	case OJ_ERR_TLS:	str = "TLS error";		break;
+	case OJ_ERR_EOF:	str = "end of file";		break;
 	default:		str = "unknown error";		break;
 	}
     }

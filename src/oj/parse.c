@@ -340,7 +340,13 @@ static ojStatus
 parse(ojParser p, const byte *json) {
     int		len;
     const byte *start;
-
+/*
+    if (NULL == p->next_map) {
+	printf("*** parse with map: %c\n", p->map[256]);
+    } else {
+	printf("*** parse with map: %c and next: %c\n", p->map[256], p->next_map[256]);
+    }
+*/
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	switch (p->map[*b]) {
@@ -923,23 +929,129 @@ oj_parse_strp(ojParser p, const char **json) {
     return OJ_OK;
 }
 
+typedef struct _ReadBlock {
+    pthread_mutex_t	mu;
+    ojStatus		status;
+    bool		eof;
+    byte		buf[16385];
+} *ReadBlock;
+
+typedef struct _ReadCtx {
+    struct _ReadBlock	blocks[4];
+    ReadBlock		bend;
+    FILE		*file;
+} *ReadCtx;
+
+static void
+read_block(FILE *file, ReadBlock b) {
+    size_t	rcnt = fread(b->buf, 1, sizeof(b->buf) - 1, file);
+
+    if (0 < rcnt) {
+	b->buf[rcnt] = '\0';
+	//printf("*** %s\n", (char*)b->buf);
+    }
+    if (rcnt != sizeof(b->buf) - 1) {
+	if (0 == rcnt) {
+	    if (feof(file)) {
+		b->eof = true;
+	    } else {
+		b->status = ferror(file);
+	    }
+	}
+    }
+}
+
+static void*
+reader(void *ctx) {
+    ReadCtx	rc = (ReadCtx)ctx;
+    ReadBlock	b = rc->blocks + 1;
+    ReadBlock	next;
+
+    pthread_mutex_lock(&b->mu);
+    while (true) {
+	if (OJ_OK != b->status) {
+	    break;
+	}
+	read_block(rc->file, b);
+	if (OJ_OK != b->status || b->eof) {
+	    break;
+	}
+	next = b + 1;
+	if (rc->bend <= next) {
+	    next = rc->blocks;
+	}
+	pthread_mutex_lock(&next->mu);
+	pthread_mutex_unlock(&b->mu);
+	b = next;
+    }
+    pthread_mutex_unlock(&b->mu);
+    pthread_exit(0);
+    return NULL;
+}
+
+static ojStatus
+parse_large_file(ojParser p, FILE *file) {
+    struct _ReadCtx	rc;
+    ReadBlock		b; // current block being parsed
+
+    //printf("*** large - %ld\n", sizeof(*rc.blocks));
+    memset(&rc, 0, sizeof(rc));
+    rc.bend = rc.blocks + sizeof(rc.blocks) / sizeof(*rc.blocks);
+    rc.file = file;
+
+    for (b = rc.blocks; b < rc.bend; b++) {
+	if (0 != pthread_mutex_init(&b->mu, NULL)) {
+	    return oj_err_no(&p->err, "initializing mutex on concurrent file reader");
+	}
+    }
+    // Lock the first 2 blocks, the first to read into and the second to stop
+    // the new thread of reading into the second block which should not happen
+    // until the reading of the first completes.
+    pthread_mutex_lock(&rc.blocks->mu);
+    pthread_mutex_lock(&rc.blocks[1].mu);
+
+    pthread_t	t;
+    int		err;
+
+    if (0 != (err = pthread_create(&t, NULL, reader, (void*)&rc))) {
+	return oj_err_set(&p->err, err, "failed to create reader thread");
+    }
+    pthread_detach(t);
+
+    ReadBlock	next;
+
+    b = rc.blocks;
+    read_block(file, b);
+
+    // Release the second block so the reader can start reading additional
+    // blocks.
+    pthread_mutex_unlock(&rc.blocks[1].mu);
+    while (true) {
+	if (OJ_OK != b->status) {
+	    oj_err_set(&p->err, b->status, "read failed");
+	    break;
+	}
+	if (OJ_OK != parse(p, b->buf) || b->eof) {
+	    b->status = p->err.code;
+	    break;
+	}
+	// Lock next before unlocking the current to assure the reader doesn't
+	// overtake the parser.
+	next = b + 1;
+	if (rc.bend <= next) {
+	    next = rc.blocks;
+	}
+	pthread_mutex_lock(&next->mu);
+	pthread_mutex_unlock(&b->mu);
+	b = next;
+    }
+    pthread_mutex_unlock(&b->mu);
+
+    return p->err.code;
+}
+
 ojStatus
 oj_parse_file(ojParser p, FILE *file) {
-    off_t	pos = ftello(file);
-    fseeko(file, 0, SEEK_END); // TBD check errors
-    off_t	fsize = ftello(file);
-    fseeko(file, pos, SEEK_SET); // TBD check errors
-    if (USE_THREAD_LIMIT < fsize) {
-	// Use threaded version.
-
-	// TBD create buf blocks
-	//  use mutex for each block, block when filling and block when parsing
-	//  start thread for loading, load first one primary thread with (is that safe for file pointer?)
-    }
-    byte	buf[16384];
-    size_t	size = sizeof(buf) - 1;
-    size_t	rsize;
-
     if (NULL == p->push) {
 	p->push = no_push;
     }
@@ -949,7 +1061,23 @@ oj_parse_file(ojParser p, FILE *file) {
     p->err.line = 1;
     p->map = value_map;
 
-    for (; true; ) {
+    off_t	pos = ftello(file);
+    off_t	fsize;
+
+    if (0 != fseeko(file, 0, SEEK_END) ||
+	0 > (fsize = ftello(file)) ||
+	0 != fseeko(file, pos, SEEK_SET)) {
+	return oj_err_no(&p->err, "checking file length");
+    }
+    if (USE_THREAD_LIMIT < fsize) {
+	// Use threaded version.
+	return parse_large_file(p, file);
+    }
+    byte	buf[16385];
+    size_t	size = sizeof(buf) - 1;
+    size_t	rsize;
+
+    while (true) {
 	if (0 < (rsize = fread(buf, 1, size, file))) {
 	    buf[rsize] = '\0';
 	    if (OJ_OK != parse(p, buf)) {

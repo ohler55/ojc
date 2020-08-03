@@ -4,10 +4,13 @@
 ^c^s show subtree
 
 - redo parser
- - file reading
-  - first regualr read
-  - next separate thread with rotating buffer stack
-
+ - change ojStr to have a separate length and more as just a struct
+  - easier for building and for users
+  - length 112 built in with 1 for \0 at end
+   - make a #define for raw size
+ - convert for numbers
+  - also call to get original string
+   - change storage to not lose original (use ext when needed)
  - test parser push/pop
  - validation unit test for mixed with error
 
@@ -17,20 +20,33 @@
  - validator with nil callbacks
 
 - make sure follow works
-- allow catchup on stream parser if with callbacks
- - make error callbacks but also ojcVal callbacks, maybe the same if start is bad
- - if invalid character keep reading until the start of something
-  - best effort if not sure, worse case is bogus results
-  - catchup mode function
-   - read until an close - white space - open is hit
-    - } {    ][    }[   ] {
 
 
-- reader_next_non_white(ojcErr err, Reader reader)
- - ignore ANSI/VT100 escape sequences
-  - will need to parse each code to determine length
-
-- multiple threads
- - could have free thread to put nodes back in cache
+- compare
+ - :question: for not exactly follow by a number for comment/note
+ - :x: for not supported
+ - :white_check_mark: for supported or maybe :ok:
+ - validate (test for these)
+  - structure comma
+  - structure close
+  - string chars (\t in string)
+  - numbers (multiple . e -)
+ - can get complete values as native types (array and object should be iteratable)
+ - big numbers
+ - long double or maybe precision (80 bit vs 64)
+ - save for later (how to do with others?)
+ - multiple json in one file (any allowable format)
+ - multiple with one json per line
+ - small file (under 4G)
+ - medium file (over 4G)
+ - large file (larger than memory)
+- performance (speed and memory use)
+ - validate (no checking that values were extracted) (mark as not really validated if compare shows invalid are not detected)
+ - single file as string (patient)
+ - mutiple file (small)
+ - mutiple file (4G)
+ - mutiple file (large)
+ - to string
+ - write
 
 - TBD stream write functions someday

@@ -22,6 +22,40 @@ clock_micro() {
     return (uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec;
 }
 
+static int
+walk_oj(ojVal val) {
+    int	cnt = 0;
+
+    switch (val->type) {
+    case OJ_NULL:
+	cnt++;
+	break;
+    case OJ_TRUE:
+	break;
+    case OJ_FALSE:
+	cnt++;
+	break;
+    case OJ_INT:
+	// TBD
+	break;
+    case OJ_DECIMAL:
+	// TBD
+	break;
+    case OJ_STRING:
+	if ('\0' == *val->str.val) {
+	    cnt++;
+	}
+	break;
+    case OJ_OBJECT:
+    case OJ_ARRAY:
+	for (ojVal v = val->list.head; NULL != v; v = v->next) {
+	    cnt++;
+	}
+	break;
+    }
+    return cnt;
+}
+
 #if 0
 static bool
 each_cb(ojcErr err, ojcVal val, void *ctx) {
@@ -232,8 +266,9 @@ bench_parse(const char *filename, int64_t iter) {
 
 static bool
 destroy_cb(ojVal val, void *ctx) {
+    walk_oj(val);
     oj_destroy(val);
-    *(long*)ctx = *(long*)ctx +1;
+    *(long*)ctx = *(long*)ctx + 1;
     return true;
 }
 
@@ -247,9 +282,10 @@ bench_parse_many(const char *filename) {
     long		iter = 0;
     struct _ojErr	e = OJ_ERR_INIT;
 
+    //int64_t	start = clock_micro();
+
     if (NULL != filename) {
 	//int64_t	t0 = clock_micro();
-
 	buf = load_file(filename);
 	str = buf;
 	//printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
@@ -299,64 +335,20 @@ bench_parse_many(const char *filename) {
     return 0;
 }
 
-struct depth_cnt {
-    long	cnt;
-    int		depth;
-};
-
-static void
-push_cnt(ojVal val, void *ctx) {
-    struct depth_cnt	*dc = (struct depth_cnt*)ctx;
-
-    switch (val->type) {
-    case OJ_OBJECT:
-	if (0 == dc->depth) {
-	    dc->cnt++;
-	}
-	dc->depth++;
-	break;
-    case OJ_ARRAY:
-	dc->depth++;
-	break;
-    }
-}
-
-static void
-pop_cnt(void *ctx) {
-    struct depth_cnt	*dc = (struct depth_cnt*)ctx;
-    dc->depth--;
-}
-/*
-static void*
-thread_test(void *ctx) {
-    int64_t	start = (int64_t)ctx;
-
-    int64_t	dt = clock_micro() - start;
-    printf("*** thread started in %lld usec\n", dt);
-    return NULL;
-}
-*/
-
 static int
 bench_parse_file(const char *filename) {
     int64_t		dt;
     FILE		*f = fopen(filename, "r");
     struct _ojParser	p;
-    struct depth_cnt	dc = { .depth = 0, .cnt = 0 };
+    //struct depth_cnt	dc = { .depth = 0, .cnt = 0 };
+    long		iter = 0;
+    struct _ojErr	e = OJ_ERR_INIT;
 
     memset(&p, 0, sizeof(p));
-    p.push = push_cnt;
-    p.pop = pop_cnt;
-    p.ctx = &dc;
 
     int64_t	start = clock_micro();
-    /*
-    pthread_t	t;
-    pthread_create(&t, NULL, thread_test, (void*)start);
-    */
 
-    oj_parse_file(&p, f);
-
+    oj_val_parse_file(&e, f, destroy_cb, &iter);
     dt = clock_micro() - start;
     fclose(f);
 
@@ -366,7 +358,7 @@ bench_parse_file(const char *filename) {
 	return -1;
     }
     printf("oj_parse_file   %ld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   dc.cnt, (double)dt / 1000.0, (int)((double)dc.cnt * 1000.0 / (double)dt));
+	   iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
     return 0;
 }
