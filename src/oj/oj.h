@@ -74,10 +74,10 @@ extern "C" {
     } *ojBuf;
 
     typedef struct _ojErr {
-	int	code;
-	int	line;
-	int	col;
-	char	msg[256];
+	int		code;
+	int		line;
+	int		col;
+	char		msg[256];
     } *ojErr;
 
     typedef struct _ojExt {
@@ -86,13 +86,10 @@ extern "C" {
 	char		val[4080];
     } *ojExt;
 
-    union _ojStr {
-	char		val[128]; 	// first char is the length, '\0' terminated
-	struct {
-	    char	start[112]; 	// start of string, first char is 0xff
-	    int		len;		// length of combines string blocks
-	    ojExt	more;		// additional string blocks
-	};
+    struct _ojStr {
+	char		start[112]; 	// first char is the length, '\0' terminated
+	int		len;		// length of combines string blocks
+	ojExt		more;		// additional string blocks
     } *ojStr;
 
     typedef struct _ojNum {
@@ -113,13 +110,12 @@ extern "C" {
 
     typedef struct _ojVal {
 	struct _ojVal		*next;
-	union _ojStr		key;
+	struct _ojStr		key;
 	union {
-	    union _ojStr	str;
+	    struct _ojStr	str;
 	    struct _ojList	list;
 	    struct _ojVal	*hash[16];
-	    int64_t		fixnum;
-	    long double		dub;
+	    struct _ojNum	num;
 	};
 	uint8_t			type;	// ojType
 	uint8_t			mod;	// ojMod

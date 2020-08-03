@@ -4,14 +4,6 @@
 ^c^s show subtree
 
 - redo parser
- - try file descriptors
-  -
-  - ojVal oj_val_parse_fd(ojErr err, int socket);
-
- - change ojStr to have a separate length and more as just a struct
-  - easier for building and for users
-  - length 112 built in with 1 for \0 at end
-   - make a #define for raw size
  - convert for numbers
   - also call to get original string
    - change storage to not lose original (use ext when needed)
@@ -25,6 +17,15 @@
 
 - make sure follow works
 
+- val funcs
+ - get as different types
+  - not all succeed so err as arg
+  - oj_val_str(ojErr err, ojVal val, char buf, size_t size)
+   - return string if correct type and no ext
+   - buf is provided then fill it and return pointer to it
+   - if too large for buf or larger than str.start then fill what can be filled and error OJ_ERR_OVERFLOW
+   - if a num then get the raw or generate raw
+    - change mod if converted
 
 - compare
  - :question: for not exactly follow by a number for comment/note

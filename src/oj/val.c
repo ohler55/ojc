@@ -255,14 +255,14 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    break;
 	case OJ_INT:
 	    if (OJ_INT_RAW == val->mod) {
-		oj_buf_append_string(buf, val->str.val + 1, (size_t)*val->str.val);
+		oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    } else {
 		// TBD
 	    }
 	    break;
 	case OJ_DECIMAL:
 	    if (OJ_DEC_RAW == val->mod) {
-		oj_buf_append_string(buf, val->str.val + 1, (size_t)*val->str.val);
+		oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    } else {
 		// TBD
 	    }
@@ -270,7 +270,7 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	case OJ_STRING:
 	    oj_buf_append(buf, '"');
 	    // TBD handle extended
-	    oj_buf_append_string(buf, val->str.val + 1, (size_t)*val->str.val);
+	    oj_buf_append_string(buf, val->str.start, (size_t)val->str.len);
 	    oj_buf_append(buf, '"');
 	    break;
 	case OJ_OBJECT:

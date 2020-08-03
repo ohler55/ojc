@@ -123,11 +123,6 @@ oj_buf_append(ojBuf buf, char c) {
 }
 
 inline static void
-oj_buf_backup(ojBuf buf) {
-    buf->tail--;
-}
-
-inline static void
 oj_buf_finish(ojBuf buf) {
     if (OJ_OK != buf->err) {
 	return;

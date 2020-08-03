@@ -389,9 +389,10 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if ('"' == *b) {
 		len = b - start;
-		if (len < sizeof(p->val.key.val)) {
-		    *p->val.key.val = (char)len;
-		    memcpy(p->val.key.val + 1, start, len);
+		if (len < sizeof(p->val.key.start)) {
+		    p->val.key.len = len;
+		    memcpy(p->val.key.start, start, len);
+		    p->val.key.start[len] = '\0';
 		} else {
 		    // TBD build key
 		}
@@ -416,9 +417,10 @@ parse(ojParser p, const byte *json) {
 	    p->val.mod = OJ_STR_INLINE;
 	    if ('"' == *b) {
 		len = b - start;
-		if (len < sizeof(p->val.str.val)) {
-		    *p->val.str.val = (char)len;
-		    memcpy(p->val.str.val + 1, start, len);
+		if (len < sizeof(p->val.str.start)) {
+		    p->val.str.len = len;
+		    memcpy(p->val.str.start, start, len);
+		    p->val.str.start[len] = '\0';
 		} else {
 		    // TBD build string
 		    printf("*** long string\n");
@@ -433,6 +435,7 @@ parse(ojParser p, const byte *json) {
 	    p->stack[p->depth] = '{';
 	    p->depth++;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
@@ -446,6 +449,7 @@ parse(ojParser p, const byte *json) {
 	    p->depth--;
 	    p->map = (0 == p->depth) ? value_map : after_map;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
@@ -460,6 +464,7 @@ parse(ojParser p, const byte *json) {
 	    p->stack[p->depth] = '[';
 	    p->depth++;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
@@ -472,6 +477,7 @@ parse(ojParser p, const byte *json) {
 	    p->depth--;
 	    p->map = (0 == p->depth) ? value_map : after_map;
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
+		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
@@ -482,6 +488,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    break;
 	case NUM_COMMA:
+	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
@@ -493,83 +500,86 @@ parse(ojParser p, const byte *json) {
 	case VAL0:
 	    p->val.type = OJ_INT;
 	    p->val.mod = OJ_INT_RAW;
-	    *p->val.str.val = 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.len = 1;
+	    *p->val.num.raw = *b;
 	    p->map = zero_map;
 	    break;
 	case VAL_NEG:
 	    p->val.type = OJ_INT;
 	    p->val.mod = OJ_INT_RAW;
-	    *p->val.str.val = 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.len = 1;
+	    *p->val.num.raw = *b;
 	    p->map = neg_map;
 	    break;;
 	case VAL_DIGIT:
 	    p->val.type = OJ_INT;
 	    p->val.mod = OJ_INT_RAW;
 	    p->map = digit_map;
+	    p->val.num.len = 0;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		*p->val.str.val = *p->val.str.val + 1;
-		p->val.str.val[*(byte*)p->val.str.val] = *b;
+		p->val.num.raw[p->val.num.len] = *b; // TBD check length
+		p->val.num.len++;
 	    }
 	    b--;
 	    break;
 	case NUM_DIGIT:
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		*p->val.str.val = *p->val.str.val + 1;
-		p->val.str.val[*(byte*)p->val.str.val] = *b;
+		p->val.num.raw[p->val.num.len] = *b; // TBD check length
+		p->val.num.len++;
 	    }
 	    b--;
 	    break;
 	case NUM_DOT:
 	    p->val.type = OJ_DECIMAL;
 	    p->val.mod = OJ_DEC_RAW;
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = dot_map;
 	    break;
 	case NUM_FRAC:
 	    p->map = frac_map;
 	    for (; NUM_FRAC == frac_map[*b]; b++) {
-		*p->val.str.val = *p->val.str.val + 1;
-		p->val.str.val[*(byte*)p->val.str.val] = *b;
+		p->val.num.raw[p->val.num.len] = *b; // TBD check length
+		p->val.num.len++;
 	    }
 	    b--;
 	    break;
 	case FRAC_E:
 	    p->val.type = OJ_DECIMAL;
 	    p->val.mod = OJ_DEC_RAW;
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = exp_sign_map;
 	    break;
 	case NUM_ZERO:
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = zero_map;
 	    break;
 	case NEG_DIGIT:
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = digit_map;
 	    break;
 	case EXP_SIGN:
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = exp_zero_map;
 	    break;
 	case EXP_DIGIT:
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = *b;
+	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.len++;
 	    p->map = exp_map;
 	    break;
 	case NUM_SPC:
 	    p->map = (0 == p->depth) ? value_map : after_map;
+	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    break;
 	case NUM_NEWLINE:
 	    p->map = (0 == p->depth) ? value_map : after_map;
+	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 	    p->push(&p->val, p->ctx);
 	    p->val.type = OJ_NULL;
 	    p->err.line++;
@@ -590,7 +600,10 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case STR_QUOTE:
 	    p->map = p->next_map;
-	    if (':' != p->map[256]) {
+	    if (':' == p->map[256]) {
+		p->val.key.start[p->val.key.len] = '\0'; // TBD check length
+	    } else {
+		p->val.str.start[p->val.str.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 	    }
 	    break;
@@ -606,8 +619,9 @@ parse(ojParser p, const byte *json) {
 	    }
 	    break;
 	case ESC_OK:
-	    *p->val.str.val = *p->val.str.val + 1;
-	    p->val.str.val[*(byte*)p->val.str.val] = esc_byte_map[*b];
+	    p->val.str.len++;
+	    // TBD check length
+	    p->val.str.start[p->val.str.len] = esc_byte_map[*b];
 	    p->map = string_map;
 	    break;
 	case VAL_NULL:

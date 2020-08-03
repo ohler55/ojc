@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -44,7 +45,7 @@ walk_oj(ojVal val) {
 	// TBD
 	break;
     case OJ_STRING:
-	if ('\0' == *val->str.val) {
+	if ('\0' == *val->str.start) {
 	    cnt++;
 	}
 	break;
@@ -337,6 +338,25 @@ bench_parse_many(const char *filename) {
     return 0;
 }
 
+static char*
+mem_use(char *buf, size_t size) {
+    struct rusage	usage;
+
+    *buf = '\0';
+    if (0 == getrusage(RUSAGE_SELF, &usage)) {
+	if (1024 * 1024 * 1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldGB", usage.ru_maxrss / (1024 * 1024 * 1024));
+	} else if (1024 * 1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldMB", usage.ru_maxrss / (1024 * 1024));
+	} else if (1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldKB", usage.ru_maxrss / 1024);
+	} else {
+	    snprintf(buf, size, "%ldB", usage.ru_maxrss);
+	}
+    }
+    return buf;
+}
+
 static int
 bench_parse_file(const char *filename) {
     int64_t		dt;
@@ -352,13 +372,14 @@ bench_parse_file(const char *filename) {
     oj_val_parse_file(&e, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
 
+    char	mem[16];
     if (OJ_OK != p.err.code) {
 	printf("*** Error: %s at %d:%d\n", p.err.msg, p.err.line, p.err.col);
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("oj_parse_file   %ld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    printf("oj_parse_file   %ld entries in %8.3f msecs. (%5d iterations/msec) used %s of memory\n",
+	   iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt), mem_use(mem, sizeof(mem)));
 
     return 0;
 }

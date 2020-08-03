@@ -102,6 +102,26 @@ simd_parse(const char *str, int64_t iter) {
     return 0;
 }
 
+
+static char*
+mem_use(char *buf, size_t size) {
+    struct rusage	usage;
+
+    *buf = '\0';
+    if (0 == getrusage(RUSAGE_SELF, &usage)) {
+	if (1024 * 1024 * 1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldGB", usage.ru_maxrss / (1024 * 1024 * 1024));
+	} else if (1024 * 1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldMB", usage.ru_maxrss / (1024 * 1024));
+	} else if (1024 < usage.ru_maxrss) {
+	    snprintf(buf, size, "%ldKB", usage.ru_maxrss / 1024);
+	} else {
+	    snprintf(buf, size, "%ldB", usage.ru_maxrss);
+	}
+    }
+    return buf;
+}
+
 static int
 simd_parse_file(const char *filename) {
     int64_t				dt;
@@ -125,8 +145,8 @@ simd_parse_file(const char *filename) {
     if (0 != zero_cnt) {
 	printf("zero count: %d\n", zero_cnt);
     }
-    printf("simdjson_parse   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt));
+    printf("simdjson_parse   %lld entries in %8.3f msecs. (%5d iterations/msec) used %s of memory\n",
+	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt), mem_use(mem, sizeof(mem));
     return 0;
 }
 
