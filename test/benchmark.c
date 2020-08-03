@@ -3,6 +3,8 @@
  * ALL RIGHTS RESERVED
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -338,7 +340,6 @@ bench_parse_many(const char *filename) {
 static int
 bench_parse_file(const char *filename) {
     int64_t		dt;
-    FILE		*f = fopen(filename, "r");
     struct _ojParser	p;
     //struct depth_cnt	dc = { .depth = 0, .cnt = 0 };
     long		iter = 0;
@@ -348,9 +349,8 @@ bench_parse_file(const char *filename) {
 
     int64_t	start = clock_micro();
 
-    oj_val_parse_file(&e, f, destroy_cb, &iter);
+    oj_val_parse_file(&e, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
-    fclose(f);
 
     if (OJ_OK != p.err.code) {
 	printf("*** Error: %s at %d:%d\n", p.err.msg, p.err.line, p.err.col);

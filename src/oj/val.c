@@ -180,7 +180,7 @@ oj_val_parse_strp(ojErr err, const char **json) {
 }
 
 ojVal
-oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx) {
+oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     struct _ojParser	p;
     struct _Stack	stack = {
 	.vals = { NULL },
@@ -194,7 +194,7 @@ oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx) {
     p.pop = pop;
     p.ctx = &stack;
 
-    oj_parse_file(&p, file);
+    oj_parse_file(&p, filename);
     if (OJ_OK != p.err.code) {
 	if (NULL != err) {
 	    *err = p.err;
@@ -205,11 +205,28 @@ oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx) {
 }
 
 ojVal
-oj_val_parse_fd(ojErr err, int socket) {
+oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+    struct _Stack	stack = {
+	.vals = { NULL },
+	.depth = 0,
+	.cb = cb,
+	.ctx = ctx,
+    };
 
-    // TBD
+    memset(&p, 0, sizeof(p));
+    p.push = push;
+    p.pop = pop;
+    p.ctx = &stack;
 
-    return NULL;
+    oj_parse_fd(&p, fd);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return stack.vals[0];
 }
 
 ojVal

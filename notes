@@ -4,6 +4,10 @@
 ^c^s show subtree
 
 - redo parser
+ - try file descriptors
+  -
+  - ojVal oj_val_parse_fd(ojErr err, int socket);
+
  - change ojStr to have a separate length and more as just a struct
   - easier for building and for users
   - length 112 built in with 1 for \0 at end

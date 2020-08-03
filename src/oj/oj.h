@@ -157,17 +157,18 @@ extern "C" {
 
     extern ojStatus	oj_parse_str(ojParser p, const char *json);
     extern ojStatus	oj_parse_strp(ojParser p, const char **json);
-    extern ojStatus	oj_parse_file(ojParser p, FILE *file);
-    extern ojStatus	oj_parse_fd(ojParser p, int socket);
+    extern ojStatus	oj_parse_file(ojParser p, const char *filename);
+    extern ojStatus	oj_parse_fd(ojParser p, int fd);
+
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
     extern void		oj_val_parser(ojParser p);
     extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_val_parse_file(ojErr err, FILE *file, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
-    extern ojVal	oj_val_parse_fd(ojErr err, int socket);
     extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 
     // TBD val access functions

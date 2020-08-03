@@ -1,7 +1,10 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "oj.h"
 #include "intern.h"
@@ -62,6 +65,18 @@ typedef struct _ojValidator {
     char		stack[256];
 } *ojValidator;
 
+typedef struct _ReadBlock {
+    pthread_mutex_t	mu;
+    ojStatus		status;
+    bool		eof;
+    byte		buf[16385];
+} *ReadBlock;
+
+typedef struct _ReadCtx {
+    struct _ReadBlock	blocks[4];
+    ReadBlock		bend;
+    int			fd;
+} *ReadCtx;
 
 /*
 0123456789abcdef0123456789abcdef */
@@ -929,22 +944,9 @@ oj_parse_strp(ojParser p, const char **json) {
     return OJ_OK;
 }
 
-typedef struct _ReadBlock {
-    pthread_mutex_t	mu;
-    ojStatus		status;
-    bool		eof;
-    byte		buf[16385];
-} *ReadBlock;
-
-typedef struct _ReadCtx {
-    struct _ReadBlock	blocks[4];
-    ReadBlock		bend;
-    FILE		*file;
-} *ReadCtx;
-
 static void
-read_block(FILE *file, ReadBlock b) {
-    size_t	rcnt = fread(b->buf, 1, sizeof(b->buf) - 1, file);
+read_block(int fd, ReadBlock b) {
+    size_t	rcnt = read(fd, b->buf, sizeof(b->buf) - 1);
 
     if (0 < rcnt) {
 	b->buf[rcnt] = '\0';
@@ -952,11 +954,9 @@ read_block(FILE *file, ReadBlock b) {
     }
     if (rcnt != sizeof(b->buf) - 1) {
 	if (0 == rcnt) {
-	    if (feof(file)) {
-		b->eof = true;
-	    } else {
-		b->status = ferror(file);
-	    }
+	    b->eof = true;
+	} else if (rcnt < 0) {
+	    b->status = errno;
 	}
     }
 }
@@ -972,7 +972,7 @@ reader(void *ctx) {
 	if (OJ_OK != b->status) {
 	    break;
 	}
-	read_block(rc->file, b);
+	read_block(rc->fd, b);
 	if (OJ_OK != b->status || b->eof) {
 	    break;
 	}
@@ -986,18 +986,19 @@ reader(void *ctx) {
     }
     pthread_mutex_unlock(&b->mu);
     pthread_exit(0);
+
     return NULL;
 }
 
 static ojStatus
-parse_large_file(ojParser p, FILE *file) {
+parse_large(ojParser p, int fd) {
     struct _ReadCtx	rc;
     ReadBlock		b; // current block being parsed
 
     //printf("*** large - %ld\n", sizeof(*rc.blocks));
     memset(&rc, 0, sizeof(rc));
     rc.bend = rc.blocks + sizeof(rc.blocks) / sizeof(*rc.blocks);
-    rc.file = file;
+    rc.fd = fd;
 
     for (b = rc.blocks; b < rc.bend; b++) {
 	if (0 != pthread_mutex_init(&b->mu, NULL)) {
@@ -1021,7 +1022,7 @@ parse_large_file(ojParser p, FILE *file) {
     ReadBlock	next;
 
     b = rc.blocks;
-    read_block(file, b);
+    read_block(fd, b);
 
     // Release the second block so the reader can start reading additional
     // blocks.
@@ -1051,7 +1052,7 @@ parse_large_file(ojParser p, FILE *file) {
 }
 
 ojStatus
-oj_parse_file(ojParser p, FILE *file) {
+oj_parse_fd(ojParser p, int fd) {
     if (NULL == p->push) {
 	p->push = no_push;
     }
@@ -1061,32 +1062,26 @@ oj_parse_file(ojParser p, FILE *file) {
     p->err.line = 1;
     p->map = value_map;
 
-    off_t	pos = ftello(file);
-    off_t	fsize;
+    struct stat	info;
 
-    if (0 != fseeko(file, 0, SEEK_END) ||
-	0 > (fsize = ftello(file)) ||
-	0 != fseeko(file, pos, SEEK_SET)) {
-	return oj_err_no(&p->err, "checking file length");
-    }
-    if (USE_THREAD_LIMIT < fsize) {
+    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size) {
 	// Use threaded version.
-	return parse_large_file(p, file);
+	return parse_large(p, fd);
     }
     byte	buf[16385];
     size_t	size = sizeof(buf) - 1;
     size_t	rsize;
 
     while (true) {
-	if (0 < (rsize = fread(buf, 1, size, file))) {
+	if (0 < (rsize = read(fd, buf, size))) {
 	    buf[rsize] = '\0';
 	    if (OJ_OK != parse(p, buf)) {
 		break;
 	    }
 	}
-	if (rsize != size) {
-	    if (0 == rsize && !feof(file)) {
-		return oj_err_set(&p->err, ferror(file), "read error");
+	if (rsize <= 0) {
+	    if (0 != rsize) {
+		return oj_err_no(&p->err, "read error");
 	    }
 	    break;
 	}
@@ -1095,9 +1090,16 @@ oj_parse_file(ojParser p, FILE *file) {
 }
 
 ojStatus
-oj_parse_fd(ojParser p, int socket) {
-    // TBD
-    return OJ_OK;
+oj_parse_file(ojParser p, const char *filename) {
+    int	fd = open(filename, O_RDONLY);
+
+    if (fd < 0) {
+	return oj_err_no(&p->err, "error opening %s", filename);
+    }
+    oj_parse_fd(p, fd);
+    close(fd);
+
+    return p->err.code;
 }
 
 ojStatus
