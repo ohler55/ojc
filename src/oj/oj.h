@@ -86,6 +86,12 @@ extern "C" {
 	char		val[4080];
     } *ojExt;
 
+    typedef struct _ojExtList {
+	// pointer is volatile
+	struct _ojExt	*volatile head;
+	struct _ojExt	*volatile tail;
+    } *ojExtList;
+
     struct _ojStr {
 	char		start[112]; 	// first char is the length, '\0' terminated
 	int		len;		// length of combines string blocks

@@ -11,8 +11,10 @@
 #define USE_MUTEX 0
 #define USE_ATOMIC 1
 
-static struct _ojList	free_vals = { .head = NULL, .tail = NULL };
-static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
+static struct _ojList		free_vals = { .head = NULL, .tail = NULL };
+//static struct _ojExtList	free_exts = { .head = NULL, .tail = NULL };
+static atomic_flag		val_busy = ATOMIC_FLAG_INIT;
+//static atomic_flag		ext_busy = ATOMIC_FLAG_INIT;
 
 bool oj_thread_safe = false;
 
