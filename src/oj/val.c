@@ -12,11 +12,39 @@
 #define USE_ATOMIC 1
 
 static struct _ojList		free_vals = { .head = NULL, .tail = NULL };
-//static struct _ojExtList	free_exts = { .head = NULL, .tail = NULL };
+static struct _ojExtList	free_exts = { .head = NULL, .tail = NULL };
 static atomic_flag		val_busy = ATOMIC_FLAG_INIT;
-//static atomic_flag		ext_busy = ATOMIC_FLAG_INIT;
+static atomic_flag		ext_busy = ATOMIC_FLAG_INIT;
 
 bool oj_thread_safe = false;
+
+static ojExt
+ext_create() {
+    ojExt	ext = NULL;
+
+    // Carelessly check to see if a new val is needed. It doesn't matter if we
+    // get it wrong here.
+    if (NULL == free_exts.head) {
+	ext = (ojExt)calloc(1, sizeof(struct _ojExt));
+    } else {
+	// Looks like we need to lock it down for a moment using the atomic busy
+	// flag.
+	if (oj_thread_safe) {
+	    while (atomic_flag_test_and_set(&ext_busy)) {
+	    }
+	}
+	if (NULL == free_exts.head) {
+	    ext = (ojExt)calloc(1, sizeof(struct _ojExt));
+	} else {
+	    ext = free_exts.head;
+	    free_exts.head = free_exts.head->next;
+	}
+	if (oj_thread_safe) {
+	    atomic_flag_clear(&ext_busy);
+	}
+    }
+    return ext;
+}
 
 ojVal
 oj_val_create() {
@@ -291,4 +319,20 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	}
     }
     return oj_buf_len(buf) - start;
+}
+
+ojStatus
+oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
+    if (len < sizeof(val->str.start)) {
+	memcpy(val->str.start, s, len);
+	val->str.start[len] = '\0';
+    } else {
+	ojExt	ext;
+
+	// TBD
+	ext = ext_create();
+	printf("*** ext: %p\n", (void*)ext);
+
+    }
+    return OJ_OK;
 }

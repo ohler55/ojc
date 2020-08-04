@@ -343,15 +343,22 @@ mem_use(char *buf, size_t size) {
     struct rusage	usage;
 
     *buf = '\0';
+    // TBD round to at least 2 places, adjust for linux vs macOS
     if (0 == getrusage(RUSAGE_SELF, &usage)) {
-	if (1024 * 1024 * 1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldGB", usage.ru_maxrss / (1024 * 1024 * 1024));
-	} else if (1024 * 1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldMB", usage.ru_maxrss / (1024 * 1024));
-	} else if (1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldKB", usage.ru_maxrss / 1024);
+	long	mem = usage.ru_maxrss;
+#ifndef __unix__
+	mem /= 1024; // results are in KB, macOS in bytes
+#endif
+	if (1024 * 1024 * 10 < mem) {
+	    snprintf(buf, size, "%ldGB", (mem + (1024 * 1024) / 2) / (1024 * 1024));
+	} else if (1024 * 1024 < mem) {
+	    snprintf(buf, size, "%0.1fGB", ((double)mem + (1024.0 * 1024.0) / 20.0) / (1024.0 * 1024.0));
+	} else if (1024 * 10 < mem) {
+	    snprintf(buf, size, "%ldMB", (mem + 512) / 1024);
+	} else if (1024 < mem) {
+	    snprintf(buf, size, "%0.1fMB", ((double)mem + 51.2) / 1024.0);
 	} else {
-	    snprintf(buf, size, "%ldB", usage.ru_maxrss);
+	    snprintf(buf, size, "%ldKB", mem);
 	}
     }
     return buf;

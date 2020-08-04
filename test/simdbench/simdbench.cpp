@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include <ostream>
@@ -102,21 +103,27 @@ simd_parse(const char *str, int64_t iter) {
     return 0;
 }
 
-
 static char*
 mem_use(char *buf, size_t size) {
     struct rusage	usage;
 
     *buf = '\0';
+    // TBD round to at least 2 places, adjust for linux vs macOS
     if (0 == getrusage(RUSAGE_SELF, &usage)) {
-	if (1024 * 1024 * 1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldGB", usage.ru_maxrss / (1024 * 1024 * 1024));
-	} else if (1024 * 1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldMB", usage.ru_maxrss / (1024 * 1024));
-	} else if (1024 < usage.ru_maxrss) {
-	    snprintf(buf, size, "%ldKB", usage.ru_maxrss / 1024);
+	long	mem = usage.ru_maxrss;
+#ifndef __unix__
+	mem /= 1024; // results are in KB, macOS in bytes
+#endif
+	if (1024 * 1024 * 10 < mem) {
+	    snprintf(buf, size, "%ldGB", (mem + (1024 * 1024) / 2) / (1024 * 1024));
+	} else if (1024 * 1024 < mem) {
+	    snprintf(buf, size, "%0.1fGB", ((double)mem + (1024.0 * 1024.0) / 20.0) / (1024.0 * 1024.0));
+	} else if (1024 * 10 < mem) {
+	    snprintf(buf, size, "%ldMB", (mem + 512) / 1024);
+	} else if (1024 < mem) {
+	    snprintf(buf, size, "%0.1fMB", ((double)mem + 51.2) / 1024.0);
 	} else {
-	    snprintf(buf, size, "%ldB", usage.ru_maxrss);
+	    snprintf(buf, size, "%ldKB", mem);
 	}
     }
     return buf;
@@ -130,6 +137,7 @@ simd_parse_file(const char *filename) {
     int64_t				start = clock_micro();
     simdjson::dom::parser		parser;
     simdjson::dom::document_stream	docs;
+    char				mem[16];
 
     try {
 	docs = parser.load_many(filename);
@@ -146,7 +154,7 @@ simd_parse_file(const char *filename) {
 	printf("zero count: %d\n", zero_cnt);
     }
     printf("simdjson_parse   %lld entries in %8.3f msecs. (%5d iterations/msec) used %s of memory\n",
-	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt), mem_use(mem, sizeof(mem));
+	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt), mem_use(mem, sizeof(mem)));
     return 0;
 }
 

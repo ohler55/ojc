@@ -416,16 +416,12 @@ parse(ojParser p, const byte *json) {
 	    p->val.type = OJ_STRING;
 	    p->val.mod = OJ_STR_INLINE;
 	    if ('"' == *b) {
-		len = b - start;
-		if (len < sizeof(p->val.str.start)) {
-		    p->val.str.len = len;
-		    memcpy(p->val.str.start, start, len);
-		    p->val.str.start[len] = '\0';
-		} else {
-		    // TBD build string
-		    printf("*** long string\n");
-		}
+		oj_val_set_str(&p->err, &p->val, (char*)start, b - start);
+		p->map = (0 == p->depth) ? value_map : after_map;
+		break;
 	    }
+	    oj_val_set_str(&p->err, &p->val, (char*)start, b - start);
+	    // TBD need to handle ext if created, maybe have a func that returns the last ext
 	    b--;
 	    p->map = string_map;
 	    p->next_map = (0 == p->depth) ? value_map : after_map;

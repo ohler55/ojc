@@ -178,6 +178,8 @@ extern "C" {
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
 
+    extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
+
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);
     extern size_t	oj_buf(ojBuf buf, ojVal val, int indent, int depth);
