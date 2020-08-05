@@ -134,6 +134,7 @@ extern "C" {
 	const char	*map;
 	const char	*next_map;
 	struct _ojVal	val; // working val
+	ojExt		ext; // set to tail of val if extended string or key
 	struct _ojErr	err;
 	void		(*push)(ojVal val, void *ctx);
 	void		(*pop)(void *ctx);

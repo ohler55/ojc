@@ -47,6 +47,8 @@ enum {
     ESC_OK		= 'B',
     U_OK		= 'E',
     TOKEN_OK		= 'F',
+    NUM_CLOSE_OBJECT	= 'G',
+    NUM_CLOSE_ARRAY	= 'H',
     NUM_DIGIT		= 'N',
     NUM_ZERO		= 'O',
     STR_OK		= 'R',
@@ -183,8 +185,8 @@ static const char	neg_map[257] = "\
 static const char	zero_map[257] = "\
 .........rs..r..................\
 r...........u.t.................\
-.............................m..\
-.............................n..\
+.............................H..\
+.............................G..\
 ................................\
 ................................\
 ................................\
@@ -193,8 +195,8 @@ r...........u.t.................\
 static const char	digit_map[257] = "\
 .........rs..r..................\
 r...........u.t.NNNNNNNNNN......\
-.............................m..\
-.............................n..\
+.............................H..\
+.............................G..\
 ................................\
 ................................\
 ................................\
@@ -213,8 +215,8 @@ static const char	dot_map[257] = "\
 static const char	frac_map[257] = "\
 .........rs..r..................\
 r...........u...vvvvvvvvvv......\
-.....w.......................m..\
-.....w.......................n..\
+.....w.......................H..\
+.....w.......................G..\
 ................................\
 ................................\
 ................................\
@@ -243,8 +245,8 @@ static const char	exp_zero_map[257] = "\
 static const char	exp_map[257] = "\
 .........rs..r..................\
 r...........u...yyyyyyyyyy......\
-.............................m..\
-.............................n..\
+.............................H..\
+.............................G..\
 ................................\
 ................................\
 ................................\
@@ -353,7 +355,6 @@ byteError(ojErr err, const char *map, int off, byte b) {
 
 static ojStatus
 parse(ojParser p, const byte *json) {
-    int		len;
     const byte *start;
 /*
     if (NULL == p->next_map) {
@@ -388,15 +389,11 @@ parse(ojParser p, const byte *json) {
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if ('"' == *b) {
-		len = b - start;
-		if (len < sizeof(p->val.key.start)) {
-		    p->val.key.len = len;
-		    memcpy(p->val.key.start, start, len);
-		    p->val.key.start[len] = '\0';
-		} else {
-		    // TBD build key
-		}
+		_oj_val_set_key(p, (char*)start, b - start);
+		p->map = colon_map;
+		break;
 	    }
+	    _oj_val_set_key(p, (char*)start, b - start);
 	    b--;
 	    p->map = string_map;
 	    p->next_map = colon_map;
@@ -416,39 +413,39 @@ parse(ojParser p, const byte *json) {
 	    p->val.type = OJ_STRING;
 	    p->val.mod = OJ_STR_INLINE;
 	    if ('"' == *b) {
-		oj_val_set_str(&p->err, &p->val, (char*)start, b - start);
+		_oj_val_set_str(p, (char*)start, b - start);
 		p->map = (0 == p->depth) ? value_map : after_map;
 		break;
 	    }
-	    oj_val_set_str(&p->err, &p->val, (char*)start, b - start);
-	    // TBD need to handle ext if created, maybe have a func that returns the last ext
+	    _oj_val_set_str(p, (char*)start, b - start);
 	    b--;
 	    p->map = string_map;
 	    p->next_map = (0 == p->depth) ? value_map : after_map;
 	    break;
 	case OPEN_OBJECT:
-	    // TBD check depth vs stack len
+	    if (sizeof(p->stack) <= p->depth) {
+		// TBD realloc stack
+		p->err.col = b - json - p->err.col;
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
+	    }
 	    p->stack[p->depth] = '{';
 	    p->depth++;
-	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p->ctx);
-		p->val.type = OJ_NULL;
-	    }
 	    p->val.type = OJ_OBJECT;
 	    p->val.mod = OJ_OBJ_RAW;
 	    p->val.list.head = NULL;
 	    p->push(&p->val, p->ctx);
 	    p->map = key1_map;
 	    break;
-	case CLOSE_OBJECT:
-	    p->depth--;
-	    p->map = (0 == p->depth) ? value_map : after_map;
+	case NUM_CLOSE_OBJECT:
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
 		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
+	    // flow through
+	case CLOSE_OBJECT:
+	    p->depth--;
+	    p->map = (0 == p->depth) ? value_map : after_map;
 	    p->pop(p->ctx);
 	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
@@ -456,27 +453,28 @@ parse(ojParser p, const byte *json) {
 	    }
 	    break;
 	case OPEN_ARRAY:
-	    // TBD check depth vs stack len
+	    if (sizeof(p->stack) <= p->depth) {
+		// TBD realloc stack
+		p->err.col = b - json - p->err.col;
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
+	    }
 	    p->stack[p->depth] = '[';
 	    p->depth++;
-	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p->ctx);
-		p->val.type = OJ_NULL;
-	    }
 	    p->val.type = OJ_ARRAY;
 	    p->val.list.head = NULL;
 	    p->push(&p->val, p->ctx);
 	    p->map = value_map;
 	    break;
-	case CLOSE_ARRAY:
-	    p->depth--;
-	    p->map = (0 == p->depth) ? value_map : after_map;
+	case NUM_CLOSE_ARRAY:
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
 		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
 		p->push(&p->val, p->ctx);
 		p->val.type = OJ_NULL;
 	    }
+	    // flow through
+	case CLOSE_ARRAY:
+	    p->depth--;
+	    p->map = (0 == p->depth) ? value_map : after_map;
 	    p->pop(p->ctx);
 	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
@@ -626,50 +624,56 @@ parse(ojParser p, const byte *json) {
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_NULL;
 		p->push(&p->val, p->ctx);
-	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+		break;
+	    }
+	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = null_map;
 		p->ri = 0;
-	    } else {
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
+		break;
 	    }
-	    break;
+	    p->err.col = b - json - p->err.col;
+	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
 	case VAL_TRUE:
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_TRUE;
 		p->push(&p->val, p->ctx);
-	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+		break;
+	    }
+	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = true_map;
 		p->ri = 0;
-	    } else {
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
+		break;
 	    }
-	    break;
+	    p->err.col = b - json - p->err.col;
+	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
 	case VAL_FALSE:
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_FALSE;
 		p->push(&p->val, p->ctx);
-	    } else if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
+		break;
+	    }
+	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
 		p->map = false_map;
 		p->ri = 0;
-	    } else {
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
+		break;
 	    }
-	    break;
+	    p->err.col = b - json - p->err.col;
+	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
 	case CHAR_ERR:
-	    return byteError(&p->err, p->map, b - json, *b);
+	    if (OJ_OK == p->err.code) {
+		byteError(&p->err, p->map, b - json, *b);
+	    }
+	    return p->err.code;
 	default:
 	    printf("*** internal error, unknown mode '%c'\n", p->map[*b]);
 	    break;
 	}
     }
-    return OJ_OK;
+    return p->err.code;
 }
 
 static ojStatus
@@ -735,6 +739,7 @@ validate(ojValidator v, const byte *json) {
 	    v->depth++;
 	    v->map = key1_map;
 	    break;
+	case NUM_CLOSE_OBJECT:
 	case CLOSE_OBJECT:
 	    v->depth--;
 	    v->map = (0 == v->depth) ? value_map : after_map;
@@ -749,6 +754,7 @@ validate(ojValidator v, const byte *json) {
 	    v->depth++;
 	    v->map = value_map;
 	    break;
+	case NUM_CLOSE_ARRAY:
 	case CLOSE_ARRAY:
 	    v->depth--;
 	    v->map = (0 == v->depth) ? value_map : after_map;

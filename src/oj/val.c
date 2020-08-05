@@ -336,3 +336,33 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
     }
     return OJ_OK;
 }
+
+void
+_oj_val_set_key(ojParser p, const char *s, size_t len) {
+    if (len < sizeof(p->val.key.start)) {
+	memcpy(p->val.key.start, s, len);
+	p->val.key.start[len] = '\0';
+    } else {
+	ojExt	ext;
+
+	// TBD
+	ext = ext_create();
+	printf("*** ext: %p\n", (void*)ext);
+
+    }
+}
+
+void
+_oj_val_set_str(ojParser p, const char *s, size_t len) {
+    if (len < sizeof(p->val.str.start)) {
+	memcpy(p->val.str.start, s, len);
+	p->val.str.start[len] = '\0';
+    } else {
+	ojExt	ext;
+
+	// TBD
+	ext = ext_create();
+	printf("*** ext: %p\n", (void*)ext);
+
+    }
+}
