@@ -8,43 +8,15 @@
 #include "oj.h"
 #include "buf.h"
 
-#define USE_MUTEX 0
-#define USE_ATOMIC 1
-
-static struct _ojList		free_vals = { .head = NULL, .tail = NULL };
-static struct _ojExtList	free_exts = { .head = NULL, .tail = NULL };
-static atomic_flag		val_busy = ATOMIC_FLAG_INIT;
-static atomic_flag		ext_busy = ATOMIC_FLAG_INIT;
-
 bool oj_thread_safe = false;
 
-static ojExt
-ext_create() {
-    ojExt	ext = NULL;
+struct _ojVal		*volatile free_head = NULL;
+struct _ojVal		*volatile free_tail = NULL;
+static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
 
-    // Carelessly check to see if a new val is needed. It doesn't matter if we
-    // get it wrong here.
-    if (NULL == free_exts.head) {
-	ext = (ojExt)calloc(1, sizeof(struct _ojExt));
-    } else {
-	// Looks like we need to lock it down for a moment using the atomic busy
-	// flag.
-	if (oj_thread_safe) {
-	    while (atomic_flag_test_and_set(&ext_busy)) {
-	    }
-	}
-	if (NULL == free_exts.head) {
-	    ext = (ojExt)calloc(1, sizeof(struct _ojExt));
-	} else {
-	    ext = free_exts.head;
-	    free_exts.head = free_exts.head->next;
-	}
-	if (oj_thread_safe) {
-	    atomic_flag_clear(&ext_busy);
-	}
-    }
-    return ext;
-}
+union ojS4k		*volatile s4k_head = NULL;
+union ojS4k		*volatile s4k_tail = NULL;
+static atomic_flag	s4k_busy = ATOMIC_FLAG_INIT;
 
 ojVal
 oj_val_create() {
@@ -52,7 +24,7 @@ oj_val_create() {
 
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
-    if (NULL == free_vals.head) {
+    if (NULL == free_head) {
 	val = (ojVal)calloc(1, sizeof(struct _ojVal));
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
@@ -61,11 +33,11 @@ oj_val_create() {
 	    while (atomic_flag_test_and_set(&val_busy)) {
 	    }
 	}
-	if (NULL == free_vals.head) {
+	if (NULL == free_head) {
 	    val = (ojVal)calloc(1, sizeof(struct _ojVal));
 	} else {
-	    val = free_vals.head;
-	    free_vals.head = free_vals.head->next;
+	    val = free_head;
+	    free_head = free_head->next;
 	}
 	if (oj_thread_safe) {
 	    atomic_flag_clear(&val_busy);
@@ -74,15 +46,70 @@ oj_val_create() {
     return val;
 }
 
+union ojS4k*
+s4k_create() {
+    union ojS4k	*s = NULL;
+
+    // Carelessly check to see if a new val is needed. It doesn't matter if we
+    // get it wrong here.
+    if (NULL == s4k_head) {
+	s = (union ojS4k*)calloc(1, sizeof(union ojS4k));
+    } else {
+	// Looks like we need to lock it down for a moment using the atomic busy
+	// flag.
+	if (oj_thread_safe) {
+	    while (atomic_flag_test_and_set(&s4k_busy)) {
+	    }
+	}
+	if (NULL == s4k_head) {
+	    s = (union ojS4k*)calloc(1, sizeof(union ojS4k));
+	} else {
+	    s = s4k_head;
+	    s4k_head = s4k_head->next;
+	}
+	if (oj_thread_safe) {
+	    atomic_flag_clear(&s4k_busy);
+	}
+    }
+    return s;
+}
+
 void
 oj_destroy(ojVal val) {
     ojVal	tail = val;
     ojVal	v = val;
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
 
     val->next = NULL;
     for (; NULL != v; v = v->next) {
+	if (sizeof(union ojS4k) < v->key.len) {
+	    free(v->key.ptr);
+	} else if (sizeof(v->key.raw) < v->key.len) {
+	    v->key.s4k->next = NULL;
+	    if (NULL == s4k_h) {
+		s4k_h = v->key.s4k;
+	    } else {
+		s4k_t->next = v->key.s4k;
+	    }
+	    s4k_t = v->key.s4k;
+	}
 	switch (v->type) {
 	case OJ_STRING:
+	    switch (v->mod) {
+	    case OJ_STR_4K:
+		v->str.s4k->next = NULL;
+		if (NULL == s4k_h) {
+		    s4k_h = v->str.s4k;
+		} else {
+		    s4k_t->next = v->str.s4k;
+		}
+		s4k_t = v->str.s4k;
+		break;
+	    case OJ_STR_PTR:
+		free(v->str.ptr);
+		break;
+	    }
 	    break;
 	case OJ_INT:
 	    // TBD if raw and ext then free the exts
@@ -113,12 +140,18 @@ oj_destroy(ojVal val) {
 	while (atomic_flag_test_and_set(&val_busy)) {
 	}
     }
-    if (NULL == free_vals.head) {
-	free_vals.head = val;
+    if (NULL == free_head) {
+	free_head = val;
     } else {
-	free_vals.tail->next = val;
+	free_tail->next = val;
     }
-    free_vals.tail = tail;
+    free_tail = tail;
+    if (NULL == s4k_head) {
+	s4k_head = s4k_h;
+    } else {
+	s4k_tail->next = s4k_h;
+    }
+    s4k_tail = s4k_t;
     if (oj_thread_safe) {
 	atomic_flag_clear(&val_busy);
     }
@@ -299,8 +332,17 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    break;
 	case OJ_STRING:
 	    oj_buf_append(buf, '"');
-	    // TBD handle extended
-	    oj_buf_append_string(buf, val->str.start, (size_t)val->str.len);
+	    switch (val->mod) {
+	    case OJ_STR_INLINE:
+		oj_buf_append_string(buf, val->str.raw, (size_t)val->str.len);
+		break;
+	    case OJ_STR_4K:
+		oj_buf_append_string(buf, val->str.s4k->str, (size_t)val->str.len);
+		break;
+	    case OJ_STR_PTR:
+		oj_buf_append_string(buf, val->str.ptr, (size_t)val->str.len);
+		break;
+	    }
 	    oj_buf_append(buf, '"');
 	    break;
 	case OJ_OBJECT:
@@ -323,46 +365,58 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 
 ojStatus
 oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
-    if (len < sizeof(val->str.start)) {
-	memcpy(val->str.start, s, len);
-	val->str.start[len] = '\0';
+    if (len < sizeof(val->str.raw)) {
+	memcpy(val->str.raw, s, len);
+	val->str.raw[len] = '\0';
+	val->mod = OJ_STR_INLINE;
+    } else if (len < sizeof(union ojS4k)) {
+	union ojS4k	*s4k = s4k_create();
+
+	val->str.s4k = s4k;
+	memcpy(val->str.s4k->str, s, len);
+	val->str.s4k->str[len] = '\0';
+	val->mod = OJ_STR_4K;
     } else {
-	ojExt	ext;
-
-	// TBD
-	ext = ext_create();
-	printf("*** ext: %p\n", (void*)ext);
-
+	val->str.ptr = (char*)malloc(len + 1);
+	memcpy(val->str.ptr, s, len);
+	val->str.ptr[len] = '\0';
+	val->mod = OJ_STR_PTR;
     }
     return OJ_OK;
 }
 
 void
 _oj_val_set_key(ojParser p, const char *s, size_t len) {
-    if (len < sizeof(p->val.key.start)) {
-	memcpy(p->val.key.start, s, len);
-	p->val.key.start[len] = '\0';
+    if (len < sizeof(p->val.key.raw)) {
+	memcpy(p->val.key.raw, s, len);
+	p->val.key.raw[len] = '\0';
+    } else if (len < sizeof(union ojS4k)) {
+	union ojS4k	*s4k = s4k_create();
+
+	p->val.key.s4k = s4k;
+	memcpy(p->val.key.s4k->str, s, len);
+	p->val.key.s4k->str[len] = '\0';
     } else {
-	ojExt	ext;
-
-	// TBD
-	ext = ext_create();
-	printf("*** ext: %p\n", (void*)ext);
-
+	p->val.key.ptr = (char*)malloc(len + 1);
+	memcpy(p->val.key.ptr, s, len);
+	p->val.key.ptr[len] = '\0';
     }
 }
 
 void
 _oj_val_set_str(ojParser p, const char *s, size_t len) {
-    if (len < sizeof(p->val.str.start)) {
-	memcpy(p->val.str.start, s, len);
-	p->val.str.start[len] = '\0';
+    if (len < sizeof(p->val.str.raw)) {
+	memcpy(p->val.str.raw, s, len);
+	p->val.str.raw[len] = '\0';
+    } else if (len < sizeof(union ojS4k)) {
+	union ojS4k	*s4k = s4k_create();
+
+	p->val.str.s4k = s4k;
+	memcpy(p->val.str.s4k->str, s, len);
+	p->val.str.s4k->str[len] = '\0';
     } else {
-	ojExt	ext;
-
-	// TBD
-	ext = ext_create();
-	printf("*** ext: %p\n", (void*)ext);
-
+	p->val.str.ptr = (char*)malloc(len + 1);
+	memcpy(p->val.str.ptr, s, len);
+	p->val.str.ptr[len] = '\0';
     }
 }

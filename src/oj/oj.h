@@ -56,7 +56,8 @@ extern "C" {
 
     typedef enum {
 	OJ_STR_INLINE	= 0,
-	OJ_STR_EXT	= 'x',
+	OJ_STR_4K	= '4',
+	OJ_STR_PTR	= 'p',
 	OJ_OBJ_RAW	= 'r',
 	OJ_OBJ_HASH	= 'h',
 	OJ_INT_RAW	= 'i', // no . or e in string
@@ -80,22 +81,18 @@ extern "C" {
 	char		msg[256];
     } *ojErr;
 
-    typedef struct _ojExt {
-	struct _ojExt	*next;
-	uint16_t	len;
-	char		val[4080];
-    } *ojExt;
-
-    typedef struct _ojExtList {
-	// pointer is volatile
-	struct _ojExt	*volatile head;
-	struct _ojExt	*volatile tail;
-    } *ojExtList;
+    union ojS4k {
+	union ojS4k	*next;
+	char		str[4096];
+    };
 
     struct _ojStr {
-	char		start[112]; 	// first char is the length, '\0' terminated
-	int		len;		// length of combines string blocks
-	ojExt		more;		// additional string blocks
+	int		len;	// length of raw or ptr excluding \0
+	union {
+	    char	raw[120];
+	    char	*ptr;
+	    union ojS4k	*s4k;
+	};
     } *ojStr;
 
     typedef struct _ojNum {
@@ -104,14 +101,15 @@ extern "C" {
 	    long double	dub;
 	};
 	int		len;
-	char		raw[96]; 	// '\0' terminated
-	ojExt		more;
+	union {
+	    char	raw[96];
+	    char	*ptr;
+	};
     } *ojNum;
 
     typedef struct _ojList {
-	// pointer is volatile
-	struct _ojVal	*volatile head;
-	struct _ojVal	*volatile tail;
+	struct _ojVal	*head;
+	struct _ojVal	*tail;
     } *ojList;
 
     typedef struct _ojVal {
@@ -134,7 +132,6 @@ extern "C" {
 	const char	*map;
 	const char	*next_map;
 	struct _ojVal	val; // working val
-	ojExt		ext; // set to tail of val if extended string or key
 	struct _ojErr	err;
 	void		(*push)(ojVal val, void *ctx);
 	void		(*pop)(void *ctx);

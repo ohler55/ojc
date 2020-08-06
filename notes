@@ -4,6 +4,16 @@
 ^c^s show subtree
 
 - redo parser
+ - val parse tests
+  - maybe oj_val.c or oj_parse.c
+
+ - maybe pospone string contraction until read
+  - allow \ in string
+  - detect invalid escaped sequence early or later?
+   - index() on \ then check after it
+
+ - add cleanup
+
  - convert for numbers
   - also call to get original string
    - change storage to not lose original (use ext when needed)
@@ -36,6 +46,7 @@
   - structure close
   - string chars (\t in string)
   - numbers (multiple . e -)
+  - display error location?
  - can get complete values as native types (array and object should be iteratable)
  - big numbers
  - long double or maybe precision (80 bit vs 64)
@@ -51,6 +62,7 @@
  - mutiple file (small)
  - mutiple file (4G)
  - mutiple file (large)
+ - build/modify
  - to string
  - write
 
