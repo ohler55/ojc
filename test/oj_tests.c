@@ -13,7 +13,7 @@ struct _data {
 };
 
 static void
-test_jsons(struct _data *dp) {
+validate_jsons(struct _data *dp) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojStatus    	status;
 
@@ -32,7 +32,7 @@ test_jsons(struct _data *dp) {
 }
 
 static void
-null_test() {
+validate_null_test() {
     struct _data	cases[] = {
 	{.json = "null", .status = OJ_OK },
 	{.json = "  null", .status = OJ_OK },
@@ -40,33 +40,33 @@ null_test() {
 	{.json = "nuLL", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-true_test() {
+validate_true_test() {
     struct _data	cases[] = {
 	{.json = "true", .status = OJ_OK },
 	{.json = "  true\n ", .status = OJ_OK },
 	{.json = "trUe", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-false_test() {
+validate_false_test() {
     struct _data	cases[] = {
 	{.json = "false", .status = OJ_OK },
 	{.json = "  false", .status = OJ_OK },
 	{.json = "faLse", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-string_test() {
+validate_string_test() {
     struct _data	cases[] = {
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "  \"abc\" ", .status = OJ_OK },
@@ -74,11 +74,11 @@ string_test() {
 	{.json = "\"a\nb\"", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-number_test() {
+validate_number_test() {
     struct _data	cases[] = {
 	{.json = "0", .status = OJ_OK },
 	{.json = "0 ", .status = OJ_OK },
@@ -91,11 +91,11 @@ number_test() {
 	{.json = "1.2.3", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-array_test() {
+validate_array_test() {
     struct _data	cases[] = {
 	{.json = "[]", .status = OJ_OK },
 	{.json = "[true]", .status = OJ_OK },
@@ -105,11 +105,11 @@ array_test() {
 	{.json = "[}", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-object_test() {
+validate_object_test() {
     struct _data	cases[] = {
 	{.json = "{}", .status = OJ_OK },
 	{.json = "{\"x\":true}", .status = OJ_OK },
@@ -117,17 +117,19 @@ object_test() {
 	{.json = "{]", .status = OJ_ERR_PARSE },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
 
 static void
-validate_test() {
+validate_mixed_test() {
     struct _data	cases[] = {
 	{.json = "{\"x\":true}{\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
-    test_jsons(cases);
+    validate_jsons(cases);
 }
+
+
 
 static void
 push(ojVal val, void *ctx) {
@@ -180,17 +182,65 @@ push_pop_test() {
     test_push_pop(cases);
 }
 
-static struct _Test	tests[] = {
-    { "null",		null_test },
-    { "true",		true_test },
-    { "false",		false_test },
-    { "string",		string_test },
-    { "number",		number_test },
-    { "array",		array_test },
-    { "object",		object_test },
-    { "validate",	validate_test },
+static void
+parse_jsons(struct _data *dp) {
+    struct _ojErr	err = OJ_ERR_INIT;
+    ojVal		val;
+    struct _ojBuf	buf;
 
-    { "push-pop",	push_pop_test },
+    oj_buf_init(&buf, 0);
+    for (; NULL != dp->json; dp++) {
+	val = oj_val_parse_str(&err, dp->json, NULL, NULL);
+	if (OJ_OK == dp->status) {
+	    bool	ok;
+
+	    if (ut_handle_oj_error(&err)) {
+		ut_print("error at %d:%d\n",  err.line, err.col);
+		return;
+	    }
+	    oj_buf(&buf, val, 0, 0);
+	    if (NULL == dp->expect) {
+		ok = ut_same(dp->json, buf.head);
+	    } else {
+		ok = ut_same(dp->expect, buf.head);
+	    }
+	    if (ok && ut_verbose) {
+		ut_print("... '%s' - pass\n", dp->json);
+	    }
+	    oj_buf_cleanup(&buf);
+	    oj_buf_reset(&buf);
+	    oj_destroy(val);
+	} else if (err.code != dp->status) {
+	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, err.code, err.msg);
+	    ut_fail();
+	}
+    }
+}
+
+static void
+parse_test() {
+    struct _data	cases[] = {
+	{.json = "\"abc\"", .status = OJ_OK },
+	{.json = "\"ab\\tcd\"", .status = OJ_OK },
+	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
+	{.json = NULL }};
+
+    parse_jsons(cases);
+}
+
+static struct _Test	tests[] = {
+    { "validate.null",		validate_null_test },
+    { "validate.true",		validate_true_test },
+    { "validate.false",		validate_false_test },
+    { "validate.string",	validate_string_test },
+    { "validate.number",	validate_number_test },
+    { "validate.array",		validate_array_test },
+    { "validate.object",	validate_object_test },
+    { "validate.mixed",		validate_mixed_test },
+
+    { "push-pop",		push_pop_test },
+
+    { "parse",			parse_test },
 
     { 0, 0 } };
 

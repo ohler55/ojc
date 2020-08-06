@@ -55,9 +55,6 @@ extern "C" {
     } ojType;
 
     typedef enum {
-	OJ_STR_INLINE	= 0,
-	OJ_STR_4K	= '4',
-	OJ_STR_PTR	= 'p',
 	OJ_OBJ_RAW	= 'r',
 	OJ_OBJ_HASH	= 'h',
 	OJ_INT_RAW	= 'i', // no . or e in string
@@ -90,8 +87,11 @@ extern "C" {
 	int		len;	// length of raw or ptr excluding \0
 	union {
 	    char	raw[120];
-	    char	*ptr;
 	    union ojS4k	*s4k;
+	    struct {
+		size_t	cap;
+		char	*ptr;
+	    };
 	};
     } *ojStr;
 

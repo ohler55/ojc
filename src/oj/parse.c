@@ -14,8 +14,6 @@
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
 
-typedef uint8_t	byte;
-
 enum {
     SKIP_CHAR		= 'a',
     SKIP_NEWLINE	= 'b',
@@ -363,6 +361,8 @@ parse(ojParser p, const byte *json) {
 	printf("*** parse with map: %c and next: %c\n", p->map[256], p->next_map[256]);
     }
 */
+    //printf("*** %s\n", json);
+
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	switch (p->map[*b]) {
@@ -413,6 +413,7 @@ parse(ojParser p, const byte *json) {
 	    p->val.type = OJ_STRING;
 	    if ('"' == *b) {
 		_oj_val_set_str(p, (char*)start, b - start);
+		p->push(&p->val, p->ctx);
 		p->map = (0 == p->depth) ? value_map : after_map;
 		break;
 	    }
@@ -592,16 +593,25 @@ parse(ojParser p, const byte *json) {
 	    b--;
 	    break;
 	case STR_OK:
+	    start = b;
+	    for (; STR_OK == string_map[*b]; b++) {
+	    }
+	    _oj_val_append_str(p, start, b - start);
+	    if ('"' == *b) {
+		p->map = p->next_map;
+		if (':' != p->map[256]) {
+		    p->push(&p->val, p->ctx);
+		}
+		break;
+	    }
+	    b--;
 	    break;
 	case STR_SLASH:
 	    p->map = esc_map;
 	    break;
 	case STR_QUOTE:
 	    p->map = p->next_map;
-	    if (':' == p->map[256]) {
-		p->val.key.raw[p->val.key.len] = '\0'; // TBD check length
-	    } else {
-		p->val.str.raw[p->val.str.len] = '\0'; // TBD check length
+	    if (':' != p->map[256]) {
 		p->push(&p->val, p->ctx);
 	    }
 	    break;
@@ -617,9 +627,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    break;
 	case ESC_OK:
-	    p->val.str.len++;
-	    // TBD check length
-	    p->val.str.raw[p->val.str.len] = esc_byte_map[*b];
+	    _oj_val_append_str(p, (byte*)&esc_byte_map[*b], 1);
 	    p->map = string_map;
 	    break;
 	case VAL_NULL:
@@ -1085,7 +1093,7 @@ oj_parse_fd(ojParser p, int fd) {
 
     struct stat	info;
 
-    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size) {
+    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
 	// Use threaded version.
 	return parse_large(p, fd);
     }

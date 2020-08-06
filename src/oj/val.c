@@ -7,15 +7,56 @@
 
 #include "oj.h"
 #include "buf.h"
+#include "intern.h"
 
 bool oj_thread_safe = false;
 
-struct _ojVal		*volatile free_head = NULL;
-struct _ojVal		*volatile free_tail = NULL;
+typedef struct _Esc {
+    int		len;
+    const char	*seq;
+} *Esc;
+
+static struct _Esc	esc_map[0x20] = {
+    { .len = 6, .seq = "\\u0000" },
+    { .len = 6, .seq = "\\u0001" },
+    { .len = 6, .seq = "\\u0002" },
+    { .len = 6, .seq = "\\u0003" },
+    { .len = 6, .seq = "\\u0004" },
+    { .len = 6, .seq = "\\u0005" },
+    { .len = 6, .seq = "\\u0006" },
+    { .len = 6, .seq = "\\u0007" },
+    { .len = 2, .seq = "\\b" },
+    { .len = 2, .seq = "\\t" },
+    { .len = 2, .seq = "\\n" },
+    { .len = 6, .seq = "\\u000b" },
+    { .len = 2, .seq = "\\f" },
+    { .len = 2, .seq = "\\r" },
+    { .len = 6, .seq = "\\u000e" },
+    { .len = 6, .seq = "\\u000f" },
+    { .len = 6, .seq = "\\u0010" },
+    { .len = 6, .seq = "\\u0011" },
+    { .len = 6, .seq = "\\u0012" },
+    { .len = 6, .seq = "\\u0013" },
+    { .len = 6, .seq = "\\u0014" },
+    { .len = 6, .seq = "\\u0015" },
+    { .len = 6, .seq = "\\u0016" },
+    { .len = 6, .seq = "\\u0017" },
+    { .len = 6, .seq = "\\u0018" },
+    { .len = 6, .seq = "\\u0019" },
+    { .len = 6, .seq = "\\u001a" },
+    { .len = 6, .seq = "\\u001b" },
+    { .len = 6, .seq = "\\u001c" },
+    { .len = 6, .seq = "\\u001d" },
+    { .len = 6, .seq = "\\u001e" },
+    { .len = 6, .seq = "\\u001f" },
+};
+
+static struct _ojVal	*volatile free_head = NULL;
+static struct _ojVal	*volatile free_tail = NULL;
 static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
 
-union ojS4k		*volatile s4k_head = NULL;
-union ojS4k		*volatile s4k_tail = NULL;
+static union ojS4k	*volatile s4k_head = NULL;
+static union ojS4k	*volatile s4k_tail = NULL;
 static atomic_flag	s4k_busy = ATOMIC_FLAG_INIT;
 
 ojVal
@@ -81,6 +122,9 @@ oj_destroy(ojVal val) {
     union ojS4k	*s4k_h = NULL;
     union ojS4k	*s4k_t = NULL;
 
+    if (NULL == val) {
+	return;
+    }
     val->next = NULL;
     for (; NULL != v; v = v->next) {
 	if (sizeof(union ojS4k) < v->key.len) {
@@ -96,8 +140,9 @@ oj_destroy(ojVal val) {
 	}
 	switch (v->type) {
 	case OJ_STRING:
-	    switch (v->mod) {
-	    case OJ_STR_4K:
+	    if (sizeof(union ojS4k) < v->str.len) {
+		free(v->str.ptr);
+	    } else if (sizeof(v->str.raw) < v->str.len) {
 		v->str.s4k->next = NULL;
 		if (NULL == s4k_h) {
 		    s4k_h = v->str.s4k;
@@ -105,10 +150,6 @@ oj_destroy(ojVal val) {
 		    s4k_t->next = v->str.s4k;
 		}
 		s4k_t = v->str.s4k;
-		break;
-	    case OJ_STR_PTR:
-		free(v->str.ptr);
-		break;
 	    }
 	    break;
 	case OJ_INT:
@@ -184,8 +225,12 @@ push(ojVal val, void *ctx) {
     if (OJ_OBJECT == v->type || OJ_ARRAY == v->type) {
 	stack->vals[stack->depth] = v;
 	stack->depth++;
-    } else if (0 == stack->depth && NULL != stack->cb) {
-	stack->cb(v, stack->ctx);
+    } else if (0 == stack->depth) {
+	if (NULL != stack->cb) {
+	    stack->cb(v, stack->ctx);
+	} else {
+	    stack->vals[stack->depth] = v;
+	}
     }
 }
 
@@ -300,11 +345,27 @@ oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf) {
     return NULL;
 }
 
+static void
+buf_append_json(ojBuf buf, const char *s) {
+    // TBD might be faster moving forward until a special char and then appending the string up till then
+    for (; '\0' != *s; s++) {
+	if ((byte)*s < 0x20) {
+	    Esc	esc = esc_map + (byte)*s;
+	    oj_buf_append_string(buf, esc->seq, esc->len);
+	} else if ('"' == *s || '\\' == *s) {
+	    oj_buf_append(buf, '\\');
+	    oj_buf_append(buf, *s);
+	} else {
+	    oj_buf_append(buf, *s);
+	}
+    }
+}
+
+// TBD handle indent
 size_t
 oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
     size_t	start = oj_buf_len(buf);
 
-    // TBD handle nested
     if (NULL != val) {
 	switch (val->type) {
 	case OJ_NULL:
@@ -314,9 +375,11 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    oj_buf_append_string(buf, "true", 4);
 	    break;
 	case OJ_FALSE:
-	    oj_buf_append_string(buf, "false", 4);
+	    oj_buf_append_string(buf, "false", 5);
 	    break;
 	case OJ_INT:
+	    // TBD if raw len is 0 then sprint
+	    //  after that always use str
 	    if (OJ_INT_RAW == val->mod) {
 		oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    } else {
@@ -330,31 +393,55 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 		// TBD
 	    }
 	    break;
-	case OJ_STRING:
-	    oj_buf_append(buf, '"');
-	    switch (val->mod) {
-	    case OJ_STR_INLINE:
-		oj_buf_append_string(buf, val->str.raw, (size_t)val->str.len);
-		break;
-	    case OJ_STR_4K:
-		oj_buf_append_string(buf, val->str.s4k->str, (size_t)val->str.len);
-		break;
-	    case OJ_STR_PTR:
-		oj_buf_append_string(buf, val->str.ptr, (size_t)val->str.len);
-		break;
+	case OJ_STRING: {
+	    const char	*s;
+
+	    if (sizeof(union ojS4k) < val->str.len) {
+		s = val->str.ptr;
+	    } else if (sizeof(val->str.raw) < val->str.len) {
+		s = val->str.s4k->str;
+	    } else {
+		s = val->str.raw;
 	    }
 	    oj_buf_append(buf, '"');
+	    buf_append_json(buf, s);
+	    oj_buf_append(buf, '"');
 	    break;
+	}
 	case OJ_OBJECT:
 	    oj_buf_append(buf, '{');
-	    // TBD members
+	    if (OJ_OBJ_HASH == val->mod) {
+		// TBD members
+	    } else {
+		int	d2 = depth + 1;
+
+		for (ojVal v = val->list.head; NULL != v; v = v->next) {
+		    // TBD handle longer key as well as with esc chars
+		    oj_buf_append(buf, '"');
+		    oj_buf_append_string(buf, v->key.raw, v->key.len);
+		    oj_buf_append(buf, '"');
+		    oj_buf_append(buf, ':');
+		    oj_buf(buf, v, indent, d2);
+		    if (NULL != v->next) {
+			oj_buf_append(buf, ',');
+		    }
+		}
+	    }
 	    oj_buf_append(buf, '}');
 	    break;
-	case OJ_ARRAY:
+	case OJ_ARRAY: {
+	    int	d2 = depth + 1;
+
 	    oj_buf_append(buf, '[');
-	    // TBD members
+	    for (ojVal v = val->list.head; NULL != v; v = v->next) {
+		oj_buf(buf, v, indent, d2);
+		if (NULL != v->next) {
+		    oj_buf_append(buf, ',');
+		}
+	    }
 	    oj_buf_append(buf, ']');
 	    break;
+	}
 	default:
 	    oj_buf_append_string(buf, "??", 2);
 	    break;
@@ -368,19 +455,17 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->str.raw)) {
 	memcpy(val->str.raw, s, len);
 	val->str.raw[len] = '\0';
-	val->mod = OJ_STR_INLINE;
     } else if (len < sizeof(union ojS4k)) {
 	union ojS4k	*s4k = s4k_create();
 
 	val->str.s4k = s4k;
 	memcpy(val->str.s4k->str, s, len);
 	val->str.s4k->str[len] = '\0';
-	val->mod = OJ_STR_4K;
     } else {
 	val->str.ptr = (char*)malloc(len + 1);
+	val->str.cap = len + 1;
 	memcpy(val->str.ptr, s, len);
 	val->str.ptr[len] = '\0';
-	val->mod = OJ_STR_PTR;
     }
     return OJ_OK;
 }
@@ -398,9 +483,11 @@ _oj_val_set_key(ojParser p, const char *s, size_t len) {
 	p->val.key.s4k->str[len] = '\0';
     } else {
 	p->val.key.ptr = (char*)malloc(len + 1);
+	p->val.key.cap = len + 1;
 	memcpy(p->val.key.ptr, s, len);
 	p->val.key.ptr[len] = '\0';
     }
+    p->val.key.len = len;
 }
 
 void
@@ -419,4 +506,40 @@ _oj_val_set_str(ojParser p, const char *s, size_t len) {
 	memcpy(p->val.str.ptr, s, len);
 	p->val.str.ptr[len] = '\0';
     }
+    p->val.str.len = len;
+}
+
+void
+_oj_val_append_str(ojParser p, const byte *s, size_t len) {
+    size_t	nl = p->val.str.len + len;
+
+    if (len < sizeof(p->val.str.raw)) {
+	if (nl < sizeof(p->val.str.raw)) {
+	    memcpy(p->val.str.raw + p->val.str.len, s, len);
+	    p->val.str.raw[nl] = '\0';
+	} else if (nl < sizeof(union ojS4k)) {
+	    // TBD create s4k, copy old, copy new, set to str.sk4
+	} else {
+	    // TBD malloc, copy old, copy new, set to str.ptr, a bit extra
+	}
+    } else if (len < sizeof(union ojS4k)) {
+	if (nl < sizeof(union ojS4k)) {
+	    memcpy(p->val.str.s4k->str + p->val.str.len, s, len);
+	    p->val.str.s4k->str[nl] = '\0';
+	} else {
+
+	    // TBD malloc, copy old, copy new, set to str.ptr, a bit extra
+	}
+    } else {
+	if (nl < p->val.str.cap) {
+	    memcpy(p->val.str.ptr + p->val.str.len, s, len);
+	} else {
+	    p->val.key.cap = nl * 3 / 2;
+	    p->val.str.ptr = realloc(p->val.str.ptr, p->val.key.cap);
+	    // TBD check success
+	    memcpy(p->val.str.ptr + p->val.str.len, s, len);
+	}
+	p->val.str.ptr[nl] = '\0';
+    }
+    p->val.str.len = nl;
 }

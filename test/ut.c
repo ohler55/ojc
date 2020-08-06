@@ -83,11 +83,11 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
     for (currentTest = tests; currentTest->name != 0; currentTest++) {
 	if (currentTest->run) {
 	    if (2 <= ut_verbose) {
-		printf(">>> %s\n", currentTest->name);
+		ut_print(">>> %s\n", currentTest->name);
 	    }
 	    currentTest->func();
 	    if (2 <= ut_verbose) {
-		printf("<<< %s\n", currentTest->name);
+		ut_print("<<< %s\n", currentTest->name);
 	    }
 	}
     }
@@ -166,7 +166,7 @@ ut_same(const char *expected, const char *actual) {
 	}
 	return 1;
     }
-    if (0 == actual || 0 == expected) {
+    if (NULL == actual || NULL == expected) {
 	currentTest->pass = 0;
 	return 0;
     }

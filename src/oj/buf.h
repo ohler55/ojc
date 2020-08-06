@@ -15,6 +15,7 @@ oj_buf_init(ojBuf buf, int fd) {
     buf->tail = buf->head;
     buf->fd = fd;
     buf->realloc_ok = (0 == fd);
+    *buf->head = '\0';
     buf->err = OJ_OK;
 }
 
@@ -32,6 +33,7 @@ inline static void
 oj_buf_reset(ojBuf buf) {
     buf->head = buf->base;
     buf->tail = buf->head;
+    *buf->head = '\0';
     buf->err = OJ_OK;
 }
 
