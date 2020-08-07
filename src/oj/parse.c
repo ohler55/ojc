@@ -300,6 +300,53 @@ a...............................\
 ................................\
 ................................S";
 
+static const byte	hex_map[256] = "\
+................................\
+................\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09......\
+.\x0a\x0b\x0c\x0d\x0e\x0f.........................\
+.\x0a\x0b\x0c\x0d\x0e\x0f.........................\
+................................\
+................................\
+................................\
+................................";
+
+// Works with extended unicode as well. \Uffffffff if support is desired in
+// the future.
+static size_t
+unicodeToUtf8(uint32_t code, byte *buf) {
+    byte	*start = buf;
+
+    if (0x0000007F >= code) {
+	*buf++ = (byte)code;
+    } else if (0x000007FF >= code) {
+	*buf++ = 0xC0 | (code >> 6);
+	*buf++ = 0x80 | (0x3F & code);
+    } else if (0x0000FFFF >= code) {
+	*buf++ = 0xE0 | (code >> 12);
+	*buf++ = 0x80 | ((code >> 6) & 0x3F);
+	*buf++ = 0x80 | (0x3F & code);
+    } else if (0x001FFFFF >= code) {
+	*buf++ = 0xF0 | (code >> 18);
+	*buf++ = 0x80 | ((code >> 12) & 0x3F);
+	*buf++ = 0x80 | ((code >> 6) & 0x3F);
+	*buf++ = 0x80 | (0x3F & code);
+    } else if (0x03FFFFFF >= code) {
+	*buf++ = 0xF8 | (code >> 24);
+	*buf++ = 0x80 | ((code >> 18) & 0x3F);
+	*buf++ = 0x80 | ((code >> 12) & 0x3F);
+	*buf++ = 0x80 | ((code >> 6) & 0x3F);
+	*buf++ = 0x80 | (0x3F & code);
+    } else if (0x7FFFFFFF >= code) {
+	*buf++ = 0xFC | (code >> 30);
+	*buf++ = 0x80 | ((code >> 24) & 0x3F);
+	*buf++ = 0x80 | ((code >> 18) & 0x3F);
+	*buf++ = 0x80 | ((code >> 12) & 0x3F);
+	*buf++ = 0x80 | ((code >> 6) & 0x3F);
+	*buf++ = 0x80 | (0x3F & code);
+    }
+    return buf - start;
+}
+
 static ojStatus
 byteError(ojErr err, const char *map, int off, byte b) {
     err->col = off - err->col;
@@ -596,7 +643,11 @@ parse(ojParser p, const byte *json) {
 	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
-	    _oj_val_append_str(p, start, b - start);
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->val.key, start, b - start);
+	    } else {
+		_oj_append_str(p, &p->val.str, start, b - start);
+	    }
 	    if ('"' == *b) {
 		p->map = p->next_map;
 		if (':' != p->map[256]) {
@@ -618,16 +669,33 @@ parse(ojParser p, const byte *json) {
 	case ESC_U:
 	    p->map = u_map;
 	    p->ri = 0;
+	    p->ucode = 0;
 	    break;
 	case U_OK:
 	    p->ri++;
+	    p->ucode = p->ucode << 4 | (uint32_t)hex_map[*b];
 	    if (4 <= p->ri) {
+		byte	utf8[8];
+		size_t	ulen = unicodeToUtf8(p->ucode, utf8);
+
+		if (0 < ulen) {
+		    if (':' == p->next_map[256]) {
+			_oj_append_str(p, &p->val.key, utf8, ulen);
+		    } else {
+			_oj_append_str(p, &p->val.str, utf8, ulen);
+		    }
+		} else {
+		    return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid unicode");
+		}
 		p->map = string_map;
-		// TBD convert to UTF-8 and add
 	    }
 	    break;
 	case ESC_OK:
-	    _oj_val_append_str(p, (byte*)&esc_byte_map[*b], 1);
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->val.key, (byte*)&esc_byte_map[*b], 1);
+	    } else {
+		_oj_append_str(p, &p->val.str, (byte*)&esc_byte_map[*b], 1);
+	    }
 	    p->map = string_map;
 	    break;
 	case VAL_NULL:
@@ -641,6 +709,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = null_map;
+		// TBD copy what we have and update p->ri
 		p->ri = 0;
 		break;
 	    }
@@ -656,6 +725,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
 		p->map = true_map;
+		// TBD copy what we have and update p->ri
 		p->ri = 0;
 		break;
 	    }
@@ -671,6 +741,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
 		p->map = false_map;
+		// TBD copy what we have and update p->ri
 		p->ri = 0;
 		break;
 	    }

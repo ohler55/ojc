@@ -81,7 +81,7 @@ extern "C" {
 	char		str[4096];
     };
 
-    struct _ojStr {
+    typedef struct _ojStr {
 	int		len;	// length of raw or ptr excluding \0
 	union {
 	    char	raw[120];
@@ -137,6 +137,7 @@ extern "C" {
 
 	int		depth;
 	int		ri;
+	uint32_t	ucode;
 	// TBD change this stack to be expandable
 	char		stack[1024];
     } *ojParser;
@@ -174,6 +175,12 @@ extern "C" {
     extern void		oj_destroy(ojVal val);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
+
+    extern const char*	oj_val_key(ojVal val);
+    extern const char*	oj_val_get_str(ojVal val);
+    extern int64_t	oj_val_get_int(ojVal val);
+    extern long double	oj_val_get_float(ojVal val);
+    extern const char*	oj_val_get_number(ojVal val);
 
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);

@@ -263,6 +263,8 @@ parse_test() {
     struct _data	cases[] = {
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
+	{.json = "\"\\u3074ー\\u305fー\"", .status = OJ_OK, .expect = "\"ぴーたー\"" },
+
 	{.json = big, .status = OJ_OK },
 	{.json = big_cut, .status = OJ_OK },
 	{.json = bigger, .status = OJ_OK },

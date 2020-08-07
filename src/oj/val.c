@@ -482,6 +482,62 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
     return OJ_OK;
 }
 
+const char*
+oj_val_key(ojVal val) {
+    const char	*k = NULL;
+
+    if (NULL != val) {
+	if (val->key.len < sizeof(val->key.raw)) {
+	    k = val->key.raw;
+	} else if (val->key.len < sizeof(union ojS4k)) {
+	    k = val->key.s4k->str;
+	} else {
+	    k = val->key.ptr;
+	}
+    }
+    return k;
+}
+
+const char*
+oj_val_get_str(ojVal val) {
+    const char	*s = NULL;
+
+    if (NULL != val && OJ_STRING == val->type) {
+	if (val->str.len < sizeof(val->str.raw)) {
+	    s = val->str.raw;
+	} else if (val->str.len < sizeof(union ojS4k)) {
+	    s = val->str.s4k->str;
+	} else {
+	    s = val->str.ptr;
+	}
+    }
+    return s;
+}
+
+int64_t
+oj_val_get_int(ojVal val) {
+
+    // TBD
+
+    return 0;
+}
+
+long double
+oj_val_get_float(ojVal val) {
+
+    // TBD
+
+    return 0.0;
+}
+
+const char*
+oj_val_get_number(ojVal val) {
+
+    // TBD
+
+    return NULL;
+}
+
 void
 _oj_val_set_key(ojParser p, const char *s, size_t len) {
     if (len < sizeof(p->val.key.raw)) {
@@ -527,77 +583,83 @@ _oj_val_set_str(ojParser p, const char *s, size_t len) {
 }
 
 void
-_oj_val_append_str(ojParser p, const byte *s, size_t len) {
-    size_t	nl = p->val.str.len + len;
+_oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
+    size_t	nl = str->len + len;
 
-    if (p->val.str.len < sizeof(p->val.str.raw)) {
-	if (nl < sizeof(p->val.str.raw)) {
-	    memcpy(p->val.str.raw + p->val.str.len, s, len);
-	    p->val.str.raw[nl] = '\0';
+    if (str->len < sizeof(str->raw)) {
+	if (nl < sizeof(str->raw)) {
+	    memcpy(str->raw + str->len, s, len);
+	    str->raw[nl] = '\0';
 	} else if (nl < sizeof(union ojS4k)) {
 	    union ojS4k	*s4k = s4k_create();
 
-	    memcpy(s4k->str, p->val.str.raw, p->val.str.len);
-	    memcpy(s4k->str + p->val.str.len, s, len);
+	    memcpy(s4k->str, str->raw, str->len);
+	    memcpy(s4k->str + str->len, s, len);
 	    s4k->str[nl] = '\0';
-	    p->val.str.s4k = s4k;
+	    str->s4k = s4k;
 	} else {
 	    size_t	cap = nl * 3 / 2;
 	    char	*ptr = (char*)malloc(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "string");
-		p->val.str.len = 0;
+		str->len = 0;
 		return;
 	    }
-	    memcpy(ptr, p->val.str.raw, p->val.str.len);
-	    memcpy(ptr + p->val.str.len, s, len);
+	    memcpy(ptr, str->raw, str->len);
+	    memcpy(ptr + str->len, s, len);
 	    ptr[nl] = '\0';
-	    p->val.str.cap = cap;
-	    p->val.str.ptr = ptr;
+	    str->cap = cap;
+	    str->ptr = ptr;
 	}
-    } else if (p->val.str.len < sizeof(union ojS4k)) {
+    } else if (str->len < sizeof(union ojS4k)) {
 	if (nl < sizeof(union ojS4k)) {
-	    memcpy(p->val.str.s4k->str + p->val.str.len, s, len);
-	    p->val.str.s4k->str[nl] = '\0';
+	    memcpy(str->s4k->str + str->len, s, len);
+	    str->s4k->str[nl] = '\0';
 	} else {
 	    size_t	cap = nl * 3 / 2;
 	    char	*ptr = (char*)malloc(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "string");
-		p->val.str.len = 0;
+		str->len = 0;
 		return;
 	    }
-	    memcpy(ptr, p->val.str.s4k->str, p->val.str.len);
-	    memcpy(ptr + p->val.str.len, s, len);
+	    memcpy(ptr, str->s4k->str, str->len);
+	    memcpy(ptr + str->len, s, len);
 	    ptr[nl] = '\0';
-	    p->val.str.s4k->next = NULL;
+	    str->s4k->next = NULL;
 	    if (NULL == s4k_head) {
-		s4k_head = p->val.str.s4k;
+		s4k_head = str->s4k;
 	    } else {
-		s4k_tail->next = p->val.str.s4k;
+		s4k_tail->next = str->s4k;
 	    }
-	    s4k_tail = p->val.str.s4k;
-	    p->val.str.cap = cap;
-	    p->val.str.ptr = ptr;
+	    s4k_tail = str->s4k;
+	    str->cap = cap;
+	    str->ptr = ptr;
 	}
     } else {
-	if (nl < p->val.str.cap) {
-	    memcpy(p->val.str.ptr + p->val.str.len, s, len);
+	if (nl < str->cap) {
+	    memcpy(str->ptr + str->len, s, len);
 	} else {
-	    p->val.str.cap = nl * 3 / 2;
-	    if (NULL == (p->val.str.ptr = realloc(p->val.str.ptr, p->val.str.cap))) {
+	    str->cap = nl * 3 / 2;
+	    if (NULL == (str->ptr = realloc(str->ptr, str->cap))) {
 		OJ_ERR_MEM(&p->err, "string");
-		p->val.str.len = 0;
+		str->len = 0;
 		return;
 	    } else {
-		memcpy(p->val.str.ptr + p->val.str.len, s, len);
+		memcpy(str->ptr + str->len, s, len);
 	    }
 	}
-	p->val.str.ptr[nl] = '\0';
+	str->ptr[nl] = '\0';
     }
-    p->val.str.len = nl;
+    str->len = nl;
 }
+
+void
+_oj_val_append_str(ojParser p, const byte *s, size_t len) {
+    _oj_append_str(p, &p->val.str, s, len);
+}
+
 
 // TBD append to key also
