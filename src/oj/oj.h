@@ -16,8 +16,6 @@ extern "C" {
 #define OJ_ERR_INIT	{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
 #define OJ_ERR_START	300
 
-#define OJ_ERR_MEM(err, type) agoo_err_memory(err, type, __FILE__, __LINE__)
-
     typedef enum {
 	OJ_OK		= 0,
 	OJ_ERR_MEMORY	= ENOMEM,
@@ -163,7 +161,6 @@ extern "C" {
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
-    extern void		oj_val_parser(ojParser p);
     extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);

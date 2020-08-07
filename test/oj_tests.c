@@ -188,7 +188,6 @@ parse_jsons(struct _data *dp) {
     ojVal		val;
     struct _ojBuf	buf;
 
-    oj_buf_init(&buf, 0);
     for (; NULL != dp->json; dp++) {
 	val = oj_val_parse_str(&err, dp->json, NULL, NULL);
 	if (OJ_OK == dp->status) {
@@ -198,6 +197,7 @@ parse_jsons(struct _data *dp) {
 		ut_print("error at %d:%d\n",  err.line, err.col);
 		return;
 	    }
+	    oj_buf_init(&buf, 0);
 	    oj_buf(&buf, val, 0, 0);
 	    if (NULL == dp->expect) {
 		ok = ut_same(dp->json, buf.head);
@@ -205,10 +205,23 @@ parse_jsons(struct _data *dp) {
 		ok = ut_same(dp->expect, buf.head);
 	    }
 	    if (ok && ut_verbose) {
-		ut_print("... '%s' - pass\n", dp->json);
+		const char	*s = dp->json;
+		char		tmp[64];
+
+		if (sizeof(tmp) - 4 < strlen(dp->json)) {
+		    char	*t;
+
+		    memcpy(tmp, dp->json, sizeof(tmp) - 4);
+		    t = tmp + sizeof(tmp) - 4;
+		    *t++ = '.';
+		    *t++ = '.';
+		    *t++ = '.';
+		    *t++ = '\0';
+		    s = tmp;
+		}
+		ut_print("--- '%s' - pass\n", s);
 	    }
 	    oj_buf_cleanup(&buf);
-	    oj_buf_reset(&buf);
 	    oj_destroy(val);
 	} else if (err.code != dp->status) {
 	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, err.code, err.msg);
@@ -219,9 +232,42 @@ parse_jsons(struct _data *dp) {
 
 static void
 parse_test() {
+    char	big[128];
+    char	big_cut[128];
+
+    *big = '"';
+    for (int i = 0; i < sizeof(big) - 2; i++) {
+	big[i+1] = 'a' + i % 26;
+    }
+    big[sizeof(big) - 2] = '"';
+    big[sizeof(big) - 1] = '\0';
+    memcpy(big_cut, big, sizeof(big));
+    big_cut[1] = 'x';
+    big_cut[57] = '\\';
+    big_cut[58] = 't';
+
+    char	bigger[5000];
+    char	bigger_cut[5000];
+
+    *bigger = '"';
+    for (int i = 0; i < sizeof(bigger) - 2; i++) {
+	bigger[i+1] = 'A' + i % 26;
+    }
+    bigger[sizeof(bigger) - 2] = '"';
+    bigger[sizeof(bigger) - 1] = '\0';
+    memcpy(bigger_cut, bigger, sizeof(bigger));
+    bigger_cut[1] = 'x';
+    bigger_cut[130] = '\\';
+    bigger_cut[131] = 't';
+
     struct _data	cases[] = {
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
+	{.json = big, .status = OJ_OK },
+	{.json = big_cut, .status = OJ_OK },
+	{.json = bigger, .status = OJ_OK },
+	{.json = bigger_cut, .status = OJ_OK },
+
 	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
@@ -249,6 +295,7 @@ main(int argc, char **argv) {
     ut_init(argc, argv, "oj", tests);
 
     ut_done();
+    oj_cleanup();
 
     return 0;
 }

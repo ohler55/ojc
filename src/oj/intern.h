@@ -7,9 +7,12 @@
 extern "C" {
 #endif
 
+#define OJ_ERR_MEM(err, type) oj_err_memory(err, type, __FILE__, __LINE__)
+
     typedef uint8_t	byte;
 
     extern void		oj_err_clear(ojErr err);
+    extern int		oj_err_memory(ojErr err, const char *type, const char *file, int line);
     extern ojStatus	oj_err_set(ojErr err, int code, const char *fmt, ...);
     extern ojStatus	oj_err_no(ojErr err, const char *fmt, ...);
 

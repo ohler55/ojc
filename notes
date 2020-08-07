@@ -4,12 +4,9 @@
 ^c^s show subtree
 
 - redo parser
- - reentrant string
-  - loop when possible
-  - need add to func
-   - or maybe just add to one at a time when possible
  - val parse tests
-  - maybe oj_val.c or oj_parse.c
+
+ - change to use a pared down agoo debug.h
 
  - maybe pospone string contraction until read
   - allow \ in string
