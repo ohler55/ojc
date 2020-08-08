@@ -1,7 +1,11 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <inttypes.h>
+#include <limits.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -561,14 +565,17 @@ oj_val_get_int(ojVal val) {
 
     if (NULL != val && OJ_INT == val->type) {
 	if (!val->num.native) {
-	    char	*end;
-
-	    val->num.fixnum = (int64_t)strtoll(val->num.raw, &end, 10);
-	    if ('\0' != *end) {
+	    if (21 < val->num.len) {
 		val->num.fixnum = 0;
 		val->type = OJ_BIG;
 	    } else {
-		val->num.native = true;
+		val->num.fixnum = (int64_t)strtoll(val->num.raw, NULL, 10);
+		if ((LLONG_MAX == val->num.fixnum || LLONG_MIN == val->num.fixnum) && 0 != errno) {
+		    val->num.fixnum = 0;
+		    val->type = OJ_BIG;
+		} else {
+		    val->num.native = true;
+		}
 	    }
 	}
 	i = val->num.fixnum;
@@ -582,10 +589,8 @@ oj_val_get_float(ojVal val) {
 
     if (NULL != val && OJ_DECIMAL == val->type) {
 	if (!val->num.native) {
-	    char	*end;
-
-	    val->num.dub = strtold(val->num.raw, &end);
-	    if ('\0' != *end) {
+	    val->num.dub = strtold(val->num.raw, NULL);
+	    if (!isfinite(val->num.dub)) {
 		val->num.dub = 0.0;
 		val->type = OJ_BIG;
 	    } else {
@@ -598,7 +603,7 @@ oj_val_get_float(ojVal val) {
 }
 
 const char*
-oj_val_get_number(ojVal val) {
+oj_val_get_bignum(ojVal val) {
     const char	*s = NULL;
 
     if (NULL != val) {
@@ -765,6 +770,47 @@ _oj_val_set_str(ojParser p, const char *s, size_t len) {
 	p->val.str.ptr[len] = '\0';
     }
     p->val.str.len = len;
+}
+
+void
+_oj_append_num(ojParser p, const char *s, size_t len) {
+    size_t	nl = p->val.num.len + len;
+
+    if (p->val.num.len < sizeof(p->val.num.raw)) {
+	if (nl < sizeof(p->val.num.raw)) {
+	    memcpy(p->val.num.raw + p->val.num.len, s, len);
+	    p->val.num.raw[nl] = '\0';
+	} else {
+	    size_t	cap = nl * 3 / 2;
+	    char	*ptr = (char*)malloc(cap);
+
+	    if (NULL == ptr) {
+		OJ_ERR_MEM(&p->err, "number");
+		p->val.num.len = 0;
+		return;
+	    }
+	    memcpy(ptr, p->val.num.raw, p->val.num.len);
+	    memcpy(ptr + p->val.num.len, s, len);
+	    ptr[nl] = '\0';
+	    p->val.num.cap = cap;
+	    p->val.num.ptr = ptr;
+	}
+    } else {
+	if (nl < p->val.num.cap) {
+	    memcpy(p->val.num.ptr + p->val.num.len, s, len);
+	} else {
+	    p->val.num.cap = nl * 3 / 2;
+	    if (NULL == (p->val.num.ptr = realloc(p->val.num.ptr, p->val.num.cap))) {
+		OJ_ERR_MEM(&p->err, "string");
+		p->val.num.len = 0;
+		return;
+	    } else {
+		memcpy(p->val.num.ptr + p->val.num.len, s, len);
+	    }
+	}
+	p->val.num.ptr[nl] = '\0';
+    }
+    p->val.num.len = nl;
 }
 
 void

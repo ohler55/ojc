@@ -101,7 +101,10 @@ extern "C" {
 	bool		native;	// true if native int64 or dec
 	union {
 	    char	raw[96];
-	    char	*ptr;
+	    struct {
+		size_t	cap;
+		char	*ptr;
+	    };
 	};
     } *ojNum;
 
@@ -181,7 +184,7 @@ extern "C" {
     extern const char*	oj_val_get_str(ojVal val);
     extern int64_t	oj_val_get_int(ojVal val);
     extern long double	oj_val_get_float(ojVal val);
-    extern const char*	oj_val_get_number(ojVal val);
+    extern const char*	oj_val_get_bignum(ojVal val);
     extern ojVal	oj_val_array_first(ojVal val);
     extern ojVal	oj_val_array_last(ojVal val);
     extern ojVal	oj_val_array_nth(ojVal val, int n);

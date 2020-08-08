@@ -4,7 +4,6 @@
 ^c^s show subtree
 
 - redo parser
- - handle longer numbers
 
  - parse tokens with break in middle
   - how about fd with a chunky feed

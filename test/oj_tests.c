@@ -309,6 +309,47 @@ parse_decimal_test() {
     oj_destroy(val);
 }
 
+static void
+parse_bignum_test() {
+    struct _ojErr	err = OJ_ERR_INIT;
+    ojVal		val;
+
+    val = oj_val_parse_str(&err, "-9223372036854775807", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
+	return;
+    }
+    const char	*num;
+    int64_t	i = oj_val_get_int(val);
+
+    ut_same_int(-9223372036854775807, i, "parse bignum");
+    oj_destroy(val);
+
+    val = oj_val_parse_str(&err, "9223372036854775808", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
+	return;
+    }
+    i = oj_val_get_int(val);
+    ut_same_int(0, i, "parse bignum");
+    num = oj_val_get_bignum(val);
+    ut_same("9223372036854775808", num);
+    oj_destroy(val);
+
+    val = oj_val_parse_str(&err, "-1.2e12345", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
+	return;
+    }
+    long double	d = oj_val_get_float(val);
+
+    ut_same_double(0.0, d, 0.0001, "parse bignum");
+    num = oj_val_get_bignum(val);
+    ut_same("-1.2e12345", num);
+
+    oj_destroy(val);
+}
+
 static struct _Test	tests[] = {
     { "validate.null",		validate_null_test },
     { "validate.true",		validate_true_test },
@@ -324,6 +365,7 @@ static struct _Test	tests[] = {
     { "parse",			parse_test },
     { "parse.int",		parse_int_test },
     { "parse.decimal",		parse_decimal_test },
+    { "parse.bignum",		parse_bignum_test },
 
     { 0, 0 } };
 

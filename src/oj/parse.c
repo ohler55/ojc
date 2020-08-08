@@ -560,57 +560,57 @@ parse(ojParser p, const byte *json) {
 	    p->val.num.native = false;
 	    p->map = digit_map;
 	    p->val.num.len = 0;
+	    start = b;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		p->val.num.raw[p->val.num.len] = *b; // TBD check length
-		p->val.num.len++;
 	    }
+	    _oj_append_num(p, (char*)start, b - start);
 	    b--;
 	    break;
 	case NUM_DIGIT:
+	    start = b;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		p->val.num.raw[p->val.num.len] = *b; // TBD check length
-		p->val.num.len++;
 	    }
+	    _oj_append_num(p, (char*)start, b - start);
 	    b--;
 	    break;
 	case NUM_DOT:
 	    p->val.type = OJ_DECIMAL;
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
-	    p->val.num.len++;
+	    _oj_append_num(p, (const char*)b, 1);
 	    p->map = dot_map;
 	    break;
 	case NUM_FRAC:
 	    p->map = frac_map;
+	    start = b;
 	    for (; NUM_FRAC == frac_map[*b]; b++) {
-		p->val.num.raw[p->val.num.len] = *b; // TBD check length
-		p->val.num.len++;
 	    }
+	    _oj_append_num(p, (char*)start, b - start);
 	    b--;
 	    break;
 	case FRAC_E:
 	    p->val.type = OJ_DECIMAL;
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
-	    p->val.num.len++;
+	    _oj_append_num(p, (const char*)b, 1);
 	    p->map = exp_sign_map;
 	    break;
 	case NUM_ZERO:
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.raw[p->val.num.len] = *b;
 	    p->val.num.len++;
 	    p->map = zero_map;
 	    break;
 	case NEG_DIGIT:
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
+	    p->val.num.raw[p->val.num.len] = *b;
 	    p->val.num.len++;
 	    p->map = digit_map;
 	    break;
 	case EXP_SIGN:
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
-	    p->val.num.len++;
+	    _oj_append_num(p, (const char*)b, 1);
 	    p->map = exp_zero_map;
 	    break;
 	case EXP_DIGIT:
-	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
-	    p->val.num.len++;
+	    start = b;
+	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+	    }
+	    _oj_append_num(p, (char*)start, b - start);
+	    b--;
 	    p->map = exp_map;
 	    break;
 	case NUM_SPC:
