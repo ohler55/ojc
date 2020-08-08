@@ -390,20 +390,16 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    oj_buf_append_string(buf, "false", 5);
 	    break;
 	case OJ_INT:
-	    // TBD if raw len is 0 then sprint
-	    //  after that always use str
-	    if (OJ_INT_RAW == val->mod) {
-		oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
-	    } else {
-		// TBD
+	    if (0 == val->num.len) {
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", val->num.fixnum);
 	    }
+	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    break;
 	case OJ_DECIMAL:
-	    if (OJ_DEC_RAW == val->mod) {
-		oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
-	    } else {
-		// TBD
+	    if (0 == val->num.len) {
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%Lg", val->num.dub);
 	    }
+	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    break;
 	case OJ_STRING: {
 	    const char	*s;
@@ -516,26 +512,152 @@ oj_val_get_str(ojVal val) {
 
 int64_t
 oj_val_get_int(ojVal val) {
+    int64_t	i = 0;
 
-    // TBD
+    if (NULL != val && OJ_INT == val->type) {
+	if (!val->num.native) {
+	    char	*end;
 
-    return 0;
+	    val->num.fixnum = (int64_t)strtoll(val->num.raw, &end, 10);
+	    if ('\0' != *end) {
+		val->num.fixnum = 0;
+	    } else {
+		val->num.native = true;
+	    }
+	}
+	i = val->num.fixnum;
+    }
+    return i;
 }
 
 long double
 oj_val_get_float(ojVal val) {
+    long double	d = 0.0;
 
-    // TBD
+    if (NULL != val && OJ_DECIMAL == val->type) {
+	if (!val->num.native) {
+	    char	*end;
 
-    return 0.0;
+	    val->num.dub = strtold(val->num.raw, &end);
+	    if ('\0' != *end) {
+		val->num.dub = 0.0;
+	    } else {
+		val->num.native = true;
+	    }
+	}
+	d = val->num.dub;
+    }
+    return d;
 }
 
 const char*
 oj_val_get_number(ojVal val) {
+    const char	*s = NULL;
 
-    // TBD
+    if (NULL != val) {
+	switch (val->type) {
+	case OJ_INT:
+	    if (0 == val->num.len) {
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", val->num.fixnum);
+	    }
+	    s = val->num.raw;
+	    break;
+	case OJ_DECIMAL:
+	    if (0 == val->num.len) {
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%Lg", val->num.dub);
+	    }
+	    s = val->num.raw;
+	    break;
+	}
+    }
+    return s;
+}
 
-    return NULL;
+ojVal
+oj_val_array_first(ojVal val) {
+    ojVal	v = NULL;
+
+    if (NULL != val && OJ_ARRAY == val->type) {
+	v = val->list.head;
+    }
+    return v;
+}
+
+ojVal
+oj_val_array_last(ojVal val) {
+    ojVal	v = NULL;
+
+    if (NULL != val && OJ_ARRAY == val->type) {
+	v = val->list.tail;
+    }
+    return v;
+}
+
+ojVal
+oj_val_array_nth(ojVal val, int n) {
+    ojVal	v = NULL;
+
+    if (NULL != val && OJ_ARRAY == val->type) {
+	for (v = val->list.head; NULL != v && 0 < n; n--, v = v->next) {
+	}
+    }
+    return v;
+}
+
+ojVal
+oj_val_array_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
+    ojVal	v = NULL;
+
+    if (NULL != val) {
+	switch (val->type) {
+	case OJ_ARRAY:
+	    for (v = val->list.head; NULL != v; v = v->next) {
+		if (!cb(v, ctx)) {
+		    break;
+		}
+	    }
+	    break;
+	case OJ_OBJECT:
+	    if (OJ_OBJ_RAW == val->mod) {
+		for (v = val->list.head; NULL != v; v = v->next) {
+		    if (!cb(v, ctx)) {
+			break;
+		    }
+		}
+	    } else {
+		ojVal	*bucket = val->hash;
+		ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
+
+		for (; bucket < bend; bucket++) {
+		    for (v = *bucket; NULL != v; v = v->next) {
+			if (!cb(v, ctx)) {
+			    break;
+			}
+		    }
+		    if (NULL != v) {
+			break;
+		    }
+		}
+	    }
+	    break;
+	}
+    }
+    return v;
+}
+
+ojVal
+oj_val_object_get(ojVal val, const char *key) {
+    ojVal	v = NULL;
+
+    if (NULL != val && OJ_OBJECT == val->type) {
+	// TBD if not a hash convert to hash first then search
+	for (v = val->list.head; NULL != v; v = v->next) {
+	    if (0 == strcmp(key, oj_val_key(v))) {
+		break;
+	    }
+	}
+    }
+    return v;
 }
 
 void
@@ -660,6 +782,3 @@ void
 _oj_val_append_str(ojParser p, const byte *s, size_t len) {
     _oj_append_str(p, &p->val.str, s, len);
 }
-
-
-// TBD append to key also

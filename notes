@@ -4,50 +4,20 @@
 ^c^s show subtree
 
 - redo parser
- - number get funcs
-  -
  - parse tokens with break in middle
-  - files would work but be large (16k)
   - how about fd with a chunky feed
    - create socketpair()
    - spawn thread to write (detach)
     - write chunks and exit when done
      - write, sleep just to be sure or sync
+
  - val parse tests
 
  - change to use a pared down agoo debug.h
 
- - maybe pospone string contraction until read
-  - allow \ in string
-  - detect invalid escaped sequence early or later?
-   - index() on \ then check after it
-
- - add cleanup
-
- - convert for numbers
-  - also call to get original string
-   - change storage to not lose original (use ext when needed)
- - test parser push/pop
- - validation unit test for mixed with error
-
- - redo structs to include hash of 8 slots
- - APIs for callback or object
-  - also callback for multi-json
- - validator with nil callbacks
-
 - make sure follow works
 
-- val funcs
- - get as different types
-  - not all succeed so err as arg
-  - oj_val_str(ojErr err, ojVal val, char buf, size_t size)
-   - return string if correct type and no ext
-   - buf is provided then fill it and return pointer to it
-   - if too large for buf or larger than str.start then fill what can be filled and error OJ_ERR_OVERFLOW
-   - if a num then get the raw or generate raw
-    - change mod if converted
-
-- compare
+- compare other libs
  - :question: for not exactly follow by a number for comment/note
  - :x: for not supported
  - :white_check_mark: for supported or maybe :ok:

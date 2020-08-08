@@ -268,6 +268,28 @@ ut_same_int(int64_t expected, int64_t actual, const char *format, ...) {
     return pass;
 }
 
+int
+ut_same_double(long double expected, long double actual, long double prec, const char *format, ...) {
+    int	pass = 0;
+
+    if (expected - prec < actual && actual < expected + prec) {
+	pass = 1;
+    } else {
+	va_list	ap;
+	char	buf[256];
+
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
+	ut_print("%s.%s Failed: %s\n  expected: %Lg\n  actual: %Lg\n",
+		 group, currentTest->name, buf, expected, actual);
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = pass;
+    }
+    return pass;
+}
+
 void
 ut_pass() {
     currentTest->pass = 1;

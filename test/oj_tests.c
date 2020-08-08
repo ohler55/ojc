@@ -276,6 +276,39 @@ parse_test() {
     parse_jsons(cases);
 }
 
+static void
+parse_int_test() {
+    struct _ojErr	err = OJ_ERR_INIT;
+    ojVal		val;
+
+    val = oj_val_parse_str(&err, "12345", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
+	return;
+    }
+    int64_t	i = oj_val_get_int(val);
+
+    ut_same_int(12345, i, "parse int");
+    oj_destroy(val);
+}
+
+static void
+parse_decimal_test() {
+    struct _ojErr	err = OJ_ERR_INIT;
+    ojVal		val;
+
+    val = oj_val_parse_str(&err, "12.345", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
+	return;
+    }
+    long double	d = oj_val_get_float(val);
+
+    ut_same_double(12.345, d, 0.0001, "parse decimal");
+
+    oj_destroy(val);
+}
+
 static struct _Test	tests[] = {
     { "validate.null",		validate_null_test },
     { "validate.true",		validate_true_test },
@@ -289,6 +322,8 @@ static struct _Test	tests[] = {
     { "push-pop",		push_pop_test },
 
     { "parse",			parse_test },
+    { "parse.int",		parse_int_test },
+    { "parse.decimal",		parse_decimal_test },
 
     { 0, 0 } };
 

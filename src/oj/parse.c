@@ -543,21 +543,21 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case VAL0:
 	    p->val.type = OJ_INT;
-	    p->val.mod = OJ_INT_RAW;
+	    p->val.num.native = false;
 	    p->val.num.len = 1;
 	    *p->val.num.raw = *b;
 	    p->map = zero_map;
 	    break;
 	case VAL_NEG:
 	    p->val.type = OJ_INT;
-	    p->val.mod = OJ_INT_RAW;
+	    p->val.num.native = false;
 	    p->val.num.len = 1;
 	    *p->val.num.raw = *b;
 	    p->map = neg_map;
 	    break;;
 	case VAL_DIGIT:
 	    p->val.type = OJ_INT;
-	    p->val.mod = OJ_INT_RAW;
+	    p->val.num.native = false;
 	    p->map = digit_map;
 	    p->val.num.len = 0;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
@@ -575,7 +575,6 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_DOT:
 	    p->val.type = OJ_DECIMAL;
-	    p->val.mod = OJ_DEC_RAW;
 	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
 	    p->val.num.len++;
 	    p->map = dot_map;
@@ -590,7 +589,6 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case FRAC_E:
 	    p->val.type = OJ_DECIMAL;
-	    p->val.mod = OJ_DEC_RAW;
 	    p->val.num.raw[p->val.num.len] = *b; // TBD check length
 	    p->val.num.len++;
 	    p->map = exp_sign_map;
@@ -756,6 +754,15 @@ parse(ojParser p, const byte *json) {
 	    printf("*** internal error, unknown mode '%c'\n", p->map[*b]);
 	    break;
 	}
+    }
+    switch (p->map[256]) {
+    case '0':
+    case 'd':
+    case 'f':
+    case 'z':
+    case 'X':
+	p->push(&p->val, p->ctx);
+	break;
     }
     return p->err.code;
 }

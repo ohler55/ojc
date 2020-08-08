@@ -55,8 +55,6 @@ extern "C" {
     typedef enum {
 	OJ_OBJ_RAW	= 'r',
 	OJ_OBJ_HASH	= 'h',
-	OJ_INT_RAW	= 'i', // no . or e in string
-	OJ_DEC_RAW	= 'd', // . or e in string
     } ojMod;
 
     typedef struct _ojBuf {
@@ -98,7 +96,8 @@ extern "C" {
 	    int64_t	fixnum;
 	    long double	dub;
 	};
-	int		len;
+	int32_t		len;
+	bool		native;	// true if native int64 or dec
 	union {
 	    char	raw[96];
 	    char	*ptr;
@@ -169,18 +168,24 @@ extern "C" {
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
     extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 
-    // TBD val access functions
-    // TBD val creation functions
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
+    // TBD set functions and add/append/insert
+    // TBD create functions
 
     extern const char*	oj_val_key(ojVal val);
     extern const char*	oj_val_get_str(ojVal val);
     extern int64_t	oj_val_get_int(ojVal val);
     extern long double	oj_val_get_float(ojVal val);
     extern const char*	oj_val_get_number(ojVal val);
+    extern ojVal	oj_val_array_first(ojVal val);
+    extern ojVal	oj_val_array_last(ojVal val);
+    extern ojVal	oj_val_array_nth(ojVal val, int n);
+    extern ojVal	oj_val_object_get(ojVal val, const char *key);
+    // for object and list, if cb return false then stop
+    extern ojVal	oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx);
 
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);

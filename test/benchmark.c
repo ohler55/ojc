@@ -39,10 +39,14 @@ walk_oj(ojVal val) {
 	cnt++;
 	break;
     case OJ_INT:
-	// TBD
+	if (0 == oj_val_get_int(val)) {
+	    cnt++;
+	}
 	break;
     case OJ_DECIMAL:
-	// TBD
+	if (0.0 == oj_val_get_float(val)) {
+	    cnt++;
+	}
 	break;
     case OJ_STRING:
 	if ('\0' == *val->str.raw) {
