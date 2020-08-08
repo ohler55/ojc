@@ -54,9 +54,25 @@ walk_oj(ojVal val) {
 	}
 	break;
     case OJ_OBJECT:
+	if (OJ_OBJ_RAW == val->mod) {
+	    for (ojVal v = val->list.head; NULL != v; v = v->next) {
+		cnt += walk_oj(v);
+	    }
+	} else {
+	    ojVal	*b = val->hash;
+	    ojVal	*bend = b + (sizeof(val->hash) / sizeof(*val->hash));
+	    ojVal	v;
+
+	    for (; b < bend; b++) {
+		for (v = *b; NULL != v; v = v->next) {
+		    cnt += walk_oj(v);
+		}
+	    }
+	}
+	break;
     case OJ_ARRAY:
 	for (ojVal v = val->list.head; NULL != v; v = v->next) {
-	    cnt++;
+	    cnt += walk_oj(v);
 	}
 	break;
     }

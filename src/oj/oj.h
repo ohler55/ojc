@@ -46,6 +46,7 @@ extern "C" {
 	OJ_FALSE	= 'f',
 	OJ_INT		= 'i',
 	OJ_DECIMAL	= 'd',
+	OJ_BIG		= 'b',
 	OJ_STRING	= 's',
 	OJ_OBJECT	= 'o',
 	OJ_ARRAY	= 'a',
@@ -112,14 +113,15 @@ extern "C" {
     typedef struct _ojVal {
 	struct _ojVal		*next;
 	struct _ojStr		key;
+	uint32_t		kh;	// key hash
+	uint8_t			type;	// ojType
+	uint8_t			mod;	// ojMod
 	union {
 	    struct _ojStr	str;
 	    struct _ojList	list;
 	    struct _ojVal	*hash[16];
 	    struct _ojNum	num;
 	};
-	uint8_t			type;	// ojType
-	uint8_t			mod;	// ojMod
     } *ojVal;
 
     typedef bool		(*ojParseCallback)(ojVal val, void *ctx);

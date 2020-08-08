@@ -15,6 +15,7 @@ oj_type_str(ojType type) {
     case OJ_FALSE:	return "false";
     case OJ_INT:	return "int";
     case OJ_DECIMAL:	return "decimal";
+    case OJ_BIG:	return "bignum";
     case OJ_STRING:	return "string";
     case OJ_OBJECT:	return "object";
     case OJ_ARRAY:	return "array";

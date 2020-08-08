@@ -59,7 +59,20 @@ static union ojS4k	*volatile s4k_head = NULL;
 static union ojS4k	*volatile s4k_tail = NULL;
 static atomic_flag	s4k_busy = ATOMIC_FLAG_INIT;
 
-// TBD busy check for desctroy and frees
+// TBD busy check for destroy and frees
+
+static uint32_t
+calc_hash(const char *key, size_t len) {
+    uint32_t	h = 0;
+    const byte	*k = (const byte*)key;
+    const byte	*kend = k + len;
+
+    for (; k < kend; k++) {
+	// fast, just spread it out
+	h = 77 * h + (*k - 0x2D);
+    }
+    return h;
+}
 
 ojVal
 oj_val_create() {
@@ -172,18 +185,27 @@ oj_destroy(ojVal val) {
 	    }
 	    break;
 	case OJ_INT:
-	    // TBD if raw and ext then free the exts
-	    break;
 	case OJ_DECIMAL:
-	    // TBD if raw and ext then free the exts
+	case OJ_BIG:
+	    if (sizeof(v->num.raw) <= v->num.len) {
+		free(v->num.ptr);
+	    }
 	    break;
 	case OJ_OBJECT:
 	    if (OJ_OBJ_RAW == v->mod) {
 		tail->next = v->list.head;
 		tail = v->list.tail;
 	    } else {
-		printf("*********** hash\n");
-		// TBD each hash bucket
+		ojVal	*bucket = v->hash;
+		ojVal	*bend = bucket + sizeof(v->hash) / sizeof(*v->hash);
+
+		for (; bucket < bend; bucket++) {
+		    if (NULL != *bucket) {
+			tail->next = *bucket;
+			for (; NULL != tail->next; tail = tail->next) {
+			}
+		    }
+		}
 	    }
 	    break;
 	case OJ_ARRAY: {
@@ -401,6 +423,8 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    }
 	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    break;
+	case OJ_BIG:
+	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	case OJ_STRING: {
 	    const char	*s;
 
@@ -419,7 +443,28 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	case OJ_OBJECT:
 	    oj_buf_append(buf, '{');
 	    if (OJ_OBJ_HASH == val->mod) {
-		// TBD members
+		ojVal	*bucket = val->hash;
+		ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
+		ojVal	v;
+		int	d2 = depth + 1;
+		bool	first = true;
+
+		oj_buf_append(buf, '{');
+		for (; bucket < bend; bucket++) {
+		    for (v = *bucket; NULL != v; v = v->next) {
+			if (first) {
+			    first = false;
+			} else {
+			    oj_buf_append(buf, ',');
+			}
+			oj_buf_append(buf, '"');
+			oj_buf_append_string(buf, v->key.raw, v->key.len);
+			oj_buf_append(buf, '"');
+			oj_buf_append(buf, ':');
+			oj_buf(buf, v, indent, d2);
+		    }
+		}
+		oj_buf_append(buf, '}');
 	    } else {
 		int	d2 = depth + 1;
 
@@ -521,6 +566,7 @@ oj_val_get_int(ojVal val) {
 	    val->num.fixnum = (int64_t)strtoll(val->num.raw, &end, 10);
 	    if ('\0' != *end) {
 		val->num.fixnum = 0;
+		val->type = OJ_BIG;
 	    } else {
 		val->num.native = true;
 	    }
@@ -541,6 +587,7 @@ oj_val_get_float(ojVal val) {
 	    val->num.dub = strtold(val->num.raw, &end);
 	    if ('\0' != *end) {
 		val->num.dub = 0.0;
+		val->type = OJ_BIG;
 	    } else {
 		val->num.native = true;
 	    }
@@ -568,6 +615,12 @@ oj_val_get_number(ojVal val) {
 	    }
 	    s = val->num.raw;
 	    break;
+	case OJ_BIG:
+	    if (sizeof(val->num.raw) <= val->num.len) {
+		s = val->num.ptr;
+	    } else {
+		s = val->num.raw;
+	    }
 	}
     }
     return s;
@@ -605,7 +658,7 @@ oj_val_array_nth(ojVal val, int n) {
 }
 
 ojVal
-oj_val_array_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
+oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
     ojVal	v = NULL;
 
     if (NULL != val) {
@@ -650,10 +703,20 @@ oj_val_object_get(ojVal val, const char *key) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_OBJECT == val->type) {
-	// TBD if not a hash convert to hash first then search
-	for (v = val->list.head; NULL != v; v = v->next) {
-	    if (0 == strcmp(key, oj_val_key(v))) {
-		break;
+	if (OJ_OBJ_RAW == val->mod) {
+	    v = val->list.head;
+	    // memset(val->hash, 0, sizeof(val->hash));
+	    for (; NULL != v; v = v->next) {
+		v->kh = calc_hash(oj_val_key(v), val->key.len);
+		// place into hash
+	    }
+	    // TBD val->type = OJ_OBJ_HASH;
+
+	    // TBD until then...
+	    for (v = val->list.head; NULL != v; v = v->next) {
+		if (0 == strcmp(key, oj_val_key(v))) {
+		    break;
+		}
 	    }
 	}
     }
