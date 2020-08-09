@@ -224,9 +224,7 @@ load_file(const char *filename) {
 
 static int
 bench_parse(const char *filename, int64_t iter) {
-    struct _ojcErr	err = OJC_ERR_INIT;
     int64_t		dt;
-    ojcVal		ojc;
     const char		*str = json;
     char		*buf = NULL;
 
@@ -235,7 +233,7 @@ bench_parse(const char *filename, int64_t iter) {
 	str = buf;
     }
     struct _ojErr	e = OJ_ERR_INIT;
-    int64_t	start = clock_micro();
+    int64_t		start = clock_micro();
 
     for (int i = iter; 0 < i; i--) {
 	if (OJ_OK != oj_validate_str(&e, str)) {
@@ -266,6 +264,9 @@ bench_parse(const char *filename, int64_t iter) {
     }
     printf("oj_parse_str    %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+
+    struct _ojcErr	err = OJC_ERR_INIT;
+    ojcVal		ojc;
 
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
@@ -410,6 +411,8 @@ bench_parse_file(const char *filename) {
     return 0;
 }
 
+extern void	debug_report();
+
 int
 main(int argc, char **argv) {
     const char	*filename = "log.json";
@@ -436,6 +439,9 @@ main(int argc, char **argv) {
     //bench_write(filename, iter);
     //bench_read(filename, iter);
     bench_parse(NULL, iter);
+
+    oj_cleanup();
+    //debug_report();
 
     return 0;
 }

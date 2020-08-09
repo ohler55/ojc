@@ -143,7 +143,7 @@ extern "C" {
 	int		ri;
 	uint32_t	ucode;
 	// TBD change this stack to be expandable
-	char		stack[1024];
+	char		stack[256];
     } *ojParser;
 
     // General functions.

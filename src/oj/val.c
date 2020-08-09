@@ -11,6 +11,7 @@
 
 #include "oj.h"
 #include "buf.h"
+#include "debug.h"
 #include "intern.h"
 
 bool oj_thread_safe = false;
@@ -85,7 +86,7 @@ oj_val_create() {
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
     if (NULL == free_head) {
-	val = (ojVal)calloc(1, sizeof(struct _ojVal));
+	val = (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
 	// flag.
@@ -94,7 +95,7 @@ oj_val_create() {
 	    }
 	}
 	if (NULL == free_head) {
-	    val = (ojVal)calloc(1, sizeof(struct _ojVal));
+	    val = (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
 	} else {
 	    val = free_head;
 	    free_head = free_head->next;
@@ -113,7 +114,7 @@ s4k_create() {
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
     if (NULL == s4k_head) {
-	s = (union ojS4k*)calloc(1, sizeof(union ojS4k));
+	s = (union ojS4k*)OJ_CALLOC(1, sizeof(union ojS4k));
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
 	// flag.
@@ -122,7 +123,7 @@ s4k_create() {
 	    }
 	}
 	if (NULL == s4k_head) {
-	    s = (union ojS4k*)calloc(1, sizeof(union ojS4k));
+	    s = (union ojS4k*)OJ_CALLOC(1, sizeof(union ojS4k));
 	} else {
 	    s = s4k_head;
 	    s4k_head = s4k_head->next;
@@ -139,14 +140,14 @@ oj_cleanup() {
     union ojS4k	*s4k;
     while (NULL != (s4k = s4k_head)) {
 	s4k_head = s4k->next;
-	free(s4k);
+	OJ_FREE(s4k);
     }
     s4k_tail = NULL;
 
     ojVal	val;
     while (NULL != (val = free_head)) {
 	free_head = val->next;
-	free(val);
+	OJ_FREE(val);
     }
     free_tail = NULL;
 }
@@ -164,7 +165,7 @@ oj_destroy(ojVal val) {
     val->next = NULL;
     for (; NULL != v; v = v->next) {
 	if (sizeof(union ojS4k) < v->key.len) {
-	    free(v->key.ptr);
+	    OJ_FREE(v->key.ptr);
 	} else if (sizeof(v->key.raw) < v->key.len) {
 	    v->key.s4k->next = NULL;
 	    if (NULL == s4k_h) {
@@ -177,7 +178,7 @@ oj_destroy(ojVal val) {
 	switch (v->type) {
 	case OJ_STRING:
 	    if (sizeof(union ojS4k) < v->str.len) {
-		free(v->str.ptr);
+		OJ_FREE(v->str.ptr);
 	    } else if (sizeof(v->str.raw) < v->str.len) {
 		v->str.s4k->next = NULL;
 		if (NULL == s4k_h) {
@@ -192,7 +193,7 @@ oj_destroy(ojVal val) {
 	case OJ_DECIMAL:
 	case OJ_BIG:
 	    if (sizeof(v->num.raw) <= v->num.len) {
-		free(v->num.ptr);
+		OJ_FREE(v->num.ptr);
 	    }
 	    break;
 	case OJ_OBJECT:
@@ -519,7 +520,7 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
 	memcpy(val->str.s4k->str, s, len);
 	val->str.s4k->str[len] = '\0';
     } else {
-	val->str.ptr = (char*)malloc(len + 1);
+	val->str.ptr = (char*)OJ_MALLOC(len + 1);
 	val->str.cap = len + 1;
 	memcpy(val->str.ptr, s, len);
 	val->str.ptr[len] = '\0';
@@ -740,7 +741,7 @@ _oj_val_set_key(ojParser p, const char *s, size_t len) {
 	memcpy(p->val.key.s4k->str, s, len);
 	p->val.key.s4k->str[len] = '\0';
     } else {
-	p->val.key.ptr = (char*)malloc(len + 1);
+	p->val.key.ptr = (char*)OJ_MALLOC(len + 1);
 	p->val.key.cap = len + 1;
 	memcpy(p->val.key.ptr, s, len);
 	p->val.key.ptr[len] = '\0';
@@ -760,7 +761,7 @@ _oj_val_set_str(ojParser p, const char *s, size_t len) {
 	memcpy(p->val.str.s4k->str, s, len);
 	p->val.str.s4k->str[len] = '\0';
     } else {
-	p->val.str.ptr = (char*)malloc(len + 1);
+	p->val.str.ptr = (char*)OJ_MALLOC(len + 1);
 	if (NULL == p->val.str.ptr) {
 	    OJ_ERR_MEM(&p->err, "string");
 	    p->val.str.len = 0;
@@ -782,7 +783,7 @@ _oj_append_num(ojParser p, const char *s, size_t len) {
 	    p->val.num.raw[nl] = '\0';
 	} else {
 	    size_t	cap = nl * 3 / 2;
-	    char	*ptr = (char*)malloc(cap);
+	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "number");
@@ -800,7 +801,7 @@ _oj_append_num(ojParser p, const char *s, size_t len) {
 	    memcpy(p->val.num.ptr + p->val.num.len, s, len);
 	} else {
 	    p->val.num.cap = nl * 3 / 2;
-	    if (NULL == (p->val.num.ptr = realloc(p->val.num.ptr, p->val.num.cap))) {
+	    if (NULL == (p->val.num.ptr = OJ_REALLOC(p->val.num.ptr, p->val.num.cap))) {
 		OJ_ERR_MEM(&p->err, "string");
 		p->val.num.len = 0;
 		return;
@@ -830,7 +831,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    str->s4k = s4k;
 	} else {
 	    size_t	cap = nl * 3 / 2;
-	    char	*ptr = (char*)malloc(cap);
+	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "string");
@@ -849,7 +850,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    str->s4k->str[nl] = '\0';
 	} else {
 	    size_t	cap = nl * 3 / 2;
-	    char	*ptr = (char*)malloc(cap);
+	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "string");
@@ -874,7 +875,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    memcpy(str->ptr + str->len, s, len);
 	} else {
 	    str->cap = nl * 3 / 2;
-	    if (NULL == (str->ptr = realloc(str->ptr, str->cap))) {
+	    if (NULL == (str->ptr = OJ_REALLOC(str->ptr, str->cap))) {
 		OJ_ERR_MEM(&p->err, "string");
 		str->len = 0;
 		return;
