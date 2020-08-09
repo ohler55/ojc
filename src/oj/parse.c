@@ -560,7 +560,7 @@ parse(ojParser p, const byte *json) {
 	    p->val.num.native = false;
 	    p->map = digit_map;
 	    p->val.num.len = 0;
-	    start = b;
+	    start = b++;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
 	    }
 	    _oj_append_num(p, (char*)start, b - start);
@@ -705,10 +705,18 @@ parse(ojParser p, const byte *json) {
 		p->push(&p->val, p->ctx);
 		break;
 	    }
-	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+	    p->ri = 0;
+	    *p->token = *b++;
+	    for (int i = 1; i < 4; i++) {
+		if ('\0' == *b) {
+		    p->ri = i;
+		    break;
+		} else {
+		    p->token[i] = *b++;
+		}
+	    }
+	    if (0 < p->ri) {
 		p->map = null_map;
-		// TBD copy what we have and update p->ri
-		p->ri = 0;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
@@ -721,10 +729,18 @@ parse(ojParser p, const byte *json) {
 		p->push(&p->val, p->ctx);
 		break;
 	    }
-	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3]) {
+	    p->ri = 0;
+	    *p->token = *b++;
+	    for (int i = 1; i < 4; i++) {
+		if ('\0' == *b) {
+		    p->ri = i;
+		    break;
+		} else {
+		    p->token[i] = *b++;
+		}
+	    }
+	    if (0 < p->ri) {
 		p->map = true_map;
-		// TBD copy what we have and update p->ri
-		p->ri = 0;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
@@ -737,14 +753,64 @@ parse(ojParser p, const byte *json) {
 		p->push(&p->val, p->ctx);
 		break;
 	    }
-	    if ('\0' == b[1] || '\0' == b[2] || '\0' == b[3] || '\0' == b[4]) {
+	    p->ri = 0;
+	    *p->token = *b++;
+	    for (int i = 1; i < 5; i++) {
+		if ('\0' == *b) {
+		    p->ri = i;
+		    break;
+		} else {
+		    p->token[i] = *b++;
+		}
+	    }
+	    if (0 < p->ri) {
 		p->map = false_map;
-		// TBD copy what we have and update p->ri
-		p->ri = 0;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
 	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
+	case TOKEN_OK:
+	    p->token[p->ri] = *b;
+	    p->ri++;
+	    switch (p->map[256]) {
+	    case 'N':
+		if (4 == p->ri) {
+		    if (0 != strncmp("null", p->token, 4)) {
+			p->err.col = b - json - p->err.col;
+			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
+		    }
+		    p->map = (0 == p->depth) ? value_map : after_map;
+		    p->val.type = OJ_NULL;
+		    p->push(&p->val, p->ctx);
+		}
+		break;
+	    case 'F':
+		if (5 == p->ri) {
+		    if (0 != strncmp("false", p->token, 5)) {
+			p->err.col = b - json - p->err.col;
+			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
+		    }
+		    p->map = (0 == p->depth) ? value_map : after_map;
+		    p->val.type = OJ_FALSE;
+		    p->push(&p->val, p->ctx);
+		}
+		break;
+	    case 'T':
+		if (4 == p->ri) {
+		    if (0 != strncmp("true", p->token, 4)) {
+			p->err.col = b - json - p->err.col;
+			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
+		    }
+		    p->map = (0 == p->depth) ? value_map : after_map;
+		    p->val.type = OJ_TRUE;
+		    p->push(&p->val, p->ctx);
+		}
+		break;
+	    default:
+		p->err.col = b - json - p->err.col;
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "parse error");
+	    }
+	    break;
 	case CHAR_ERR:
 	    if (OJ_OK == p->err.code) {
 		byteError(&p->err, p->map, b - json, *b);
@@ -755,14 +821,16 @@ parse(ojParser p, const byte *json) {
 	    break;
 	}
     }
-    switch (p->map[256]) {
-    case '0':
-    case 'd':
-    case 'f':
-    case 'z':
-    case 'X':
-	p->push(&p->val, p->ctx);
-	break;
+    if (0 == p->depth) {
+	switch (p->map[256]) {
+	case '0':
+	case 'd':
+	case 'f':
+	case 'z':
+	case 'X':
+	    p->push(&p->val, p->ctx);
+	    break;
+	}
     }
     return p->err.code;
 }
@@ -1171,6 +1239,7 @@ oj_parse_fd(ojParser p, int fd) {
 
     struct stat	info;
 
+    // st_size will be 0 if not a file
     if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
 	// Use threaded version.
 	return parse_large(p, fd);
@@ -1182,6 +1251,7 @@ oj_parse_fd(ojParser p, int fd) {
     while (true) {
 	if (0 < (rsize = read(fd, buf, size))) {
 	    buf[rsize] = '\0';
+	    //printf("*** chunk len: %ld - '%s'\n", rsize, buf);
 	    if (OJ_OK != parse(p, buf)) {
 		break;
 	    }

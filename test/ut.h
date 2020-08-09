@@ -17,10 +17,10 @@ typedef struct _Test {
     const char	*name;
     void	(*func)(void);
     int		pass;
-    int		run;
+    bool	run;
 } *Test;
 
-extern void	ut_init(int argc, char **argv, const char *groupName, Test allTests);
+extern bool	ut_init(int argc, char **argv, const char *groupName, Test allTests);
 extern Test	ut_append(Test tests, const char *name, void (*func)(void));
 
 extern void	ut_print(const char *format, ...);

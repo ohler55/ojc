@@ -585,7 +585,7 @@ oj_val_get_int(ojVal val) {
 }
 
 long double
-oj_val_get_float(ojVal val) {
+oj_val_get_double(ojVal val) {
     long double	d = 0.0;
 
     if (NULL != val && OJ_DECIMAL == val->type) {

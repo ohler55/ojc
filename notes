@@ -5,18 +5,9 @@
 
 - redo parser
 
- - parse tokens with break in middle
-  - how about fd with a chunky feed
-   - create socketpair()
-   - spawn thread to write (detach)
-    - write chunks and exit when done
-     - write, sleep just to be sure or sync
-
  - val parse tests
  - hash
   - key hash on each val?
-
- - change to use a pared down agoo debug.h
 
 - make sure follow works
 

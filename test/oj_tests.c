@@ -9,6 +9,8 @@ extern void	append_pushpop_tests(Test tests);
 extern void	append_parse_tests(Test tests);
 extern void	append_chunk_tests(Test tests);
 
+extern void	debug_report();
+
 int
 main(int argc, char **argv) {
     struct _Test	tests[1024] = { { NULL, NULL } };
@@ -18,10 +20,13 @@ main(int argc, char **argv) {
     append_parse_tests(tests);
     append_chunk_tests(tests);
 
-    ut_init(argc, argv, "oj", tests);
+    bool	display_mem_report = ut_init(argc, argv, "oj", tests);
 
     ut_done();
     oj_cleanup();
 
+    if (display_mem_report) {
+	debug_report();
+    }
     return 0;
 }

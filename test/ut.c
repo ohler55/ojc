@@ -15,12 +15,12 @@
 static void	usage(const char *appName);
 static Test	findTest(const char *name);
 
-FILE		*ut_out = 0;
-int		ut_verbose = 0;
+FILE			*ut_out = NULL;
+int			ut_verbose = 0;
 
-static const char	*group = 0;
-static Test		tests = 0;
-static Test		currentTest = 0;
+static const char	*group = NULL;
+static Test		tests = NULL;
+static Test		currentTest = NULL;
 
 void
 ut_print(const char *format, ...) {
@@ -46,19 +46,20 @@ ut_append(Test tests, const char *name, void (*func)(void)) {
     return tests - 1;
 }
 
-void
+bool
 ut_init(int argc, char **argv, const char *groupName, Test allTests) {
     Test	t;
     char	*appName = *argv;
     char	*a;
-    int		runAll = 1;
+    bool	runAll = true;
+    bool	display_mem_report = false;
 
     ut_out = stdout;
     tests = allTests;
     group = groupName;
     for (t = tests; t->name != 0; t++) {
 	t->pass = -1;
-	t->run = 0;
+	t->run = false;
     }
     argc--;
     argv++;
@@ -71,7 +72,7 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
 		printf("Failed to open %s\n", *argv);
 		usage(appName);
 	    }
-	} else if (0 == strcmp("-c", a)) {
+	} else if (0 == strcmp("-o", a)) {
 	    argc--;
 	    argv++;
 	    if (0 == (ut_out = fopen(*argv, "w"))) {
@@ -80,17 +81,27 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
 	    }
 	} else if (0 == strcmp("-v", a)) {
 	    ut_verbose += 1;
+	} else if (0 == strcmp("-m", a)) {
+	    display_mem_report = true;
 	} else {
-	    if (0 == (t = findTest(a))) {
+	    size_t	alen = strlen(a);
+	    bool	found = false;
+
+	    for (t = tests; NULL != t->name; t++) {
+		if (0 == strncmp(t->name, a, alen)) {
+		    t->run = true;
+		    found = true;
+		}
+	    }
+	    if (!found) {
 		printf("%s does not contain test %s\n", group, a);
 		usage(appName);
 	    }
-	    t->run = 1;
-	    runAll = 0;
+	    runAll = false;
 	}
     }
     if (runAll) {
-	for (t = tests; t->name != 0; t++) {
+	for (t = tests; NULL != t->name; t++) {
 	    t->run = 1;
 	}
     }
@@ -107,6 +118,7 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
 	    }
 	}
     }
+    return display_mem_report;
 }
 
 void
@@ -415,8 +427,10 @@ ut_resetTest(const char *testName) {
 static void
 usage(const char *appName) {
     printf("%s [-m] [-o file] [-c file]\n", appName);
-    printf("  -o file  name of output file to append to\n");
-    printf("  -c file  name of output file to create and write to\n");
+    printf("  -v       increase verbosity\n");
+    printf("  -m       show memory report (must be compiled with -DMEM_DEBUG)");
+    printf("  -a file  name of output file to append to\n");
+    printf("  -o file  name of output file to create and write to\n");
     exit(0);
 }
 

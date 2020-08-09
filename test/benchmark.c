@@ -44,7 +44,7 @@ walk_oj(ojVal val) {
 	}
 	break;
     case OJ_DECIMAL:
-	if (0.0 == oj_val_get_float(val)) {
+	if (0.0 == oj_val_get_double(val)) {
 	    cnt++;
 	}
 	break;
