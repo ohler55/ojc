@@ -3,6 +3,7 @@
  * ALL RIGHTS RESERVED
  */
 
+#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -28,6 +29,21 @@ ut_print(const char *format, ...) {
     va_start(ap, format);
     vfprintf(ut_out, format, ap);
     va_end(ap);
+}
+
+Test
+ut_append(Test tests, const char *name, void (*func)(void)) {
+    for (; NULL != tests->name; tests++) {
+    }
+    tests->name = name;
+    tests->func = func;
+    tests->pass = -1;
+    tests->run = true;
+    tests++;
+    tests->name = NULL;
+    tests->func = NULL;
+
+    return tests - 1;
 }
 
 void
@@ -554,6 +570,19 @@ bool
 ut_handle_oj_error(ojErr err) {
     if (OJ_OK != err->code) {
 	ut_print("[%d] %s\n", err->code, err->msg);
+	ut_fail();
+	return true;
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = 1;
+    }
+    return false;
+}
+
+bool
+ut_handle_errno() {
+    if (0 != errno) {
+	ut_print("[%d] %s\n", errno, strerror(errno));
 	ut_fail();
 	return true;
     }

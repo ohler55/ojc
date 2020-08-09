@@ -418,7 +418,7 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    break;
 	case OJ_INT:
 	    if (0 == val->num.len) {
-		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", val->num.fixnum);
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", (long long)val->num.fixnum);
 	    }
 	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
 	    break;
@@ -611,7 +611,7 @@ oj_val_get_bignum(ojVal val) {
 	switch (val->type) {
 	case OJ_INT:
 	    if (0 == val->num.len) {
-		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", val->num.fixnum);
+		val->num.len = snprintf(val->num.raw, sizeof(val->num.raw), "%lld", (long long)val->num.fixnum);
 	    }
 	    s = val->num.raw;
 	    break;

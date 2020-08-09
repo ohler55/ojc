@@ -21,6 +21,8 @@ typedef struct _Test {
 } *Test;
 
 extern void	ut_init(int argc, char **argv, const char *groupName, Test allTests);
+extern Test	ut_append(Test tests, const char *name, void (*func)(void));
+
 extern void	ut_print(const char *format, ...);
 extern void	ut_done(void);
 extern int	ut_same(const char *expected, const char *actual);
@@ -38,6 +40,7 @@ extern void	ut_hexDumpBuf(const unsigned char *data, int len, char *out);
 extern char*	ut_toCodeStr(const unsigned char *data, int len);
 extern bool	ut_handle_error(ojcErr err);
 extern bool	ut_handle_oj_error(ojErr err);
+extern bool	ut_handle_errno();
 
 extern void	ut_benchmark(const char *label, int64_t iter, void (*func)(int64_t iter, void *ctx), void *ctx);
 

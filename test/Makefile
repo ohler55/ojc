@@ -22,8 +22,8 @@ clean:
 $(TARGET): tests.o ut.o
 	$(CC) -o $@ tests.o ut.o -L$(LIB_DIR) $(LIBS)
 
-$(OJ_TARGET): oj_tests.o ut.o
-	$(CC) -o $@ oj_tests.o ut.o -L$(LIB_DIR) $(LIBS)
+$(OJ_TARGET): oj_tests.o validate_tests.o pushpop_tests.o parse_tests.o chunk_tests.o ut.o
+	$(CC) -o $@ oj_tests.o validate_tests.o pushpop_tests.o parse_tests.o chunk_tests.o ut.o -L$(LIB_DIR) $(LIBS)
 
 $(BENCH): benchmark.o
 	$(CC) -o $@ benchmark.o -L$(LIB_DIR)  $(LIBS)
