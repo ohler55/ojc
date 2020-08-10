@@ -441,7 +441,7 @@ main(int argc, char **argv) {
     bench_parse(NULL, iter);
 
     oj_cleanup();
-    //debug_report();
+    debug_report();
 
     return 0;
 }

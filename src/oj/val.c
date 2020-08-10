@@ -198,8 +198,10 @@ oj_destroy(ojVal val) {
 	    break;
 	case OJ_OBJECT:
 	    if (OJ_OBJ_RAW == v->mod) {
-		tail->next = v->list.head;
-		tail = v->list.tail;
+		if (NULL != v->list.head) {
+		    tail->next = v->list.head;
+		    tail = v->list.tail;
+		}
 	    } else {
 		ojVal	*bucket = v->hash;
 		ojVal	*bend = bucket + sizeof(v->hash) / sizeof(*v->hash);
@@ -214,8 +216,10 @@ oj_destroy(ojVal val) {
 	    }
 	    break;
 	case OJ_ARRAY: {
-	    tail->next = v->list.head;
-	    tail = v->list.tail;
+	    if (NULL != v->list.head) {
+		tail->next = v->list.head;
+		tail = v->list.tail;
+	    }
 	    break;
 	}
 	default:
