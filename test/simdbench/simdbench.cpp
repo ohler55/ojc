@@ -87,7 +87,7 @@ simd_parse(const char *str, int64_t iter) {
 	// detect the error.
 	try {
 	    simdjson::dom::element	doc = parser.parse(str, len, true);
-	    zero_cnt += walk_json(doc);
+	    //walk_json(doc);
 	} catch (const std::exception &x) {
 	    std::cout << "simdjson_parse failed: " << x.what() << std::endl;
 	    return 1;
@@ -143,7 +143,7 @@ simd_parse_file(const char *filename) {
 	docs = parser.load_many(filename);
 	for (simdjson::dom::element doc : docs) {
 	    cnt++;
-	    zero_cnt += walk_json(doc);
+	    //zero_cnt += walk_json(doc);
 	}
     } catch (const std::exception &x) {
 	std::cout << "simdjson_parse failed: " << x.what() << std::endl;

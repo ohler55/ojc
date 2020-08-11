@@ -1,8 +1,6 @@
 // Copyright (c) 2020 by Peter Ohler, ALL RIGHTS RESERVED
 
-#include <errno.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -47,44 +45,6 @@ mem_use(char *buf, size_t size) {
     return buf;
 }
 
-static int
-walk(ojVal val) {
-    int	cnt = 0;
-
-    switch (val->type) {
-    case OJ_NULL:
-	cnt++;
-	break;
-    case OJ_TRUE:
-	break;
-    case OJ_FALSE:
-	cnt++;
-	break;
-    case OJ_INT:
-	if (0 == oj_val_get_int(val)) {
-	    cnt++;
-	}
-	break;
-    case OJ_DECIMAL:
-	if (0.0 == oj_val_get_double(val, false)) {
-	    cnt++;
-	}
-	break;
-    case OJ_STRING:
-	if ('\0' == *val->str.raw) {
-	    cnt++;
-	}
-	break;
-    case OJ_OBJECT:
-    case OJ_ARRAY:
-	for (ojVal v = val->list.head; NULL != v; v = v->next) {
-	    cnt += walk(v);
-	}
-	break;
-    }
-    return cnt;
-}
-
 static char*
 load_file(const char *filename) {
     FILE	*f = fopen(filename, "r");
@@ -123,7 +83,6 @@ bench_parse(const char *filename, long long iter) {
 
     for (int i = iter; 0 < i; i--) {
 	v = oj_val_parse_str(&err, buf, NULL, NULL);
-	//walk(v);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;

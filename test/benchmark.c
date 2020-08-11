@@ -289,7 +289,7 @@ bench_parse(const char *filename, int64_t iter) {
 
 static bool
 destroy_cb(ojVal val, void *ctx) {
-    walk_oj(val);
+    //walk_oj(val);
     oj_destroy(val);
     *(long*)ctx = *(long*)ctx + 1;
     return true;

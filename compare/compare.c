@@ -79,15 +79,16 @@ typedef struct _fileIter {
 } *FileIter;
 
 static struct _fileIter	files[] = {
+    { .filename = "files/patient.json", .iter = 100000 },
     { .filename = "files/ca.json", .iter = 10000 },
     { .filename = NULL },
 };
 
 static void
-run_parse(App app) {
+run_parse(App apps) {
     for (FileIter fi = files; NULL != fi->filename; fi++) {
-	for (; NULL != app->path; app++) {
-	    ojVal	val = run_app(app, "parse", fi->filename, fi->iter);
+	for (App a = apps; NULL != a->path; a++) {
+	    ojVal	val = run_app(a, "parse", fi->filename, fi->iter);
 
 	    if (NULL != val) {
 		const char	*name = oj_val_get_str(oj_val_object_get(val, "name"));
@@ -101,7 +102,7 @@ run_parse(App app) {
 		} else {
 		    double	per = (double)usec / (double)iter;
 
-		    printf("%-10s: %lld entries in %8.3f msecs. (%7.1f usec/iterations) used %s of memory\n",
+		    printf("%-10s: %10lld entries in %8.3f msecs. (%7.1f usec/iterations) used %s of memory\n",
 			   name, (long long)iter, (double)usec / 1000.0, per, mem);
 		}
 		oj_destroy(val);
