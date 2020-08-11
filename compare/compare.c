@@ -16,7 +16,6 @@ typedef struct _benchResult {
 typedef struct _app {
     const char	*path;
 
-
 } *App;
 
 static const char	*mode = NULL;
@@ -55,28 +54,59 @@ run_app(App app, const char *m, const char *filename, long iter) {
     size_t	len = fread(out, 1, sizeof(out), f);
 
     if (len < 0) {
-	printf("*-*-* failed to read output from %s\n", cmd);
+	printf("*-*-* failed to read output from '%s'\n", cmd);
 	return NULL;
     }
     out[len] = '\0';
     if (0 != pclose(f)) {
-	printf("*-*-* exited with error %s\n", cmd);
+	printf("*-*-* exited with error '%s'\n", cmd);
 	return NULL;
     }
+    struct _ojErr	err = OJ_ERR_INIT;
 
-    printf("*** out: '%s'\n", out);
-    // TBD parse as JSON
-    //
-    return NULL;
+    ojVal	val = oj_val_parse_str(&err, out, NULL, NULL);
+
+    if (OJ_OK != err.code) {
+	printf("*-*-* failed to parse result from '%s'. %s\n", cmd, err.msg);
+	return NULL;
+    }
+    return val;
 }
+
+typedef struct _fileIter {
+    const char	*filename;
+    long	iter;
+} *FileIter;
+
+static struct _fileIter	files[] = {
+    { .filename = "files/ca.json", .iter = 10000 },
+    { .filename = NULL },
+};
 
 static void
 run_parse(App app) {
-    // TBD parse list of files, collect and display results
-    for (; NULL != app->path; app++) {
-	ojVal	val = run_app(app, "parse", "files/ca.json", 1000);
-	// extract data needed then display
-	oj_destroy(val);
+    for (FileIter fi = files; NULL != fi->filename; fi++) {
+	for (; NULL != app->path; app++) {
+	    ojVal	val = run_app(app, "parse", fi->filename, fi->iter);
+
+	    if (NULL != val) {
+		const char	*name = oj_val_get_str(oj_val_object_get(val, "name"));
+		const char	*err = oj_val_get_str(oj_val_object_get(val, "err"));
+		int64_t	usec = oj_val_get_int(oj_val_object_get(val, "usec"));
+		int64_t	iter = oj_val_get_int(oj_val_object_get(val, "iter"));
+		const char	*mem = oj_val_get_str(oj_val_object_get(val, "mem"));
+
+		if (NULL != err) {
+		    printf("%-10s: %s\n", name, err);
+		} else {
+		    double	per = (double)usec / (double)iter;
+
+		    printf("%-10s: %lld entries in %8.3f msecs. (%7.1f usec/iterations) used %s of memory\n",
+			   name, (long long)iter, (double)usec / 1000.0, per, mem);
+		}
+		oj_destroy(val);
+	    }
+	}
     }
 }
 

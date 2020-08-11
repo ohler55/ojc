@@ -4,10 +4,17 @@
 ^c^s show subtree
 
 - redo parser
+ - single app for benchmark results
+  - get benchmarks.c cleanup to use ut_benchmark
+  - maybe separate apps that output results
+   - allows better memory checking
+   - app <parse|file|validate|write> <filename> <iter>
+   - output is json {name, duration, mem-use, error}
+  - bench app takes list of apps to run
 
  - val parse tests
+
  - hash
-  - key hash on each val?
 
 - make sure follow works
 

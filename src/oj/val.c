@@ -589,12 +589,16 @@ oj_val_get_int(ojVal val) {
 }
 
 long double
-oj_val_get_double(ojVal val) {
+oj_val_get_double(ojVal val, bool prec) {
     long double	d = 0.0;
 
     if (NULL != val && OJ_DECIMAL == val->type) {
 	if (!val->num.native) {
-	    val->num.dub = strtold(val->num.raw, NULL);
+	    if (prec) {
+		val->num.dub = strtold(val->num.raw, NULL);
+	    } else {
+		val->num.dub = strtod(val->num.raw, NULL);
+	    }
 	    if (!isfinite(val->num.dub)) {
 		val->num.dub = 0.0;
 		val->type = OJ_BIG;

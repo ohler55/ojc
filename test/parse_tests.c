@@ -132,7 +132,7 @@ parse_decimal_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val);
+    long double	d = oj_val_get_double(val, true);
 
     ut_same_double(12.345, d, 0.0001, "parse decimal");
 
@@ -171,7 +171,7 @@ parse_bignum_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val);
+    long double	d = oj_val_get_double(val, true);
 
     ut_same_double(0.0, d, 0.0001, "parse bignum");
     num = oj_val_get_bignum(val);
