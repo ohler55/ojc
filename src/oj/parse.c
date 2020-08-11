@@ -409,7 +409,6 @@ parse(ojParser p, const byte *json) {
     }
 */
     //printf("*** %s\n", json);
-
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	switch (p->map[*b]) {
@@ -460,7 +459,7 @@ parse(ojParser p, const byte *json) {
 	    p->val.type = OJ_STRING;
 	    if ('"' == *b) {
 		_oj_val_set_str(p, (char*)start, b - start);
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		p->map = (0 == p->depth) ? value_map : after_map;
 		break;
 	    }
@@ -476,17 +475,17 @@ parse(ojParser p, const byte *json) {
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
 	    }
 	    p->stack[p->depth] = '{';
-	    p->depth++;
 	    p->val.type = OJ_OBJECT;
 	    p->val.mod = OJ_OBJ_RAW;
 	    p->val.list.head = NULL;
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
+	    p->depth++;
 	    p->map = key1_map;
 	    break;
 	case NUM_CLOSE_OBJECT:
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
 		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		p->val.type = OJ_NULL;
 		p->val.key.len = 0;
 	    }
@@ -494,7 +493,7 @@ parse(ojParser p, const byte *json) {
 	case CLOSE_OBJECT:
 	    p->depth--;
 	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->pop(p->ctx);
+	    p->pop(p);
 	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
@@ -507,16 +506,16 @@ parse(ojParser p, const byte *json) {
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
 	    }
 	    p->stack[p->depth] = '[';
-	    p->depth++;
 	    p->val.type = OJ_ARRAY;
 	    p->val.list.head = NULL;
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
+	    p->depth++;
 	    p->map = value_map;
 	    break;
 	case NUM_CLOSE_ARRAY:
 	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
 		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		p->val.type = OJ_NULL;
 		p->val.key.len = 0;
 	    }
@@ -524,7 +523,7 @@ parse(ojParser p, const byte *json) {
 	case CLOSE_ARRAY:
 	    p->depth--;
 	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->pop(p->ctx);
+	    p->pop(p);
 	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
 		p->err.col = b - json - p->err.col;
 		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
@@ -532,7 +531,7 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_COMMA:
 	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
 	    p->val.type = OJ_NULL;
 	    p->val.key.len = 0;
 	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
@@ -616,14 +615,14 @@ parse(ojParser p, const byte *json) {
 	case NUM_SPC:
 	    p->map = (0 == p->depth) ? value_map : after_map;
 	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
 	    p->val.type = OJ_NULL;
 	    p->val.key.len = 0;
 	    break;
 	case NUM_NEWLINE:
 	    p->map = (0 == p->depth) ? value_map : after_map;
 	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
 	    p->val.type = OJ_NULL;
 	    p->val.key.len = 0;
 	    p->err.line++;
@@ -649,7 +648,7 @@ parse(ojParser p, const byte *json) {
 	    if ('"' == *b) {
 		p->map = p->next_map;
 		if (':' != p->map[256]) {
-		    p->push(&p->val, p->ctx);
+		    p->push(&p->val, p);
 		}
 		break;
 	    }
@@ -661,7 +660,7 @@ parse(ojParser p, const byte *json) {
 	case STR_QUOTE:
 	    p->map = p->next_map;
 	    if (':' != p->map[256]) {
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 	    }
 	    break;
 	case ESC_U:
@@ -702,7 +701,7 @@ parse(ojParser p, const byte *json) {
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_NULL;
 		p->val.key.len = 0;
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -726,7 +725,7 @@ parse(ojParser p, const byte *json) {
 		b += 3;
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_TRUE;
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -750,7 +749,7 @@ parse(ojParser p, const byte *json) {
 		b += 4;
 		p->map = (0 == p->depth) ? value_map : after_map;
 		p->val.type = OJ_FALSE;
-		p->push(&p->val, p->ctx);
+		p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -781,7 +780,7 @@ parse(ojParser p, const byte *json) {
 		    }
 		    p->map = (0 == p->depth) ? value_map : after_map;
 		    p->val.type = OJ_NULL;
-		    p->push(&p->val, p->ctx);
+		    p->push(&p->val, p);
 		}
 		break;
 	    case 'F':
@@ -792,7 +791,7 @@ parse(ojParser p, const byte *json) {
 		    }
 		    p->map = (0 == p->depth) ? value_map : after_map;
 		    p->val.type = OJ_FALSE;
-		    p->push(&p->val, p->ctx);
+		    p->push(&p->val, p);
 		}
 		break;
 	    case 'T':
@@ -803,7 +802,7 @@ parse(ojParser p, const byte *json) {
 		    }
 		    p->map = (0 == p->depth) ? value_map : after_map;
 		    p->val.type = OJ_TRUE;
-		    p->push(&p->val, p->ctx);
+		    p->push(&p->val, p);
 		}
 		break;
 	    default:
@@ -828,7 +827,7 @@ parse(ojParser p, const byte *json) {
 	case 'f':
 	case 'z':
 	case 'X':
-	    p->push(&p->val, p->ctx);
+	    p->push(&p->val, p);
 	    break;
 	}
     }
@@ -1091,11 +1090,11 @@ oj_parser_reset(ojParser p) {
 }
 
 static void
-no_push(ojVal val, void *ctx) {
+no_push(ojVal val, ojParser p) {
 }
 
 static void
-no_pop(void *ctx) {
+no_pop(ojParser p) {
 }
 
 ojStatus

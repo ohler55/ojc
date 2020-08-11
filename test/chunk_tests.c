@@ -23,7 +23,9 @@ write_chunks(void *ctx) {
     const char		**sp;
 
     for (sp = data->input; NULL != *sp; sp++) {
-	write(data->wd, *sp, strlen(*sp));
+	if (write(data->wd, *sp, strlen(*sp)) < 0) {
+	    break;
+	}
 	usleep(100);
     }
     close(data->wd);

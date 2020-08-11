@@ -81,29 +81,30 @@ calc_hash(const char *key, size_t len) {
 
 ojVal
 oj_val_create() {
-    ojVal	val = NULL;
-
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
     if (NULL == free_head) {
+	return (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
+    }
+    if (!oj_thread_safe) {
+	ojVal	val = free_head;
+
+	free_head = free_head->next;
+
+	return val;
+    }
+    ojVal	val;
+
+    while (atomic_flag_test_and_set(&val_busy)) {
+    }
+    if (NULL == free_head) {
 	val = (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
     } else {
-	// Looks like we need to lock it down for a moment using the atomic busy
-	// flag.
-	if (oj_thread_safe) {
-	    while (atomic_flag_test_and_set(&val_busy)) {
-	    }
-	}
-	if (NULL == free_head) {
-	    val = (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
-	} else {
-	    val = free_head;
-	    free_head = free_head->next;
-	}
-	if (oj_thread_safe) {
-	    atomic_flag_clear(&val_busy);
-	}
+	val = free_head;
+	free_head = free_head->next;
     }
+    atomic_flag_clear(&val_busy);
+
     return val;
 }
 
@@ -230,87 +231,100 @@ oj_destroy(ojVal val) {
     if (oj_thread_safe) {
 	while (atomic_flag_test_and_set(&val_busy)) {
 	}
-    }
-    if (NULL == free_head) {
-	free_head = val;
-    } else {
-	free_tail->next = val;
-    }
-    free_tail = tail;
-    if (NULL != s4k_h) {
-	if (NULL == s4k_head) {
-	    s4k_head = s4k_h;
+	if (NULL == free_head) {
+	    free_head = val;
 	} else {
-	    s4k_tail->next = s4k_h;
+	    free_tail->next = val;
 	}
-	s4k_tail = s4k_t;
-    }
-    if (oj_thread_safe) {
+	free_tail = tail;
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
 	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL == free_head) {
+	    free_head = val;
+	} else {
+	    free_tail->next = val;
+	}
+	free_tail = tail;
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
     }
 }
 
-typedef struct _Stack {
-    // TBD change to be expandable
-    ojVal		vals[256];
-    int			depth;
-    ojParseCallback	cb;
-    void		*ctx;
-} *Stack;
-
 static void
-push(ojVal val, void *ctx) {
-    Stack	stack = (Stack)ctx;
+push(ojVal val, struct _ojParser *p) {
     ojVal	v = oj_val_create();
 
     *v = *val;
-    if (0 < stack->depth) {
-	ojVal	p = stack->vals[stack->depth - 1];
+    if (0 < p->depth) {
+	ojVal	parent = p->vals[p->depth - 1];
 
-	if (NULL == p->list.head) {
-	    p->list.head = v;
+	if (NULL == parent->list.head) {
+	    parent->list.head = v;
 	} else {
-	    p->list.tail->next = v;
+	    parent->list.tail->next = v;
 	}
-	p->list.tail = v;
+	parent->list.tail = v;
     }
     if (OJ_OBJECT == v->type || OJ_ARRAY == v->type) {
-	stack->vals[stack->depth] = v;
-	stack->depth++;
-    } else if (0 == stack->depth) {
-	if (NULL != stack->cb) {
-	    stack->cb(v, stack->ctx);
+	p->vals[p->depth] = v;
+    } else if (0 == p->depth) {
+	if (NULL != p->cb) {
+	    p->cb(v, p->ctx);
 	} else {
-	    stack->vals[stack->depth] = v;
+	    p->vals[p->depth] = v;
 	}
     }
 }
 
 static void
-pop(void *ctx) {
-    Stack	stack = (Stack)ctx;
-
-    stack->depth--;
-    if (0 == stack->depth && NULL != stack->cb) {
-	stack->cb(*stack->vals, stack->ctx);
-	*stack->vals = NULL;
+pop(struct _ojParser *p) {
+    if (0 == p->depth && NULL != p->cb) {
+	p->cb(*p->vals, p->ctx);
+	*p->vals = NULL;
     }
 }
 
+void
+oj_val_parser_init(ojParser p) {
+    memset(p, 0, sizeof(struct _ojParser));
+    p->push = push;
+    p->pop = pop;
+}
+
 ojVal
-oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
+oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx) {
+    p->cb = cb;
+    p->ctx = ctx;
+    oj_parse_str(p, json);
+    if (OJ_OK != p->err.code) {
+	return NULL;
+    }
+    return p->vals[0];
+}
+
+ojVal
+oj_val_parse_strx(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
     struct _ojParser	p;
-    struct _Stack	stack = {
-	.vals = { NULL },
-	.depth = 0,
-	.cb = cb,
-	.ctx = ctx,
-    };
 
     memset(&p, 0, sizeof(p));
     p.push = push;
     p.pop = pop;
-    p.ctx = &stack;
+    p.cb = cb;
+    p.ctx = ctx;
 
     oj_parse_str(&p, json);
     if (OJ_OK != p.err.code) {
@@ -319,7 +333,7 @@ oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
 	}
 	return NULL;
     }
-    return stack.vals[0];
+    return p.vals[0];
 }
 
 ojVal
@@ -333,17 +347,12 @@ oj_val_parse_strp(ojErr err, const char **json) {
 ojVal
 oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     struct _ojParser	p;
-    struct _Stack	stack = {
-	.vals = { NULL },
-	.depth = 0,
-	.cb = cb,
-	.ctx = ctx,
-    };
 
     memset(&p, 0, sizeof(p));
     p.push = push;
     p.pop = pop;
-    p.ctx = &stack;
+    p.cb = cb;
+    p.ctx = ctx;
 
     oj_parse_file(&p, filename);
     if (OJ_OK != p.err.code) {
@@ -352,23 +361,18 @@ oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx
 	}
 	return NULL;
     }
-    return stack.vals[0];
+    return p.vals[0];
 }
 
 ojVal
 oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
     struct _ojParser	p;
-    struct _Stack	stack = {
-	.vals = { NULL },
-	.depth = 0,
-	.cb = cb,
-	.ctx = ctx,
-    };
 
     memset(&p, 0, sizeof(p));
     p.push = push;
     p.pop = pop;
-    p.ctx = &stack;
+    p.cb = cb;
+    p.ctx = ctx;
 
     oj_parse_fd(&p, fd);
     if (OJ_OK != p.err.code) {
@@ -377,7 +381,7 @@ oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
 	}
 	return NULL;
     }
-    return stack.vals[0];
+    return p.vals[0];
 }
 
 ojVal

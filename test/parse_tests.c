@@ -17,9 +17,11 @@ parse_jsons(struct _data *dp) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
     struct _ojBuf	buf;
+    struct _ojParser	p;
 
+    oj_val_parser_init(&p);
     for (; NULL != dp->json; dp++) {
-	val = oj_val_parse_str(&err, dp->json, NULL, NULL);
+	val = oj_val_parse_str(&p, dp->json, NULL, NULL);
 	if (OJ_OK == dp->status) {
 	    bool	ok;
 
@@ -109,9 +111,11 @@ parse_test() {
 static void
 parse_int_test() {
     struct _ojErr	err = OJ_ERR_INIT;
+    struct _ojParser	p;
     ojVal		val;
 
-    val = oj_val_parse_str(&err, "12345", NULL, NULL);
+    oj_val_parser_init(&p);
+    val = oj_val_parse_str(&p, "12345", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
@@ -126,8 +130,10 @@ static void
 parse_decimal_test() {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
+    struct _ojParser	p;
 
-    val = oj_val_parse_str(&err, "12.345", NULL, NULL);
+    oj_val_parser_init(&p);
+    val = oj_val_parse_str(&p, "12.345", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
@@ -141,12 +147,13 @@ parse_decimal_test() {
 
 static void
 parse_bignum_test() {
-    struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
+    struct _ojParser	p;
 
-    val = oj_val_parse_str(&err, "-9223372036854775807", NULL, NULL);
-    if (ut_handle_oj_error(&err)) {
-	ut_print("error at %d:%d\n",  err.line, err.col);
+    oj_val_parser_init(&p);
+    val = oj_val_parse_str(&p, "-9223372036854775807", NULL, NULL);
+    if (ut_handle_oj_error(&p.err)) {
+	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
 	return;
     }
     const char	*num;
@@ -155,9 +162,9 @@ parse_bignum_test() {
     ut_same_int(-9223372036854775807, i, "parse bignum");
     oj_destroy(val);
 
-    val = oj_val_parse_str(&err, "9223372036854775808", NULL, NULL);
-    if (ut_handle_oj_error(&err)) {
-	ut_print("error at %d:%d\n",  err.line, err.col);
+    val = oj_val_parse_str(&p, "9223372036854775808", NULL, NULL);
+    if (ut_handle_oj_error(&p.err)) {
+	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
 	return;
     }
     i = oj_val_get_int(val);
@@ -166,9 +173,9 @@ parse_bignum_test() {
     ut_same("9223372036854775808", num);
     oj_destroy(val);
 
-    val = oj_val_parse_str(&err, "-1.2e12345", NULL, NULL);
-    if (ut_handle_oj_error(&err)) {
-	ut_print("error at %d:%d\n",  err.line, err.col);
+    val = oj_val_parse_str(&p, "-1.2e12345", NULL, NULL);
+    if (ut_handle_oj_error(&p.err)) {
+	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
 	return;
     }
     long double	d = oj_val_get_double(val, true);

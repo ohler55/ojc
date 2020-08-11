@@ -135,15 +135,17 @@ extern "C" {
 	const char	*next_map;
 	struct _ojVal	val; // working val
 	struct _ojErr	err;
-	void		(*push)(ojVal val, void *ctx);
-	void		(*pop)(void *ctx);
-	void		*ctx; // push and pop context
+	void		(*push)(ojVal val, struct _ojParser *p);
+	void		(*pop)(struct _ojParser *p);
+	ojParseCallback	cb;
+	void		*ctx;
 
 	int		depth;
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
 	// TBD change this stack to be expandable
+	ojVal		vals[256];
 	char		stack[256];
     } *ojParser;
 
@@ -167,7 +169,9 @@ extern "C" {
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
-    extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern void		oj_val_parser_init(ojParser p);
+    //extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 

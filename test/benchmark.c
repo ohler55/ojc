@@ -234,7 +234,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     struct _ojErr	e = OJ_ERR_INIT;
     int64_t		start = clock_micro();
-
+#if 0
     for (int i = iter; 0 < i; i--) {
 	if (OJ_OK != oj_validate_str(&e, str)) {
 	    break;
@@ -246,14 +246,16 @@ bench_parse(const char *filename, int64_t iter) {
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("oj_validate_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+    printf("oj_validate_str  %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+#endif
+    struct _ojParser	p;
+    ojVal		v;
 
-    ojVal	v;
-
+    oj_val_parser_init(&p);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&e, str, NULL, NULL);
+	v = oj_val_parse_str(&p, str, NULL, NULL);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
@@ -262,25 +264,26 @@ bench_parse(const char *filename, int64_t iter) {
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("oj_parse_str    %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+    printf("oj_val_parse_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
 
-    struct _ojcErr	err = OJC_ERR_INIT;
-    ojcVal		ojc;
+#if 0
+    memset(&p, 0, sizeof(p));
 
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	ojc = ojc_parse_str(&err, str, noop_cb, NULL);
-	ojc_destroy(ojc);
+	oj_parser_reset(&p);
+	oj_parse_str(&p, str);
     }
     dt = clock_micro() - start;
-    if (OJC_OK != err.code) {
-	printf("*** Error: %s\n", err.msg);
+    if (OJ_OK != e.code) {
+	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
+	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
 	return -1;
     }
-    printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
+    printf("oj_parse_str     %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
 	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-
+#endif
     if (NULL != buf) {
 	free(buf);
     }
@@ -304,6 +307,7 @@ bench_parse_many(const char *filename) {
     char		*buf = NULL;
     long		iter = 0;
     struct _ojErr	e = OJ_ERR_INIT;
+    struct _ojParser	p;
 
     //int64_t	start = clock_micro();
 
@@ -313,9 +317,10 @@ bench_parse_many(const char *filename) {
 	str = buf;
 	//printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
     }
+    oj_val_parser_init(&p);
     int64_t	start = clock_micro();
 
-    oj_val_parse_str(&e, str, destroy_cb, &iter);
+    oj_val_parse_str(&p, str, destroy_cb, &iter);
     dt = clock_micro() - start;
     if (OJ_OK != e.code) {
 	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
@@ -433,6 +438,7 @@ main(int argc, char **argv) {
 	} else {
 	    bench_parse(filename, iter);
 	}
+	oj_cleanup();
 	return 0;
     }
     //bench_fill(iter);

@@ -13,14 +13,14 @@ struct _data {
 };
 
 static void
-push(ojVal val, void *ctx) {
-    oj_buf((ojBuf)ctx, val, 0, 0);
-    oj_buf_append((ojBuf)ctx, ' ');
+push(ojVal val, ojParser p) {
+    oj_buf((ojBuf)p->ctx, val, 0, 0);
+    oj_buf_append((ojBuf)p->ctx, ' ');
 }
 
 static void
-pop(void *ctx) {
-    oj_buf_append_string((ojBuf)ctx, "pop ", 4);
+pop(ojParser p) {
+    oj_buf_append_string((ojBuf)p->ctx, "pop ", 4);
 }
 
 static void
