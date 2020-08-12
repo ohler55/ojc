@@ -62,12 +62,14 @@ run_app(App app, const char *m, const char *filename, long iter) {
 	printf("*-*-* exited with error '%s'\n", cmd);
 	return NULL;
     }
-    struct _ojErr	err = OJ_ERR_INIT;
+    struct _ojParser	p;
 
-    ojVal	val = oj_val_parse_str(&err, out, NULL, NULL);
+    oj_val_parser_init(&p);
 
-    if (OJ_OK != err.code) {
-	printf("*-*-* failed to parse result from '%s'. %s\n", cmd, err.msg);
+    ojVal	val = oj_val_parse_str(&p, out, NULL, NULL);
+
+    if (OJ_OK != p.err.code) {
+	printf("*-*-* failed to parse result from '%s'. %s\n", cmd, p.err.msg);
 	return NULL;
     }
     return val;
@@ -93,8 +95,8 @@ run_parse(App apps) {
 	    if (NULL != val) {
 		const char	*name = oj_val_get_str(oj_val_object_get(val, "name"));
 		const char	*err = oj_val_get_str(oj_val_object_get(val, "err"));
-		int64_t	usec = oj_val_get_int(oj_val_object_get(val, "usec"));
-		int64_t	iter = oj_val_get_int(oj_val_object_get(val, "iter"));
+		int64_t		usec = oj_val_get_int(oj_val_object_get(val, "usec"));
+		int64_t		iter = oj_val_get_int(oj_val_object_get(val, "iter"));
 		const char	*mem = oj_val_get_str(oj_val_object_get(val, "mem"));
 
 		if (NULL != err) {

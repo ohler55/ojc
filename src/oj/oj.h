@@ -170,9 +170,9 @@ extern "C" {
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
     extern void		oj_val_parser_init(ojParser p);
-    //extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+
+    extern ojVal	oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);

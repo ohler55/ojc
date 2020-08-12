@@ -317,26 +317,6 @@ oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx) {
 }
 
 ojVal
-oj_val_parse_strx(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
-    struct _ojParser	p;
-
-    memset(&p, 0, sizeof(p));
-    p.push = push;
-    p.pop = pop;
-    p.cb = cb;
-    p.ctx = ctx;
-
-    oj_parse_str(&p, json);
-    if (OJ_OK != p.err.code) {
-	if (NULL != err) {
-	    *err = p.err;
-	}
-	return NULL;
-    }
-    return p.vals[0];
-}
-
-ojVal
 oj_val_parse_strp(ojErr err, const char **json) {
 
     // TBD
@@ -345,23 +325,14 @@ oj_val_parse_strp(ojErr err, const char **json) {
 }
 
 ojVal
-oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
-    struct _ojParser	p;
-
-    memset(&p, 0, sizeof(p));
-    p.push = push;
-    p.pop = pop;
-    p.cb = cb;
-    p.ctx = ctx;
-
-    oj_parse_file(&p, filename);
-    if (OJ_OK != p.err.code) {
-	if (NULL != err) {
-	    *err = p.err;
-	}
+oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ctx) {
+    p->cb = cb;
+    p->ctx = ctx;
+    oj_parse_file(p, filename);
+    if (OJ_OK != p->err.code) {
 	return NULL;
     }
-    return p.vals[0];
+    return p->vals[0];
 }
 
 ojVal

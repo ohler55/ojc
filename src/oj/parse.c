@@ -1106,6 +1106,9 @@ oj_parse_str(ojParser p, const char *json) {
 	p->pop = no_pop;
     }
     p->err.line = 1;
+    p->err.col = 0;
+    *p->err.msg = '\0';
+    p->depth = 0;
     p->map = value_map;
     parse(p, (const byte*)json);
 

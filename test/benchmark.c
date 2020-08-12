@@ -25,6 +25,7 @@ clock_micro() {
     return (uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec;
 }
 
+#if 0
 static int
 walk_oj(ojVal val) {
     int	cnt = 0;
@@ -78,121 +79,10 @@ walk_oj(ojVal val) {
     }
     return cnt;
 }
-
-#if 0
-static bool
-each_cb(ojcErr err, ojcVal val, void *ctx) {
-    *((int64_t*)ctx) = *((int64_t*)ctx) + 1;
-    return true;
-}
-
-static int
-bench_fill(int64_t iter) {
-    struct _Buf		buf;
-    struct _ojcErr	err = OJC_ERR_INIT;
-    int64_t		i;
-    int64_t		dt;
-    int64_t		start;
-    ojcVal		obj;
-
-    obj = ojc_create_object();
-    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
-    ojc_object_append(&err, obj, "message",
-		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
-    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
-    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
-    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
-    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
-    ojc_object_append(&err, obj, "version", ojc_create_int(1));
-
-    start = clock_micro();
-    for (i = 0; i < iter; i++) {
-	buf_init(&buf, 0);
-	ojc_buf(&buf, obj, 0, 0);
-	buf_cleanup(&buf);
-    }
-    dt = clock_micro() - start;
-    printf("ojc_fill        %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-    return 0;
-}
-
-static int
-bench_write(const char *filename, int64_t iter) {
-    FILE		*f;
-    struct _ojcErr	err = OJC_ERR_INIT;
-    int64_t		i;
-    int64_t		dt;
-    int64_t		start;
-    ojcVal		obj;
-    int			fd;
-
-    obj = ojc_create_object();
-    ojc_object_append(&err, obj, "level", ojc_create_str("INFO", 0));
-    ojc_object_append(&err, obj, "message",
-		      ojc_create_str("This is a log message that is long enough to be representative of an actual message.", 0));
-    ojc_object_append(&err, obj, "msgType", ojc_create_int(1));
-    ojc_object_append(&err, obj, "source", ojc_create_str("Test", 0));
-    ojc_object_append(&err, obj, "thread", ojc_create_str("main", 0));
-    ojc_object_append(&err, obj, "timestamp", ojc_create_int(1400000000000000000LL));
-    ojc_object_append(&err, obj, "version", ojc_create_int(1));
-
-    start = clock_micro();
-    ojc_err_init(&err);
-    f = fopen(filename, "w");
-    fd = fileno(f);
-    for (i = 0; i < iter; i++) {
-	ojc_write(&err, obj, 0, fd);
-	//if (write(fd, "\n", 1)) {}
-    }
-    fclose(f);
-    dt = clock_micro() - start;
-    if (OJC_OK != err.code) {
-	printf("*** Error: %s\n", err.msg);
-	return -1;
-    }
-    printf("ojc_write       %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-    return 0;
-}
-
-static int
-bench_read(const char *filename, int64_t iter) {
-    FILE		*f;
-    struct _ojcErr	err = OJC_ERR_INIT;
-    int64_t		cnt = 0;
-    int64_t		dt;
-    int64_t		start = clock_micro();
-
-    ojc_err_init(&err);
-    f = fopen(filename, "r");
-    ojc_parse_file(&err, f, each_cb, &cnt);
-    /*
-    for (int i = iter; 0 < i; i--) {
-	ojc_parse_file(&err, f, each_cb, &cnt);
-	fseek(f, 0, SEEK_SET);
-    }
-    */
-    fclose(f);
-    dt = clock_micro() - start;
-    if (OJC_OK != err.code) {
-	printf("*** Error: %s\n", err.msg);
-	return -1;
-    }
-    printf("ojc_parse_file  %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)cnt, (double)dt / 1000.0, (int)((double)cnt * 1000.0 / (double)dt));
-
-    return 0;
-}
-#endif
+#end
 
 static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be representative of an actual message.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 //static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
-
-static bool
-noop_cb(ojcErr err, ojcVal val, void *ctx) {
-    return true;
-}
 
 static char*
 load_file(const char *filename) {
@@ -222,35 +112,32 @@ load_file(const char *filename) {
     return buf;
 }
 
+static void
+print_results(const char *name, int64_t iter, int64_t usec, ojErr err) {
+    if (OJ_OK != err->code) {
+	printf("%-18s: %s at %d:%d\n", name, err->msg, err->line, err->col);
+    } else {
+	double	per = (double)usec / (double)iter;
+
+	printf("%-18s: %lld entries in %8.3f msecs, %7.2f usec/iterations  %7.1f iterations/msec\n",
+	       name, (long long)iter, (double)usec / 1000.0, per, 1000.0 / per);
+    }
+}
+
 static int
 bench_parse(const char *filename, int64_t iter) {
     int64_t		dt;
     const char		*str = json;
     char		*buf = NULL;
+    struct _ojErr	err = OJ_ERR_INIT;
+    struct _ojParser	p;
+    ojVal		v;
+    int64_t		start;
 
     if (NULL != filename) {
 	buf = load_file(filename);
 	str = buf;
     }
-    struct _ojErr	e = OJ_ERR_INIT;
-    int64_t		start = clock_micro();
-#if 0
-    for (int i = iter; 0 < i; i--) {
-	if (OJ_OK != oj_validate_str(&e, str)) {
-	    break;
-	}
-    }
-    dt = clock_micro() - start;
-    if (OJ_OK != e.code) {
-	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
-	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
-	return -1;
-    }
-    printf("oj_validate_str  %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-#endif
-    struct _ojParser	p;
-    ojVal		v;
 
     oj_val_parser_init(&p);
     start = clock_micro();
@@ -259,31 +146,25 @@ bench_parse(const char *filename, int64_t iter) {
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
-    if (OJ_OK != e.code) {
-	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
-	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
-	return -1;
-    }
-    printf("oj_val_parse_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    print_results("oj_val_parse_str", iter, dt, &p.err);
 
-#if 0
     memset(&p, 0, sizeof(p));
-
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_parser_reset(&p);
 	oj_parse_str(&p, str);
     }
     dt = clock_micro() - start;
-    if (OJ_OK != e.code) {
-	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
-	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
-	return -1;
+    print_results("oj_parse_str", iter, dt, &p.err);
+
+    start = clock_micro();
+    for (int i = iter; 0 < i; i--) {
+	if (OJ_OK != oj_validate_str(&err, str)) {
+	    break;
+	}
     }
-    printf("oj_parse_str     %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-#endif
+    dt = clock_micro() - start;
+    print_results("oj_validate_str", iter, dt, &err);
+
     if (NULL != buf) {
 	free(buf);
     }
@@ -300,62 +181,47 @@ destroy_cb(ojVal val, void *ctx) {
 
 static int
 bench_parse_many(const char *filename) {
-    struct _ojcErr	err = OJC_ERR_INIT;
+    struct _ojErr	err = OJ_ERR_INIT;
     int64_t		dt;
-    ojcVal		ojc;
     const char		*str = json;
     char		*buf = NULL;
     long		iter = 0;
-    struct _ojErr	e = OJ_ERR_INIT;
     struct _ojParser	p;
+    ojVal		v;
+    int64_t		start;
 
-    //int64_t	start = clock_micro();
+    printf("oj_val_parse_file includes file load time in results\n");
+    oj_val_parser_init(&p);
+    start = clock_micro();
+    v = oj_val_parse_file(&p, filename, destroy_cb, &iter);
+    dt = clock_micro() - start;
+    print_results("oj_val_parse_file", iter, dt, &p.err);
 
     if (NULL != filename) {
-	//int64_t	t0 = clock_micro();
+	int64_t	t0 = clock_micro();
+
 	buf = load_file(filename);
 	str = buf;
-	//printf("*** file loaded in %0.3f msec\n", (double)(clock_micro() - t0) / 1000.0);
+	printf("%s loaded in %0.3f msec\n", filename, (double)(clock_micro() - t0) / 1000.0);
     }
+    iter = 0;
+
     oj_val_parser_init(&p);
-    int64_t	start = clock_micro();
-
-    oj_val_parse_str(&p, str, destroy_cb, &iter);
+    start = clock_micro();
+    v = oj_val_parse_str(&p, str, destroy_cb, &iter);
     dt = clock_micro() - start;
-    if (OJ_OK != e.code) {
-	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
-	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
-	return -1;
-    }
-    printf("oj_parse_str    %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    print_results("oj_val_parse_str", iter, dt, &p.err);
+
+    memset(&p, 0, sizeof(p));
+    start = clock_micro();
+    oj_parse_str(&p, str);
+    dt = clock_micro() - start;
+    print_results("oj_parse_str", iter, dt, &p.err);
 
     start = clock_micro();
-    if (OJ_OK != oj_validate_str(&e, str)) {
-	printf("*** Error: %s\n", e.msg);
-	return -1;
-    }
-
+    oj_validate_str(&err, str);
     dt = clock_micro() - start;
-    if (OJ_OK != e.code) {
-	printf("*** Error: %s at %d:%d\n", e.msg, e.line, e.col);
-	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
-	return -1;
-    }
-    printf("oj_validate_str %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
-
-    start = clock_micro();
-    ojc = ojc_parse_str(&err, str, noop_cb, NULL);
-    ojc_destroy(ojc);
-
-    dt = clock_micro() - start;
-    if (OJC_OK != err.code) {
-	printf("*** Error: %s\n", err.msg);
-	return -1;
-    }
-    printf("ojc_parse_str   %lld entries in %8.3f msecs. (%5d iterations/msec)\n",
-	   (long long)iter, (double)dt / 1000.0, (int)((double)iter * 1000.0 / (double)dt));
+    print_results("oj_validate_str", iter, dt, &err);
 
     if (NULL != buf) {
 	free(buf);
@@ -363,6 +229,7 @@ bench_parse_many(const char *filename) {
     return 0;
 }
 
+#if 0
 static char*
 mem_use(char *buf, size_t size) {
     struct rusage	usage;
@@ -395,13 +262,12 @@ bench_parse_file(const char *filename) {
     struct _ojParser	p;
     //struct depth_cnt	dc = { .depth = 0, .cnt = 0 };
     long		iter = 0;
-    struct _ojErr	e = OJ_ERR_INIT;
 
-    memset(&p, 0, sizeof(p));
+    oj_val_parser_init(&p);
 
     int64_t	start = clock_micro();
 
-    oj_val_parse_file(&e, filename, destroy_cb, &iter);
+    oj_val_parse_file(&p, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
 
     char	mem[16];
@@ -415,6 +281,7 @@ bench_parse_file(const char *filename) {
 
     return 0;
 }
+#endif
 
 extern void	debug_report();
 
@@ -426,7 +293,7 @@ main(int argc, char **argv) {
    if (1 < argc) {
 	filename = argv[1];
 
-	bench_parse_file(filename);
+	//bench_parse_file(filename);
 
 	if (2 < argc) {
 	    iter = strtoll(argv[2], NULL, 10);
