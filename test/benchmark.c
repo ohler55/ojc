@@ -79,7 +79,7 @@ walk_oj(ojVal val) {
     }
     return cnt;
 }
-#end
+#endif
 
 static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be representative of an actual message.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";
 //static const char	json[] = "{\"level\":\"INFO\",\"message\":\"This is a log message that is long enough to be.\",\"msgType\":1,\"source\":\"Test\",\"thread\":\"main\",\"timestamp\":1400000000000000000,\"version\":1,\"where\":[{\"file\":\"my-file.c\",\"line\":123}]}";

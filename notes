@@ -7,6 +7,9 @@
  - test with callback parser - noop
   - separate app
 
+ - make Parser.val be a pointer
+  - create and fill in each time
+  - back on feee list at end
  - single app for benchmark results
    - app <parse|file|validate|write> <filename> <iter>
    - output is json {name, duration, mem-use, error}
