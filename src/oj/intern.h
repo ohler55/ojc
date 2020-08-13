@@ -16,8 +16,8 @@ extern "C" {
     extern ojStatus	oj_err_set(ojErr err, int code, const char *fmt, ...);
     extern ojStatus	oj_err_no(ojErr err, const char *fmt, ...);
 
-    extern void		_oj_val_set_str(ojParser p, const char *s, size_t len);
-    extern void		_oj_val_set_key(ojParser p, const char *s, size_t len);
+    extern void		_oj_val_set_str(ojVal val, const char *s, size_t len);
+    extern void		_oj_val_set_key(ojVal val, const char *s, size_t len);
     extern void		_oj_append_str(ojParser p, ojStr str, const byte *s, size_t len);
     extern void		_oj_append_num(ojParser p, const char *s, size_t len);
 

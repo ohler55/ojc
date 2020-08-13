@@ -63,7 +63,7 @@ parse_jsons(struct _data *dp) {
 }
 
 static void
-parse_test() {
+parse_mixed_test() {
     char	big[128];
     char	big_cut[128];
 
@@ -93,6 +93,7 @@ parse_test() {
     bigger_cut[131] = 't';
 
     struct _data	cases[] = {
+/*
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
 	{.json = "\"\\u3074ー\\u305fー\"", .status = OJ_OK, .expect = "\"ぴーたー\"" },
@@ -101,7 +102,7 @@ parse_test() {
 	{.json = big_cut, .status = OJ_OK },
 	{.json = bigger, .status = OJ_OK },
 	{.json = bigger_cut, .status = OJ_OK },
-
+*/
 	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
@@ -189,7 +190,7 @@ parse_bignum_test() {
 
 void
 append_parse_tests(Test tests) {
-    ut_append(tests, "parse", parse_test);
+    ut_append(tests, "parse.mixed", parse_mixed_test);
     ut_append(tests, "parse.int", parse_int_test);
     ut_append(tests, "parse.decimal", parse_decimal_test);
     ut_append(tests, "parse.bignum", parse_bignum_test);

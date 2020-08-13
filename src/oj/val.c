@@ -266,6 +266,7 @@ oj_destroy(ojVal val) {
 
 static void
 push(ojVal val, struct _ojParser *p) {
+/*
     ojVal	v = oj_val_create();
 
     *v = *val;
@@ -288,14 +289,17 @@ push(ojVal val, struct _ojParser *p) {
 	    p->vals[p->depth] = v;
 	}
     }
+*/
 }
 
 static void
 pop(struct _ojParser *p) {
+    /*
     if (0 == p->depth && NULL != p->cb) {
 	p->cb(*p->vals, p->ctx);
 	*p->vals = NULL;
     }
+    */
 }
 
 void
@@ -313,7 +317,7 @@ oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx) {
     if (OJ_OK != p->err.code) {
 	return NULL;
     }
-    return p->vals[0];
+    return p->results;
 }
 
 ojVal
@@ -332,7 +336,7 @@ oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ct
     if (OJ_OK != p->err.code) {
 	return NULL;
     }
-    return p->vals[0];
+    return p->results;
 }
 
 ojVal
@@ -352,7 +356,7 @@ oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
 	}
 	return NULL;
     }
-    return p.vals[0];
+    return p.results;
 }
 
 ojVal
@@ -485,6 +489,19 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	}
     }
     return oj_buf_len(buf) - start;
+}
+
+char*
+oj_to_str(ojVal val, int indent) {
+    struct _ojBuf	buf;
+
+    oj_buf_init(&buf, 0);
+    oj_buf(&buf, val, 0, 0);
+    oj_buf_append(&buf, '\0');
+    if (buf.base == buf.head) {
+	return strdup(buf.head);
+    }
+    return buf.head;
 }
 
 ojStatus
@@ -713,88 +730,83 @@ oj_val_object_get(ojVal val, const char *key) {
 }
 
 void
-_oj_val_set_key(ojParser p, const char *s, size_t len) {
-    if (len < sizeof(p->val.key.raw)) {
-	memcpy(p->val.key.raw, s, len);
-	p->val.key.raw[len] = '\0';
+_oj_val_set_key(ojVal val, const char *s, size_t len) {
+    if (len < sizeof(val->key.raw)) {
+	memcpy(val->key.raw, s, len);
+	val->key.raw[len] = '\0';
     } else if (len < sizeof(union ojS4k)) {
 	union ojS4k	*s4k = s4k_create();
 
-	p->val.key.s4k = s4k;
-	memcpy(p->val.key.s4k->str, s, len);
-	p->val.key.s4k->str[len] = '\0';
+	val->key.s4k = s4k;
+	memcpy(val->key.s4k->str, s, len);
+	val->key.s4k->str[len] = '\0';
     } else {
-	p->val.key.ptr = (char*)OJ_MALLOC(len + 1);
-	p->val.key.cap = len + 1;
-	memcpy(p->val.key.ptr, s, len);
-	p->val.key.ptr[len] = '\0';
+	val->key.ptr = (char*)OJ_MALLOC(len + 1);
+	val->key.cap = len + 1;
+	memcpy(val->key.ptr, s, len);
+	val->key.ptr[len] = '\0';
     }
-    p->val.key.len = len;
+    val->key.len = len;
 }
 
 void
-_oj_val_set_str(ojParser p, const char *s, size_t len) {
-    if (len < sizeof(p->val.str.raw)) {
-	memcpy(p->val.str.raw, s, len);
-	p->val.str.raw[len] = '\0';
+_oj_val_set_str(ojVal val, const char *s, size_t len) {
+    if (len < sizeof(val->str.raw)) {
+	memcpy(val->str.raw, s, len);
+	val->str.raw[len] = '\0';
     } else if (len < sizeof(union ojS4k)) {
 	union ojS4k	*s4k = s4k_create();
 
-	p->val.str.s4k = s4k;
-	memcpy(p->val.str.s4k->str, s, len);
-	p->val.str.s4k->str[len] = '\0';
+	val->str.s4k = s4k;
+	memcpy(val->str.s4k->str, s, len);
+	val->str.s4k->str[len] = '\0';
     } else {
-	p->val.str.ptr = (char*)OJ_MALLOC(len + 1);
-	if (NULL == p->val.str.ptr) {
-	    OJ_ERR_MEM(&p->err, "string");
-	    p->val.str.len = 0;
-	    return;
-	}
-	memcpy(p->val.str.ptr, s, len);
-	p->val.str.ptr[len] = '\0';
+	val->str.ptr = (char*)OJ_MALLOC(len + 1);
+	memcpy(val->str.ptr, s, len);
+	val->str.ptr[len] = '\0';
     }
-    p->val.str.len = len;
+    val->str.len = len;
 }
 
 void
 _oj_append_num(ojParser p, const char *s, size_t len) {
-    size_t	nl = p->val.num.len + len;
+    size_t	nl = p->stack->num.len + len;
 
-    if (p->val.num.len < sizeof(p->val.num.raw)) {
-	if (nl < sizeof(p->val.num.raw)) {
-	    memcpy(p->val.num.raw + p->val.num.len, s, len);
-	    p->val.num.raw[nl] = '\0';
+    if (p->stack->num.len < sizeof(p->stack->num.raw)) {
+	if (nl < sizeof(p->stack->num.raw)) {
+	    memcpy(p->stack->num.raw + p->stack->num.len, s, len);
+	    p->stack->num.raw[nl] = '\0';
 	} else {
 	    size_t	cap = nl * 3 / 2;
 	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
 		OJ_ERR_MEM(&p->err, "number");
-		p->val.num.len = 0;
+		p->stack->num.len = 0;
 		return;
 	    }
-	    memcpy(ptr, p->val.num.raw, p->val.num.len);
-	    memcpy(ptr + p->val.num.len, s, len);
+	    memcpy(ptr, p->stack->num.raw, p->stack->num.len);
+	    memcpy(ptr + p->stack->num.len, s, len);
 	    ptr[nl] = '\0';
-	    p->val.num.cap = cap;
-	    p->val.num.ptr = ptr;
+	    p->stack->num.cap = cap;
+	    p->stack->num.ptr = ptr;
 	}
     } else {
-	if (nl < p->val.num.cap) {
-	    memcpy(p->val.num.ptr + p->val.num.len, s, len);
+	if (nl < p->stack->num.cap) {
+	    memcpy(p->stack->num.ptr + p->stack->num.len, s, len);
 	} else {
-	    p->val.num.cap = nl * 3 / 2;
-	    if (NULL == (p->val.num.ptr = OJ_REALLOC(p->val.num.ptr, p->val.num.cap))) {
+	    p->stack->num.cap = nl * 3 / 2;
+	    if (NULL == (p->stack->num.ptr = OJ_REALLOC(p->stack->num.ptr, p->stack->num.cap))) {
 		OJ_ERR_MEM(&p->err, "string");
-		p->val.num.len = 0;
+		p->stack->num.len = 0;
 		return;
 	    } else {
-		memcpy(p->val.num.ptr + p->val.num.len, s, len);
+		memcpy(p->stack->num.ptr + p->stack->num.len, s, len);
 	    }
 	}
-	p->val.num.ptr[nl] = '\0';
+	p->stack->num.ptr[nl] = '\0';
     }
-    p->val.num.len = nl;
+    p->stack->num.len = nl;
 }
 
 void
@@ -873,5 +885,5 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 
 void
 _oj_val_append_str(ojParser p, const byte *s, size_t len) {
-    _oj_append_str(p, &p->val.str, s, len);
+    _oj_append_str(p, &p->stack->str, s, len);
 }

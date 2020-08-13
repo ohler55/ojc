@@ -16,7 +16,7 @@ main(int argc, char **argv) {
     struct _Test	tests[1024] = { { NULL, NULL } };
 
     append_validate_tests(tests);
-    append_pushpop_tests(tests);
+    //append_pushpop_tests(tests);
     append_parse_tests(tests);
     append_chunk_tests(tests);
 

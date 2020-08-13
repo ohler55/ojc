@@ -138,7 +138,6 @@ bench_parse(const char *filename, int64_t iter) {
 	buf = load_file(filename);
 	str = buf;
     }
-
     oj_val_parser_init(&p);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
@@ -147,7 +146,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     dt = clock_micro() - start;
     print_results("oj_val_parse_str", iter, dt, &p.err);
-
+/*
     memset(&p, 0, sizeof(p));
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
@@ -155,7 +154,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &p.err);
-
+*/
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
 	if (OJ_OK != oj_validate_str(&err, str)) {
@@ -211,13 +210,13 @@ bench_parse_many(const char *filename) {
     v = oj_val_parse_str(&p, str, destroy_cb, &iter);
     dt = clock_micro() - start;
     print_results("oj_val_parse_str", iter, dt, &p.err);
-
+/*
     memset(&p, 0, sizeof(p));
     start = clock_micro();
     oj_parse_str(&p, str);
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &p.err);
-
+*/
     start = clock_micro();
     oj_validate_str(&err, str);
     dt = clock_micro() - start;

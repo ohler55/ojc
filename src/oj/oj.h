@@ -54,7 +54,7 @@ extern "C" {
     } ojType;
 
     typedef enum {
-	OJ_OBJ_RAW	= 'r',
+	OJ_OBJ_RAW	= '\0',
 	OJ_OBJ_HASH	= 'h',
     } ojMod;
 
@@ -133,20 +133,17 @@ extern "C" {
     typedef struct _ojParser {
 	const char	*map;
 	const char	*next_map;
-	struct _ojVal	val; // working val
+	ojVal		stack;
+	ojVal		results;
 	struct _ojErr	err;
 	void		(*push)(ojVal val, struct _ojParser *p);
 	void		(*pop)(struct _ojParser *p);
 	ojParseCallback	cb;
 	void		*ctx;
 
-	int		depth;
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
-	// TBD change this stack to be expandable
-	ojVal		vals[256];
-	char		stack[256];
     } *ojParser;
 
     // General functions.
