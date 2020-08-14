@@ -74,7 +74,7 @@ typedef struct _ReadBlock {
 } *ReadBlock;
 
 typedef struct _ReadCtx {
-    struct _ReadBlock	blocks[4];
+    struct _ReadBlock	blocks[8];
     ReadBlock		bend;
     int			fd;
 } *ReadCtx;

@@ -184,15 +184,15 @@ bench_parse_many(const char *filename) {
     const char		*str = json;
     char		*buf = NULL;
     long		iter = 0;
-    ojVal		v;
     int64_t		start;
 
     printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
-    v = oj_parse_file(&err, filename, destroy_cb, &iter);
+    oj_parse_file(&err, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
     print_results("oj_parse_file", iter, dt, &err);
 
+    start = clock_micro();
     if (NULL != filename) {
 	int64_t	t0 = clock_micro();
 
@@ -202,8 +202,7 @@ bench_parse_many(const char *filename) {
     }
     iter = 0;
 
-    start = clock_micro();
-    v = oj_parse_str(&err, str, destroy_cb, &iter);
+    oj_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &err);
 /*
