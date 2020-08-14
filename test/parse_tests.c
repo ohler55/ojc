@@ -117,7 +117,7 @@ parse_int_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    int64_t	i = oj_val_get_int(val);
+    int64_t	i = oj_int_get(val);
 
     ut_same_int(12345, i, "parse int");
     oj_destroy(val);
@@ -133,7 +133,7 @@ parse_decimal_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val, true);
+    long double	d = oj_double_get(val, true);
 
     ut_same_double(12.345, d, 0.0001, "parse decimal");
 
@@ -151,7 +151,7 @@ parse_bignum_test() {
 	return;
     }
     const char	*num;
-    int64_t	i = oj_val_get_int(val);
+    int64_t	i = oj_int_get(val);
 
     ut_same_int(-9223372036854775807, i, "parse bignum");
     oj_destroy(val);
@@ -161,9 +161,9 @@ parse_bignum_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    i = oj_val_get_int(val);
+    i = oj_int_get(val);
     ut_same_int(0, i, "parse bignum");
-    num = oj_val_get_bignum(val);
+    num = oj_bignum_get(val);
     ut_same("9223372036854775808", num);
     oj_destroy(val);
 
@@ -172,10 +172,10 @@ parse_bignum_test() {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val, true);
+    long double	d = oj_double_get(val, true);
 
     ut_same_double(0.0, d, 0.0001, "parse bignum");
-    num = oj_val_get_bignum(val);
+    num = oj_bignum_get(val);
     ut_same("-1.2e12345", num);
 
     oj_destroy(val);

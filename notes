@@ -7,15 +7,6 @@
  - test with callback parser - noop
   - separate app
 
- - rename oj_val_parse_str to oj_parse_str
- - implement push-pop parser
-  - put object and array on stack as for val parser
-   - on pop, destory/free
-    - later could save for reuse
-  - for others, use and put on ready
-
- - rename - remove _val from get functions
-
  - single app for benchmark results
    - app <parse|file|validate|write> <filename> <iter>
    - output is json {name, duration, mem-use, error}

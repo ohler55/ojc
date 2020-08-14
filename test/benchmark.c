@@ -124,6 +124,19 @@ print_results(const char *name, int64_t iter, int64_t usec, ojErr err) {
     }
 }
 
+static void
+push_cb(ojVal val, void *ctx) {
+/*
+    if (3 == val->key.len && 0 == strcmp("alg", val->key.raw) && NULL != ctx) {
+	*(long*)ctx = *(long*)ctx + 1;
+    }
+*/
+}
+
+static void
+pop_cb(void *ctx) {
+}
+
 static int
 bench_parse(const char *filename, int64_t iter) {
     int64_t		dt;
@@ -144,15 +157,16 @@ bench_parse(const char *filename, int64_t iter) {
     }
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &err);
-/*
-    memset(&p, 0, sizeof(p));
+
+    oj_err_init(&err);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_pp_parse_str(&p, str);
+	oj_pp_parse_str(&err, str, push_cb, pop_cb, NULL);
     }
     dt = clock_micro() - start;
-    print_results("oj_pp_parse_str", iter, dt, &p.err);
-*/
+    print_results("oj_pp_parse_str", iter, dt, &err);
+
+    oj_err_init(&err);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
 	if (OJ_OK != oj_validate_str(&err, str)) {
@@ -171,7 +185,6 @@ bench_parse(const char *filename, int64_t iter) {
 static bool
 destroy_cb(ojVal val, void *ctx) {
     //walk_oj(val);
-    oj_val_object_find(val, "alg", 3);
     oj_destroy(val);
     *(long*)ctx = *(long*)ctx + 1;
     return true;
@@ -184,6 +197,7 @@ bench_parse_many(const char *filename) {
     const char		*str = json;
     char		*buf = NULL;
     long		iter = 0;
+    int64_t		file_load_time;
     int64_t		start;
 
     printf("oj_parse_file includes file load time in results\n");
@@ -200,21 +214,25 @@ bench_parse_many(const char *filename) {
 	str = buf;
 	printf("%s loaded in %0.3f msec\n", filename, (double)(clock_micro() - t0) / 1000.0);
     }
+    file_load_time = clock_micro() - start;
     iter = 0;
 
+    start = clock_micro();
     oj_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
+    dt += file_load_time;
     print_results("oj_parse_str", iter, dt, &err);
-/*
-    memset(&p, 0, sizeof(p));
+
     start = clock_micro();
-    oj_pp_parse_str(&p, str);
+    oj_pp_parse_str(&err, str, push_cb, pop_cb, NULL);
     dt = clock_micro() - start;
-    print_results("oj_pp_parse_str", iter, dt, &p.err);
-*/
+    dt += file_load_time;
+    print_results("oj_pp_parse_str", iter, dt, &err);
+
     start = clock_micro();
     oj_validate_str(&err, str);
     dt = clock_micro() - start;
+    dt += file_load_time;
     print_results("oj_validate_str", iter, dt, &err);
 
     if (NULL != buf) {

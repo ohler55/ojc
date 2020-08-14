@@ -11,6 +11,7 @@
 #include "intern.h"
 
 #define USE_THREAD_LIMIT	100000
+#define DEBUG	0
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -427,9 +428,6 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	    val->key.len = 0;
 	    val->next = p->stack;
 	    p->stack = val;
-	    if (OJ_ARRAY == type || OJ_OBJECT == type) {
-		p->push(val, p->ctx);
-	    }
 	} else {
 	    val = oj_val_create();
 	    val->type = type;
@@ -437,9 +435,10 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	    val->key.len = 0;
 	    val->next = p->stack;
 	    p->stack = val;
-	    if (OJ_ARRAY == type || OJ_OBJECT == type) {
-		p->push(val, p->ctx);
-	    }
+	}
+	if (OJ_ARRAY == type || OJ_OBJECT == type) {
+	    val->list.head = NULL;
+	    p->push(val, p->ctx);
 	}
     } else {
 	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member

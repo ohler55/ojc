@@ -264,62 +264,6 @@ oj_destroy(ojVal val) {
     }
 }
 
-#if 0
-static void
-push(ojVal val, struct _ojParser *p) {
-/*
-    ojVal	v = oj_val_create();
-
-    *v = *val;
-    if (0 < p->depth) {
-	ojVal	parent = p->vals[p->depth - 1];
-
-	if (NULL == parent->list.head) {
-	    parent->list.head = v;
-	} else {
-	    parent->list.tail->next = v;
-	}
-	parent->list.tail = v;
-    }
-    if (OJ_OBJECT == v->type || OJ_ARRAY == v->type) {
-	p->vals[p->depth] = v;
-    } else if (0 == p->depth) {
-	if (NULL != p->cb) {
-	    p->cb(v, p->ctx);
-	} else {
-	    p->vals[p->depth] = v;
-	}
-    }
-*/
-}
-
-static void
-pop(struct _ojParser *p) {
-    /*
-    if (0 == p->depth && NULL != p->cb) {
-	p->cb(*p->vals, p->ctx);
-	*p->vals = NULL;
-    }
-    */
-}
-#endif
-
-ojVal
-oj_val_parse_strp(ojErr err, const char **json) {
-
-    // TBD
-
-    return NULL;
-}
-
-ojVal
-oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf) {
-
-    // TBD
-
-    return NULL;
-}
-
 static void
 buf_append_json(ojBuf buf, const char *s) {
     // TBD might be faster moving forward until a special char and then appending the string up till then
@@ -478,7 +422,7 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
 }
 
 const char*
-oj_val_key(ojVal val) {
+oj_key(ojVal val) {
     const char	*k = NULL;
 
     if (NULL != val) {
@@ -494,7 +438,7 @@ oj_val_key(ojVal val) {
 }
 
 const char*
-oj_val_get_str(ojVal val) {
+oj_str_get(ojVal val) {
     const char	*s = NULL;
 
     if (NULL != val && OJ_STRING == val->type) {
@@ -510,7 +454,7 @@ oj_val_get_str(ojVal val) {
 }
 
 int64_t
-oj_val_get_int(ojVal val) {
+oj_int_get(ojVal val) {
     int64_t	i = 0;
 
     if (NULL != val && OJ_INT == val->type) {
@@ -534,7 +478,7 @@ oj_val_get_int(ojVal val) {
 }
 
 long double
-oj_val_get_double(ojVal val, bool prec) {
+oj_double_get(ojVal val, bool prec) {
     long double	d = 0.0;
 
     if (NULL != val && OJ_DECIMAL == val->type) {
@@ -557,7 +501,7 @@ oj_val_get_double(ojVal val, bool prec) {
 }
 
 const char*
-oj_val_get_bignum(ojVal val) {
+oj_bignum_get(ojVal val) {
     const char	*s = NULL;
 
     if (NULL != val) {
@@ -586,7 +530,7 @@ oj_val_get_bignum(ojVal val) {
 }
 
 ojVal
-oj_val_array_first(ojVal val) {
+oj_array_first(ojVal val) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_ARRAY == val->type) {
@@ -596,7 +540,7 @@ oj_val_array_first(ojVal val) {
 }
 
 ojVal
-oj_val_array_last(ojVal val) {
+oj_array_last(ojVal val) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_ARRAY == val->type) {
@@ -606,7 +550,7 @@ oj_val_array_last(ojVal val) {
 }
 
 ojVal
-oj_val_array_nth(ojVal val, int n) {
+oj_array_nth(ojVal val, int n) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_ARRAY == val->type) {
@@ -617,7 +561,7 @@ oj_val_array_nth(ojVal val, int n) {
 }
 
 ojVal
-oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
+oj_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
     ojVal	v = NULL;
 
     if (NULL != val) {
@@ -658,7 +602,7 @@ oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
 }
 
 ojVal
-oj_val_object_get(ojVal val, const char *key, int len) {
+oj_object_get(ojVal val, const char *key, int len) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_OBJECT == val->type) {
@@ -666,14 +610,14 @@ oj_val_object_get(ojVal val, const char *key, int len) {
 	    v = val->list.head;
 	    // memset(val->hash, 0, sizeof(val->hash));
 	    for (; NULL != v; v = v->next) {
-		v->kh = calc_hash(oj_val_key(v), val->key.len);
+		v->kh = calc_hash(oj_key(v), val->key.len);
 		// place into hash
 	    }
 	    // TBD val->type = OJ_OBJ_HASH;
 
 	    // TBD until then...
 	    for (v = val->list.head; NULL != v; v = v->next) {
-		if (len == v->key.len && 0 == strcmp(key, oj_val_key(v))) {
+		if (len == v->key.len && 0 == strcmp(key, oj_key(v))) {
 		    break;
 		}
 	    }
@@ -683,13 +627,13 @@ oj_val_object_get(ojVal val, const char *key, int len) {
 }
 
 ojVal
-oj_val_object_find(ojVal val, const char *key, int len) {
+oj_object_find(ojVal val, const char *key, int len) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_OBJECT == val->type) {
 	if (OJ_OBJ_RAW == val->mod) {
 	    for (v = val->list.head; NULL != v; v = v->next) {
-		if (len == v->key.len && 0 == strncmp(key, oj_val_key(v), len)) {
+		if (len == v->key.len && 0 == strncmp(key, oj_key(v), len)) {
 		    break;
 		}
 	    }
