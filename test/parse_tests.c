@@ -17,11 +17,9 @@ parse_jsons(struct _data *dp) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
     struct _ojBuf	buf;
-    struct _ojParser	p;
 
-    oj_val_parser_init(&p);
     for (; NULL != dp->json; dp++) {
-	val = oj_val_parse_str(&p, dp->json, NULL, NULL);
+	val = oj_parse_str(&err, dp->json, NULL, NULL);
 	if (OJ_OK == dp->status) {
 	    bool	ok;
 
@@ -63,7 +61,7 @@ parse_jsons(struct _data *dp) {
 }
 
 static void
-parse_test() {
+parse_mixed_test() {
     char	big[128];
     char	big_cut[128];
 
@@ -93,6 +91,7 @@ parse_test() {
     bigger_cut[131] = 't';
 
     struct _data	cases[] = {
+/*
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
 	{.json = "\"\\u3074ー\\u305fー\"", .status = OJ_OK, .expect = "\"ぴーたー\"" },
@@ -101,7 +100,7 @@ parse_test() {
 	{.json = big_cut, .status = OJ_OK },
 	{.json = bigger, .status = OJ_OK },
 	{.json = bigger_cut, .status = OJ_OK },
-
+*/
 	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
@@ -111,16 +110,14 @@ parse_test() {
 static void
 parse_int_test() {
     struct _ojErr	err = OJ_ERR_INIT;
-    struct _ojParser	p;
     ojVal		val;
 
-    oj_val_parser_init(&p);
-    val = oj_val_parse_str(&p, "12345", NULL, NULL);
+    val = oj_parse_str(&err, "12345", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    int64_t	i = oj_val_get_int(val);
+    int64_t	i = oj_int_get(val);
 
     ut_same_int(12345, i, "parse int");
     oj_destroy(val);
@@ -130,15 +127,13 @@ static void
 parse_decimal_test() {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
-    struct _ojParser	p;
 
-    oj_val_parser_init(&p);
-    val = oj_val_parse_str(&p, "12.345", NULL, NULL);
+    val = oj_parse_str(&err, "12.345", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val, true);
+    long double	d = oj_double_get(val, true);
 
     ut_same_double(12.345, d, 0.0001, "parse decimal");
 
@@ -147,41 +142,40 @@ parse_decimal_test() {
 
 static void
 parse_bignum_test() {
+    struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
-    struct _ojParser	p;
 
-    oj_val_parser_init(&p);
-    val = oj_val_parse_str(&p, "-9223372036854775807", NULL, NULL);
-    if (ut_handle_oj_error(&p.err)) {
-	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
+    val = oj_parse_str(&err, "-9223372036854775807", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
     const char	*num;
-    int64_t	i = oj_val_get_int(val);
+    int64_t	i = oj_int_get(val);
 
     ut_same_int(-9223372036854775807, i, "parse bignum");
     oj_destroy(val);
 
-    val = oj_val_parse_str(&p, "9223372036854775808", NULL, NULL);
-    if (ut_handle_oj_error(&p.err)) {
-	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
+    val = oj_parse_str(&err, "9223372036854775808", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    i = oj_val_get_int(val);
+    i = oj_int_get(val);
     ut_same_int(0, i, "parse bignum");
-    num = oj_val_get_bignum(val);
+    num = oj_bignum_get(val);
     ut_same("9223372036854775808", num);
     oj_destroy(val);
 
-    val = oj_val_parse_str(&p, "-1.2e12345", NULL, NULL);
-    if (ut_handle_oj_error(&p.err)) {
-	ut_print("error at %d:%d\n",  p.err.line, p.err.col);
+    val = oj_parse_str(&err, "-1.2e12345", NULL, NULL);
+    if (ut_handle_oj_error(&err)) {
+	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    long double	d = oj_val_get_double(val, true);
+    long double	d = oj_double_get(val, true);
 
     ut_same_double(0.0, d, 0.0001, "parse bignum");
-    num = oj_val_get_bignum(val);
+    num = oj_bignum_get(val);
     ut_same("-1.2e12345", num);
 
     oj_destroy(val);
@@ -189,7 +183,7 @@ parse_bignum_test() {
 
 void
 append_parse_tests(Test tests) {
-    ut_append(tests, "parse", parse_test);
+    ut_append(tests, "parse.mixed", parse_mixed_test);
     ut_append(tests, "parse.int", parse_int_test);
     ut_append(tests, "parse.decimal", parse_decimal_test);
     ut_append(tests, "parse.bignum", parse_bignum_test);

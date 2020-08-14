@@ -54,7 +54,7 @@ extern "C" {
     } ojType;
 
     typedef enum {
-	OJ_OBJ_RAW	= 'r',
+	OJ_OBJ_RAW	= '\0',
 	OJ_OBJ_HASH	= 'h',
     } ojMod;
 
@@ -133,20 +133,23 @@ extern "C" {
     typedef struct _ojParser {
 	const char	*map;
 	const char	*next_map;
-	struct _ojVal	val; // working val
+	ojVal		stack;
+	ojVal		results;
 	struct _ojErr	err;
-	void		(*push)(ojVal val, struct _ojParser *p);
-	void		(*pop)(struct _ojParser *p);
+
+	// for push-pull parser
+	void		(*push)(ojVal val, void *ctx);
+	void		(*pop)(void *ctx);
+	ojVal		ready;
+
 	ojParseCallback	cb;
 	void		*ctx;
 
-	int		depth;
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
-	// TBD change this stack to be expandable
-	ojVal		vals[256];
-	char		stack[256];
+	bool		pp;
+	bool		has_cb;
     } *ojParser;
 
     // General functions.
@@ -159,24 +162,21 @@ extern "C" {
 
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
-    extern void		oj_parser_reset(ojParser p);
+    extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
-    extern ojStatus	oj_parse_str(ojParser p, const char *json);
+
+    extern ojStatus	oj_pp_parse_str(ojErr		err,
+					const char	*json,
+					void		(*push)(ojVal val, void *ctx),
+					void		(*pop)(void * ctx),
+					void		*ctx);
+
+
     extern ojStatus	oj_parse_strp(ojParser p, const char **json);
-    extern ojStatus	oj_parse_file(ojParser p, const char *filename);
-    extern ojStatus	oj_parse_fd(ojParser p, int fd);
-
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
-
-    extern void		oj_val_parser_init(ojParser p);
-    extern ojVal	oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx);
-
-    extern ojVal	oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
-
-    extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
-    extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
@@ -185,17 +185,18 @@ extern "C" {
     // TBD set functions and add/append/insert
     // TBD create functions
 
-    extern const char*	oj_val_key(ojVal val);
-    extern const char*	oj_val_get_str(ojVal val);
-    extern int64_t	oj_val_get_int(ojVal val);
-    extern long double	oj_val_get_double(ojVal val, bool prec);
-    extern const char*	oj_val_get_bignum(ojVal val);
-    extern ojVal	oj_val_array_first(ojVal val);
-    extern ojVal	oj_val_array_last(ojVal val);
-    extern ojVal	oj_val_array_nth(ojVal val, int n);
-    extern ojVal	oj_val_object_get(ojVal val, const char *key);
+    extern const char*	oj_key(ojVal val);
+    extern const char*	oj_str_get(ojVal val);
+    extern int64_t	oj_int_get(ojVal val);
+    extern long double	oj_double_get(ojVal val, bool prec);
+    extern const char*	oj_bignum_get(ojVal val);
+    extern ojVal	oj_array_first(ojVal val);
+    extern ojVal	oj_array_last(ojVal val);
+    extern ojVal	oj_array_nth(ojVal val, int n);
+    extern ojVal	oj_object_get(ojVal val, const char *key, int len);
+    extern ojVal	oj_object_find(ojVal val, const char *key, int len);
     // for object and list, if cb return false then stop
-    extern ojVal	oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx);
+    extern ojVal	oj_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx);
 
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);

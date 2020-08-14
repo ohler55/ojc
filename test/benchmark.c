@@ -115,7 +115,7 @@ load_file(const char *filename) {
 static void
 print_results(const char *name, int64_t iter, int64_t usec, ojErr err) {
     if (OJ_OK != err->code) {
-	printf("%-18s: %s at %d:%d\n", name, err->msg, err->line, err->col);
+	printf("%-18s: [%d] %s at %d:%d\n", name, err->code, err->msg, err->line, err->col);
     } else {
 	double	per = (double)usec / (double)iter;
 
@@ -124,13 +124,25 @@ print_results(const char *name, int64_t iter, int64_t usec, ojErr err) {
     }
 }
 
+static void
+push_cb(ojVal val, void *ctx) {
+/*
+    if (3 == val->key.len && 0 == strcmp("alg", val->key.raw) && NULL != ctx) {
+	*(long*)ctx = *(long*)ctx + 1;
+    }
+*/
+}
+
+static void
+pop_cb(void *ctx) {
+}
+
 static int
 bench_parse(const char *filename, int64_t iter) {
     int64_t		dt;
     const char		*str = json;
     char		*buf = NULL;
     struct _ojErr	err = OJ_ERR_INIT;
-    struct _ojParser	p;
     ojVal		v;
     int64_t		start;
 
@@ -138,24 +150,23 @@ bench_parse(const char *filename, int64_t iter) {
 	buf = load_file(filename);
 	str = buf;
     }
-
-    oj_val_parser_init(&p);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&p, str, NULL, NULL);
+	v = oj_parse_str(&err, str, NULL, NULL);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
-    print_results("oj_val_parse_str", iter, dt, &p.err);
+    print_results("oj_parse_str", iter, dt, &err);
 
-    memset(&p, 0, sizeof(p));
+    oj_err_init(&err);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_parse_str(&p, str);
+	oj_pp_parse_str(&err, str, push_cb, pop_cb, NULL);
     }
     dt = clock_micro() - start;
-    print_results("oj_parse_str", iter, dt, &p.err);
+    print_results("oj_pp_parse_str", iter, dt, &err);
 
+    oj_err_init(&err);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
 	if (OJ_OK != oj_validate_str(&err, str)) {
@@ -186,17 +197,16 @@ bench_parse_many(const char *filename) {
     const char		*str = json;
     char		*buf = NULL;
     long		iter = 0;
-    struct _ojParser	p;
-    ojVal		v;
+    int64_t		file_load_time;
     int64_t		start;
 
-    printf("oj_val_parse_file includes file load time in results\n");
-    oj_val_parser_init(&p);
+    printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
-    v = oj_val_parse_file(&p, filename, destroy_cb, &iter);
+    oj_parse_file(&err, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_file", iter, dt, &p.err);
+    print_results("oj_parse_file", iter, dt, &err);
 
+    start = clock_micro();
     if (NULL != filename) {
 	int64_t	t0 = clock_micro();
 
@@ -204,23 +214,25 @@ bench_parse_many(const char *filename) {
 	str = buf;
 	printf("%s loaded in %0.3f msec\n", filename, (double)(clock_micro() - t0) / 1000.0);
     }
+    file_load_time = clock_micro() - start;
     iter = 0;
 
-    oj_val_parser_init(&p);
     start = clock_micro();
-    v = oj_val_parse_str(&p, str, destroy_cb, &iter);
+    oj_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_str", iter, dt, &p.err);
+    dt += file_load_time;
+    print_results("oj_parse_str", iter, dt, &err);
 
-    memset(&p, 0, sizeof(p));
     start = clock_micro();
-    oj_parse_str(&p, str);
+    oj_pp_parse_str(&err, str, push_cb, pop_cb, NULL);
     dt = clock_micro() - start;
-    print_results("oj_parse_str", iter, dt, &p.err);
+    dt += file_load_time;
+    print_results("oj_pp_parse_str", iter, dt, &err);
 
     start = clock_micro();
     oj_validate_str(&err, str);
     dt = clock_micro() - start;
+    dt += file_load_time;
     print_results("oj_validate_str", iter, dt, &err);
 
     if (NULL != buf) {
@@ -267,10 +279,11 @@ bench_parse_file(const char *filename) {
 
     int64_t	start = clock_micro();
 
-    oj_val_parse_file(&p, filename, destroy_cb, &iter);
+    oj_parse_file(&p, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
 
     char	mem[16];
+
     if (OJ_OK != p.err.code) {
 	printf("*** Error: %s at %d:%d\n", p.err.msg, p.err.line, p.err.col);
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);

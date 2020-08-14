@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -10,6 +11,7 @@
 #include "intern.h"
 
 #define USE_THREAD_LIMIT	100000
+#define DEBUG	0
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -73,7 +75,7 @@ typedef struct _ReadBlock {
 } *ReadBlock;
 
 typedef struct _ReadCtx {
-    struct _ReadBlock	blocks[4];
+    struct _ReadBlock	blocks[8];
     ReadBlock		bend;
     int			fd;
 } *ReadCtx;
@@ -347,6 +349,18 @@ unicodeToUtf8(uint32_t code, byte *buf) {
     return buf - start;
 }
 
+#if DEBUG
+static void
+print_stack(ojParser p, const char *label) {
+    printf("*** %s\n", label);
+    for (ojVal v = p->stack; NULL != v; v = v->next) {
+	char	*s = oj_to_str(v, 0);
+	printf("  %s\n", s);
+	free(s);
+    }
+}
+#endif
+
 static ojStatus
 byteError(ojErr err, const char *map, int off, byte b) {
     err->col = off - err->col;
@@ -398,19 +412,103 @@ byteError(ojErr err, const char *map, int off, byte b) {
     return err->code;
 }
 
+static ojVal
+push_val(ojParser p, ojType type, ojMod mod) {
+    ojVal	val;
+
+    if (p->pp) {
+	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	    val = p->stack;
+	    val->type = type;
+	    val->mod = mod;
+	} else if (NULL != (val = p->ready)) {
+	    p->ready = val->next;
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	} else {
+	    val = oj_val_create();
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	}
+	if (OJ_ARRAY == type || OJ_OBJECT == type) {
+	    val->list.head = NULL;
+	    p->push(val, p->ctx);
+	}
+    } else {
+	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	    val = p->stack;
+	    val->type = type;
+	    val->mod = mod;
+	} else {
+	    val = oj_val_create();
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	}
+    }
+    return val;
+}
+
+static void
+pop_val(ojParser p) {
+    ojVal	parent;
+    ojVal	top = p->stack;
+
+    if (p->pp) {
+	if (OJ_ARRAY == top->type || OJ_OBJECT == top->type) {
+	    p->pop(p->ctx);
+	} else {
+	    p->push(top, p->ctx);
+	}
+	p->stack = top->next;
+	top->next = p->ready;
+	p->ready = top;
+	if (NULL == p->stack) {
+	    p->map = value_map;
+	} else {
+	    p->map = after_map;
+	}
+    } else {
+	if (NULL == (parent = top->next)) {
+	    if (p->has_cb) {
+		p->cb(top, p->ctx);
+	    } else {
+		top->next = p->results;
+		p->results = p->stack;
+	    }
+	    p->stack = NULL;
+	    p->map = value_map;
+	} else {
+	    if (NULL == parent->list.head) {
+		parent->list.head = top;
+	    } else {
+		parent->list.tail->next = top;
+	    }
+	    parent->list.tail = top;
+	    top->next = NULL;
+	    p->stack = parent;
+	    p->map = after_map;
+	}
+    }
+}
+
 static ojStatus
 parse(ojParser p, const byte *json) {
     const byte *start;
-/*
-    if (NULL == p->next_map) {
-	printf("*** parse with map: %c\n", p->map[256]);
-    } else {
-	printf("*** parse with map: %c and next: %c\n", p->map[256], p->next_map[256]);
-    }
-*/
-    //printf("*** %s\n", json);
+    ojVal	v;
+
+    //printf("*** parse %s\n", json);
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
+	//print_stack(p, "loop");
 	switch (p->map[*b]) {
 	case SKIP_NEWLINE:
 	    p->err.line++;
@@ -430,135 +528,101 @@ parse(ojParser p, const byte *json) {
 	case SKIP_CHAR:
 	    break;
 	case KEY_QUOTE:
+	    v = push_val(p, OJ_FREE, 0);
 	    b++;
 	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if ('"' == *b) {
-		_oj_val_set_key(p, (char*)start, b - start);
+		_oj_val_set_key(v, (char*)start, b - start);
 		p->map = colon_map;
 		break;
 	    }
-	    _oj_val_set_key(p, (char*)start, b - start);
+	    _oj_val_set_key(v, (char*)start, b - start);
 	    b--;
 	    p->map = string_map;
 	    p->next_map = colon_map;
 	    break;
 	case AFTER_COMMA:
-	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
+	    if (OJ_OBJECT == p->stack->type) {
 		p->map = key_map;
 	    } else {
 		p->map = comma_map;
 	    }
 	    break;
 	case VAL_QUOTE:
+	    v = push_val(p, OJ_STRING, 0);
 	    b++;
 	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
-	    p->val.type = OJ_STRING;
 	    if ('"' == *b) {
-		_oj_val_set_str(p, (char*)start, b - start);
-		p->push(&p->val, p);
-		p->map = (0 == p->depth) ? value_map : after_map;
+		_oj_val_set_str(v, (char*)start, b - start);
+		//p->push(&p->val, p);
+		pop_val(p);
+		p->map = (NULL == p->stack) ? value_map : after_map;
 		break;
 	    }
-	    _oj_val_set_str(p, (char*)start, b - start);
+	    _oj_val_set_str(v, (char*)start, b - start);
 	    b--;
 	    p->map = string_map;
-	    p->next_map = (0 == p->depth) ? value_map : after_map;
+	    p->next_map = (NULL == p->stack->next) ? value_map : after_map;
 	    break;
 	case OPEN_OBJECT:
-	    if (sizeof(p->stack) <= p->depth) {
-		// TBD realloc stack
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
-	    }
-	    p->stack[p->depth] = '{';
-	    p->val.type = OJ_OBJECT;
-	    p->val.mod = OJ_OBJ_RAW;
-	    p->val.list.head = NULL;
-	    p->push(&p->val, p);
-	    p->depth++;
+	    v = push_val(p, OJ_OBJECT, OJ_OBJ_RAW);
+	    v->list.head = NULL;
+	    v->list.tail = NULL;
+	    //p->push(&p->val, p);
 	    p->map = key1_map;
 	    break;
 	case NUM_CLOSE_OBJECT:
-	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p);
-		p->val.type = OJ_NULL;
-		p->val.key.len = 0;
-	    }
+	    pop_val(p);
 	    // flow through
 	case CLOSE_OBJECT:
-	    p->depth--;
-	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->pop(p);
-	    if (p->depth < 0 || '{' != p->stack[p->depth]) {
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
-	    }
+	    pop_val(p);
 	    break;
 	case OPEN_ARRAY:
-	    if (sizeof(p->stack) <= p->depth) {
-		// TBD realloc stack
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "too deeply nested");
-	    }
-	    p->stack[p->depth] = '[';
-	    p->val.type = OJ_ARRAY;
-	    p->val.list.head = NULL;
-	    p->push(&p->val, p);
-	    p->depth++;
+	    v = push_val(p, OJ_ARRAY, 0);
+	    v->list.head = NULL;
+	    v->list.tail = NULL;
 	    p->map = value_map;
+	    //p->push(&p->val, p);
 	    break;
 	case NUM_CLOSE_ARRAY:
-	    if (OJ_INT == p->val.type || OJ_DECIMAL == p->val.type) {
-		p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-		p->push(&p->val, p);
-		p->val.type = OJ_NULL;
-		p->val.key.len = 0;
-	    }
+	    pop_val(p);
 	    // flow through
 	case CLOSE_ARRAY:
-	    p->depth--;
-	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->pop(p);
-	    if (p->depth < 0 || '[' != p->stack[p->depth]) {
-		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
-	    }
+	    pop_val(p);
 	    break;
 	case NUM_COMMA:
-	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p);
-	    p->val.type = OJ_NULL;
-	    p->val.key.len = 0;
-	    if (0 < p->depth && '{' == p->stack[p->depth-1]) {
+	    pop_val(p);
+	    //p->push(&p->val, p);
+	    if (OJ_OBJECT == p->stack->type) {
 		p->map = key_map;
 	    } else {
 		p->map = comma_map;
 	    }
 	    break;
 	case VAL0:
-	    p->val.type = OJ_INT;
-	    p->val.num.native = false;
-	    p->val.num.len = 1;
-	    *p->val.num.raw = *b;
+	    v = push_val(p, OJ_INT, 0);
+	    v->num.native = false;
+	    v->num.len = 1;
+	    *v->num.raw = *b;
 	    p->map = zero_map;
 	    break;
 	case VAL_NEG:
-	    p->val.type = OJ_INT;
-	    p->val.num.native = false;
-	    p->val.num.len = 1;
-	    *p->val.num.raw = *b;
+	    v = push_val(p, OJ_INT, 0);
+	    v->num.native = false;
+	    v->num.len = 1;
+	    *v->num.raw = *b;
 	    p->map = neg_map;
 	    break;;
 	case VAL_DIGIT:
-	    p->val.type = OJ_INT;
-	    p->val.num.native = false;
+	    v = push_val(p, OJ_INT, 0);
+	    v->num.native = false;
+	    *v->num.raw = *b;
 	    p->map = digit_map;
-	    p->val.num.len = 0;
+	    v->num.len = 0;
 	    start = b++;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
 	    }
@@ -573,7 +637,7 @@ parse(ojParser p, const byte *json) {
 	    b--;
 	    break;
 	case NUM_DOT:
-	    p->val.type = OJ_DECIMAL;
+	    p->stack->type = OJ_DECIMAL;
 	    _oj_append_num(p, (const char*)b, 1);
 	    p->map = dot_map;
 	    break;
@@ -586,18 +650,18 @@ parse(ojParser p, const byte *json) {
 	    b--;
 	    break;
 	case FRAC_E:
-	    p->val.type = OJ_DECIMAL;
+	    p->stack->type = OJ_DECIMAL;
 	    _oj_append_num(p, (const char*)b, 1);
 	    p->map = exp_sign_map;
 	    break;
 	case NUM_ZERO:
-	    p->val.num.raw[p->val.num.len] = *b;
-	    p->val.num.len++;
+	    p->stack->num.raw[p->stack->num.len] = *b;
+	    p->stack->num.len++;
 	    p->map = zero_map;
 	    break;
 	case NEG_DIGIT:
-	    p->val.num.raw[p->val.num.len] = *b;
-	    p->val.num.len++;
+	    p->stack->num.raw[p->stack->num.len] = *b;
+	    p->stack->num.len++;
 	    p->map = digit_map;
 	    break;
 	case EXP_SIGN:
@@ -613,20 +677,12 @@ parse(ojParser p, const byte *json) {
 	    p->map = exp_map;
 	    break;
 	case NUM_SPC:
-	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p);
-	    p->val.type = OJ_NULL;
-	    p->val.key.len = 0;
+	    pop_val(p);
+	    //p->push(&p->val, p);
 	    break;
 	case NUM_NEWLINE:
-	    p->map = (0 == p->depth) ? value_map : after_map;
-	    p->val.num.raw[p->val.num.len] = '\0'; // TBD check length
-	    p->push(&p->val, p);
-	    p->val.type = OJ_NULL;
-	    p->val.key.len = 0;
-	    p->err.line++;
-	    p->err.col = b - json;
+	    pop_val(p);
+	    //p->push(&p->val, p);
 	    b++;
 #ifdef SPACE_JUMP
 	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
@@ -641,14 +697,15 @@ parse(ojParser p, const byte *json) {
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->val.key, start, b - start);
+		_oj_append_str(p, &p->stack->key, start, b - start);
 	    } else {
-		_oj_append_str(p, &p->val.str, start, b - start);
+		_oj_append_str(p, &p->stack->str, start, b - start);
 	    }
 	    if ('"' == *b) {
 		p->map = p->next_map;
 		if (':' != p->map[256]) {
-		    p->push(&p->val, p);
+		    pop_val(p);
+		    //p->push(&p->val, p);
 		}
 		break;
 	    }
@@ -660,7 +717,8 @@ parse(ojParser p, const byte *json) {
 	case STR_QUOTE:
 	    p->map = p->next_map;
 	    if (':' != p->map[256]) {
-		p->push(&p->val, p);
+		pop_val(p);
+		//p->push(&p->val, p);
 	    }
 	    break;
 	case ESC_U:
@@ -677,9 +735,9 @@ parse(ojParser p, const byte *json) {
 
 		if (0 < ulen) {
 		    if (':' == p->next_map[256]) {
-			_oj_append_str(p, &p->val.key, utf8, ulen);
+			_oj_append_str(p, &p->stack->key, utf8, ulen);
 		    } else {
-			_oj_append_str(p, &p->val.str, utf8, ulen);
+			_oj_append_str(p, &p->stack->str, utf8, ulen);
 		    }
 		} else {
 		    return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid unicode");
@@ -689,19 +747,18 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case ESC_OK:
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->val.key, (byte*)&esc_byte_map[*b], 1);
+		_oj_append_str(p, &p->stack->key, (byte*)&esc_byte_map[*b], 1);
 	    } else {
-		_oj_append_str(p, &p->val.str, (byte*)&esc_byte_map[*b], 1);
+		_oj_append_str(p, &p->stack->str, (byte*)&esc_byte_map[*b], 1);
 	    }
 	    p->map = string_map;
 	    break;
 	case VAL_NULL:
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
-		p->map = (0 == p->depth) ? value_map : after_map;
-		p->val.type = OJ_NULL;
-		p->val.key.len = 0;
-		p->push(&p->val, p);
+		push_val(p, OJ_NULL, 0);
+		pop_val(p);
+		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -723,9 +780,9 @@ parse(ojParser p, const byte *json) {
 	case VAL_TRUE:
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
-		p->map = (0 == p->depth) ? value_map : after_map;
-		p->val.type = OJ_TRUE;
-		p->push(&p->val, p);
+		push_val(p, OJ_TRUE, 0);
+		pop_val(p);
+		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -747,9 +804,9 @@ parse(ojParser p, const byte *json) {
 	case VAL_FALSE:
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
-		p->map = (0 == p->depth) ? value_map : after_map;
-		p->val.type = OJ_FALSE;
-		p->push(&p->val, p);
+		push_val(p, OJ_FALSE, 0);
+		pop_val(p);
+		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -778,9 +835,9 @@ parse(ojParser p, const byte *json) {
 			p->err.col = b - json - p->err.col;
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
 		    }
-		    p->map = (0 == p->depth) ? value_map : after_map;
-		    p->val.type = OJ_NULL;
-		    p->push(&p->val, p);
+		    push_val(p, OJ_NULL, 0);
+		    pop_val(p);
+		    //p->push(&p->val, p);
 		}
 		break;
 	    case 'F':
@@ -789,9 +846,9 @@ parse(ojParser p, const byte *json) {
 			p->err.col = b - json - p->err.col;
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
 		    }
-		    p->map = (0 == p->depth) ? value_map : after_map;
-		    p->val.type = OJ_FALSE;
-		    p->push(&p->val, p);
+		    push_val(p, OJ_FALSE, 0);
+		    pop_val(p);
+		    //p->push(&p->val, p);
 		}
 		break;
 	    case 'T':
@@ -800,9 +857,9 @@ parse(ojParser p, const byte *json) {
 			p->err.col = b - json - p->err.col;
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
 		    }
-		    p->map = (0 == p->depth) ? value_map : after_map;
-		    p->val.type = OJ_TRUE;
-		    p->push(&p->val, p);
+		    push_val(p, OJ_TRUE, 0);
+		    pop_val(p);
+		    //p->push(&p->val, p);
 		}
 		break;
 	    default:
@@ -820,14 +877,14 @@ parse(ojParser p, const byte *json) {
 	    break;
 	}
     }
-    if (0 == p->depth) {
+    if (NULL != p->stack && NULL == p->stack->next) {
 	switch (p->map[256]) {
 	case '0':
 	case 'd':
 	case 'f':
 	case 'z':
 	case 'X':
-	    p->push(&p->val, p);
+	    pop_val(p);
 	    break;
 	}
     }
@@ -1057,70 +1114,6 @@ validate(ojValidator v, const byte *json) {
     return OJ_OK;
 }
 
-ojStatus
-oj_validate_str(ojErr err, const char *json) {
-    struct _ojValidator	v;
-
-    memset(&v, 0, sizeof(v));
-    v.err.line = 1;
-    v.map = value_map;
-    if (OJ_OK != validate(&v, (const byte*)json) && NULL != err) {
-	*err = v.err;
-    }
-    return v.err.code;
-}
-
-ojStatus
-oj_validate_strzzz(ojValidator v, const char *json) {
-    memset(v, 0, sizeof(struct _ojValidator));
-    v->map = value_map;
-    v->err.line = 1;
-    validate(v, (const byte*)json);
-
-    return v->err.code;
-}
-
-void
-oj_parser_reset(ojParser p) {
-    p->map = value_map;
-    p->err.line = 1;
-    p->err.col = 0;
-    *p->err.msg = '\0';
-    p->depth = 0;
-}
-
-static void
-no_push(ojVal val, ojParser p) {
-}
-
-static void
-no_pop(ojParser p) {
-}
-
-ojStatus
-oj_parse_str(ojParser p, const char *json) {
-    if (NULL == p->push) {
-	p->push = no_push;
-    }
-    if (NULL == p->pop) {
-	p->pop = no_pop;
-    }
-    p->err.line = 1;
-    p->err.col = 0;
-    *p->err.msg = '\0';
-    p->depth = 0;
-    p->map = value_map;
-    parse(p, (const byte*)json);
-
-    return p->err.code;
-}
-
-ojStatus
-oj_parse_strp(ojParser p, const char **json) {
-    // TBD
-    return OJ_OK;
-}
-
 static void
 read_block(int fd, ReadBlock b) {
     size_t	rcnt = read(fd, b->buf, sizeof(b->buf) - 1);
@@ -1229,22 +1222,90 @@ parse_large(ojParser p, int fd) {
 }
 
 ojStatus
-oj_parse_fd(ojParser p, int fd) {
-    if (NULL == p->push) {
-	p->push = no_push;
+oj_validate_str(ojErr err, const char *json) {
+    struct _ojValidator	v;
+
+    memset(&v, 0, sizeof(v));
+    v.err.line = 1;
+    v.map = value_map;
+    if (OJ_OK != validate(&v, (const byte*)json) && NULL != err) {
+	*err = v.err;
     }
-    if (NULL == p->pop) {
-	p->pop = no_pop;
+    return v.err.code;
+}
+
+ojVal
+oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.has_cb = (NULL != cb);
+    p.ctx = ctx;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
     }
-    p->err.line = 1;
-    p->map = value_map;
+    return p.results;
+}
+
+ojStatus
+oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx), void (*pop)(void *ctx), void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.pp = true;
+    p.ctx = ctx;
+    p.push = push;
+    p.pop = pop;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (OJ_OK != p.err.code && NULL != err) {
+	*err = p.err;
+    }
+    if (NULL != p.ready) {
+	p.ready->type = OJ_ARRAY;
+	p.ready->list.head = p.ready->next;
+	p.ready->list.tail = p.ready->next;
+	if (NULL != p.ready->list.tail) {
+	    for (; NULL != p.ready->list.tail->next; p.ready->list.tail = p.ready->list.tail->next) {
+	    }
+	}
+	oj_destroy(p.ready);
+    }
+    return p.err.code;
+}
+
+ojVal
+oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.has_cb = (NULL != cb);
+    p.ctx = ctx;
+    p.err.line = 1;
+    p.map = value_map;
 
     struct stat	info;
 
     // st_size will be 0 if not a file
     if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
 	// Use threaded version.
-	return parse_large(p, fd);
+	parse_large(&p, fd);
+	if (OJ_OK != p.err.code) {
+	    if (NULL != err) {
+		*err = p.err;
+	    }
+	    return NULL;
+	}
+	return p.results;
     }
     byte	buf[16385];
     size_t	size = sizeof(buf) - 1;
@@ -1253,32 +1314,44 @@ oj_parse_fd(ojParser p, int fd) {
     while (true) {
 	if (0 < (rsize = read(fd, buf, size))) {
 	    buf[rsize] = '\0';
-	    //printf("*** chunk len: %ld - '%s'\n", rsize, buf);
-	    if (OJ_OK != parse(p, buf)) {
+	    if (OJ_OK != parse(&p, buf)) {
 		break;
 	    }
 	}
 	if (rsize <= 0) {
 	    if (0 != rsize) {
-		return oj_err_no(&p->err, "read error");
+		if (NULL != err) {
+		    oj_err_no(err, "read error");
+		}
+		return NULL;
 	    }
 	    break;
 	}
     }
-    return p->err.code;
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return p.results;
 }
 
-ojStatus
-oj_parse_file(ojParser p, const char *filename) {
+ojVal
+oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     int	fd = open(filename, O_RDONLY);
 
     if (fd < 0) {
-	return oj_err_no(&p->err, "error opening %s", filename);
+	if (NULL != err) {
+	    oj_err_no(err, "error opening %s", filename);
+	}
+	return NULL;
     }
-    oj_parse_fd(p, fd);
+    ojVal	val = oj_parse_fd(err, fd, cb, ctx);
+
     close(fd);
 
-    return p->err.code;
+    return val;
 }
 
 ojStatus
