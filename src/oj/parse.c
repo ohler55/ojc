@@ -411,7 +411,8 @@ byteError(ojErr err, const char *map, int off, byte b) {
     return err->code;
 }
 
-// TBD point to these from parser. Is it faster to keep push-pop outside?
+// TBD for push-pop callback parser make a separate parse functions
+
 static ojVal
 push_val(ojParser p, ojType type, ojMod mod) {
     ojVal	val;
@@ -420,15 +421,6 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	val = p->stack;
 	val->type = type;
 	val->mod = mod;
-/*
-    } else if (NULL != (val = p->ready)) {
-	p->ready = NULL;
-	val->type = type;
-	val->mod = mod;
-	val->key.len = 0;
-	val->next = p->stack;
-	p->stack = val;
-*/
     } else {
 	val = oj_val_create();
 	val->type = type;
@@ -437,11 +429,6 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	val->next = p->stack;
 	p->stack = val;
     }
-    /*
-    if (NULL != p->push && (OJ_OBJECT == type || OJ_ARRAY == type)) {
-	p->push(val, p);
-    }
-    */
     return val;
 }
 
@@ -449,10 +436,6 @@ static void
 pop_val(ojParser p) {
     ojVal	parent;
     ojVal	top = p->stack;
-
-    // TBD if NULL != push
-    //  if obj or array then pop
-    //  else push
 
     if (NULL == (parent = top->next)) {
 	if (NULL == p->cb) {
@@ -481,13 +464,6 @@ parse(ojParser p, const byte *json) {
     const byte *start;
     ojVal	v;
 
-/*
-    if (NULL == p->next_map) {
-	printf("*** parse with map: %c\n", p->map[256]);
-    } else {
-	printf("*** parse with map: %c and next: %c\n", p->map[256], p->next_map[256]);
-    }
-*/
     //printf("*** parse %s\n", json);
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
@@ -1097,74 +1073,6 @@ validate(ojValidator v, const byte *json) {
     return OJ_OK;
 }
 
-ojStatus
-oj_validate_str(ojErr err, const char *json) {
-    struct _ojValidator	v;
-
-    memset(&v, 0, sizeof(v));
-    v.err.line = 1;
-    v.map = value_map;
-    if (OJ_OK != validate(&v, (const byte*)json) && NULL != err) {
-	*err = v.err;
-    }
-    return v.err.code;
-}
-
-ojStatus
-oj_validate_strzzz(ojValidator v, const char *json) {
-    memset(v, 0, sizeof(struct _ojValidator));
-    v->map = value_map;
-    v->err.line = 1;
-    validate(v, (const byte*)json);
-
-    return v->err.code;
-}
-
-void
-oj_parser_reset(ojParser p) {
-    p->map = value_map;
-    p->err.line = 1;
-    p->err.col = 0;
-    *p->err.msg = '\0';
-    p->stack = NULL;
-    p->results = NULL;
-}
-
-static void
-no_push(ojVal val, ojParser p) {
-}
-
-static void
-no_pop(ojParser p) {
-}
-
-ojStatus
-oj_parse_str(ojParser p, const char *json) {
-/*
-    if (NULL == p->push) {
-	p->push = no_push;
-    }
-    if (NULL == p->pop) {
-	p->pop = no_pop;
-    }
-*/
-    p->err.line = 1;
-    p->err.col = 0;
-    *p->err.msg = '\0';
-    p->stack = NULL;
-    p->results = NULL;
-    p->map = value_map;
-    parse(p, (const byte*)json);
-
-    return p->err.code;
-}
-
-ojStatus
-oj_parse_strp(ojParser p, const char **json) {
-    // TBD
-    return OJ_OK;
-}
-
 static void
 read_block(int fd, ReadBlock b) {
     size_t	rcnt = read(fd, b->buf, sizeof(b->buf) - 1);
@@ -1273,22 +1181,67 @@ parse_large(ojParser p, int fd) {
 }
 
 ojStatus
-oj_parse_fd(ojParser p, int fd) {
-    if (NULL == p->push) {
-	p->push = no_push;
+oj_validate_str(ojErr err, const char *json) {
+    struct _ojValidator	v;
+
+    memset(&v, 0, sizeof(v));
+    v.err.line = 1;
+    v.map = value_map;
+    if (OJ_OK != validate(&v, (const byte*)json) && NULL != err) {
+	*err = v.err;
     }
-    if (NULL == p->pop) {
-	p->pop = no_pop;
+    return v.err.code;
+}
+
+ojVal
+oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.ctx = ctx;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
     }
-    p->err.line = 1;
-    p->map = value_map;
+    return p.results;
+}
+
+ojStatus
+oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx), void (*pop)(void *ctx)) {
+
+    // TBD
+    return OJ_OK;
+}
+
+ojVal
+oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.ctx = ctx;
+    p.err.line = 1;
+    p.map = value_map;
 
     struct stat	info;
 
     // st_size will be 0 if not a file
     if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
 	// Use threaded version.
-	return parse_large(p, fd);
+	parse_large(&p, fd);
+	if (OJ_OK != p.err.code) {
+	    if (NULL != err) {
+		*err = p.err;
+	    }
+	    return NULL;
+	}
+	return p.results;
     }
     byte	buf[16385];
     size_t	size = sizeof(buf) - 1;
@@ -1297,32 +1250,44 @@ oj_parse_fd(ojParser p, int fd) {
     while (true) {
 	if (0 < (rsize = read(fd, buf, size))) {
 	    buf[rsize] = '\0';
-	    //printf("*** chunk len: %ld - '%s'\n", rsize, buf);
-	    if (OJ_OK != parse(p, buf)) {
+	    if (OJ_OK != parse(&p, buf)) {
 		break;
 	    }
 	}
 	if (rsize <= 0) {
 	    if (0 != rsize) {
-		return oj_err_no(&p->err, "read error");
+		if (NULL != err) {
+		    oj_err_no(err, "read error");
+		}
+		return NULL;
 	    }
 	    break;
 	}
     }
-    return p->err.code;
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return p.results;
 }
 
-ojStatus
-oj_parse_file(ojParser p, const char *filename) {
+ojVal
+oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     int	fd = open(filename, O_RDONLY);
 
     if (fd < 0) {
-	return oj_err_no(&p->err, "error opening %s", filename);
+	if (NULL != err) {
+	    oj_err_no(err, "error opening %s", filename);
+	}
+	return NULL;
     }
-    oj_parse_fd(p, fd);
+    ojVal	val = oj_parse_fd(err, fd, cb, ctx);
+
     close(fd);
 
-    return p->err.code;
+    return val;
 }
 
 ojStatus

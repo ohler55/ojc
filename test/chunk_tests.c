@@ -48,7 +48,7 @@ eval_data(struct _data *data) {
     pthread_detach(t);
 
     struct _ojErr	err = OJ_ERR_INIT;
-    ojVal		val = oj_val_parse_fd(&err, sv[1], NULL, NULL);
+    ojVal		val = oj_parse_fd(&err, sv[1], NULL, NULL);
 
     close(sv[1]);
     if (ut_handle_oj_error(&err)) {

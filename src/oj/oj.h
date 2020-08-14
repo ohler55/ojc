@@ -135,12 +135,16 @@ extern "C" {
 	const char	*next_map;
 	ojVal		stack;
 	ojVal		results;
-	ojVal		ready; // use for push-pull parser only
 	struct _ojErr	err;
+
+	// for push-pull parser
 	void		(*push)(ojVal val, struct _ojParser *p);
 	void		(*pop)(struct _ojParser *p);
+	ojVal		ready;
+
 	ojParseCallback	cb;
 	void		*ctx;
+
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
@@ -156,30 +160,26 @@ extern "C" {
 
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
-    extern void		oj_parser_reset(ojParser p);
+    extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
-    extern ojStatus	oj_parse_str(ojParser p, const char *json);
+
+
     extern ojStatus	oj_parse_strp(ojParser p, const char **json);
-    extern ojStatus	oj_parse_file(ojParser p, const char *filename);
-    extern ojStatus	oj_parse_fd(ojParser p, int fd);
 
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
-    extern ojStatus	oj_pp_parse_str(ojErr	err,
-					const	char *json,
-					void	(*push)(ojVal val, struct _ojParser *p),
-					void	(*pop)(struct _ojParser *p));
-
-    extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-
-    extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
-
+    extern ojStatus	oj_pp_parse_str(ojErr		err,
+					const char	*json,
+					void		(*push)(ojVal val, void *ctx),
+					void		(*pop)(void * ctx));
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
     extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 
-    extern ojVal	oj_val_create();
+
+    extern ojVal	oj_val_create(); // TBD add type as arg
     extern void		oj_destroy(ojVal val);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);

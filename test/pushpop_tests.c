@@ -13,32 +13,25 @@ struct _data {
 };
 
 static void
-push(ojVal val, ojParser p) {
-    oj_buf((ojBuf)p->ctx, val, 0, 0);
-    oj_buf_append((ojBuf)p->ctx, ' ');
+push(ojVal val, void *ctx) {
+    oj_buf((ojBuf)ctx, val, 0, 0);
+    oj_buf_append((ojBuf)ctx, ' ');
 }
 
 static void
-pop(ojParser p) {
-    oj_buf_append_string((ojBuf)p->ctx, "pop ", 4);
+pop(void *ctx) {
+    oj_buf_append_string((ojBuf)ctx, "pop ", 4);
 }
 
 static void
 test_push_pop(struct _data *dp) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojStatus    	status;
-    struct _ojParser	p;
     struct _ojBuf	buf;
 
     oj_buf_init(&buf, 0);
-    memset(&p, 0, sizeof(p));
-    p.ctx = &buf;
-    p.push = push;
-    p.pop = pop;
     for (; NULL != dp->json; dp++) {
-	oj_parser_reset(&p);
-	oj_buf_reset(&buf);
-	status = oj_parse_str(&p, dp->json);
+	status = oj_pp_parse_str(&err, dp->json, push, pop);
 	if (OJ_OK == dp->status) {
 	    if (ut_handle_oj_error(&err)) {
 		ut_print("error at %d:%d\n",  err.line, err.col);

@@ -140,19 +140,19 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&err, str, NULL, NULL);
+	v = oj_parse_str(&err, str, NULL, NULL);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
-    print_results("oj_val_parse_str", iter, dt, &p.err);
+    print_results("oj_parse_str", iter, dt, &p.err);
 /*
     memset(&p, 0, sizeof(p));
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	oj_parse_str(&p, str);
+	oj_pp_parse_str(&p, str);
     }
     dt = clock_micro() - start;
-    print_results("oj_parse_str", iter, dt, &p.err);
+    print_results("oj_pp_parse_str", iter, dt, &p.err);
 */
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
@@ -187,11 +187,11 @@ bench_parse_many(const char *filename) {
     ojVal		v;
     int64_t		start;
 
-    printf("oj_val_parse_file includes file load time in results\n");
+    printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
-    v = oj_val_parse_file(&err, filename, destroy_cb, &iter);
+    v = oj_parse_file(&err, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_file", iter, dt, &err);
+    print_results("oj_parse_file", iter, dt, &err);
 
     if (NULL != filename) {
 	int64_t	t0 = clock_micro();
@@ -203,15 +203,15 @@ bench_parse_many(const char *filename) {
     iter = 0;
 
     start = clock_micro();
-    v = oj_val_parse_str(&err, str, destroy_cb, &iter);
+    v = oj_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_str", iter, dt, &err);
+    print_results("oj_parse_str", iter, dt, &err);
 /*
     memset(&p, 0, sizeof(p));
     start = clock_micro();
-    oj_parse_str(&p, str);
+    oj_pp_parse_str(&p, str);
     dt = clock_micro() - start;
-    print_results("oj_parse_str", iter, dt, &p.err);
+    print_results("oj_pp_parse_str", iter, dt, &p.err);
 */
     start = clock_micro();
     oj_validate_str(&err, str);
@@ -262,10 +262,11 @@ bench_parse_file(const char *filename) {
 
     int64_t	start = clock_micro();
 
-    oj_val_parse_file(&p, filename, destroy_cb, &iter);
+    oj_parse_file(&p, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
 
     char	mem[16];
+
     if (OJ_OK != p.err.code) {
 	printf("*** Error: %s at %d:%d\n", p.err.msg, p.err.line, p.err.col);
 	//printf("*** Error: %s at %d:%d in %s\n", e.msg, e.line, e.col, str);
