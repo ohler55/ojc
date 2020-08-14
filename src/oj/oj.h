@@ -135,12 +135,12 @@ extern "C" {
 	const char	*next_map;
 	ojVal		stack;
 	ojVal		results;
+	ojVal		ready; // use for push-pull parser only
 	struct _ojErr	err;
 	void		(*push)(ojVal val, struct _ojParser *p);
 	void		(*pop)(struct _ojParser *p);
 	ojParseCallback	cb;
 	void		*ctx;
-
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
@@ -166,10 +166,14 @@ extern "C" {
     extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
     extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
-    extern void		oj_val_parser_init(ojParser p);
-    extern ojVal	oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_pp_parse_str(ojErr	err,
+					const	char *json,
+					void	(*push)(ojVal val, struct _ojParser *p),
+					void	(*pop)(struct _ojParser *p));
 
-    extern ojVal	oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+
+    extern ojVal	oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_val_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);

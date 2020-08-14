@@ -138,10 +138,9 @@ bench_parse(const char *filename, int64_t iter) {
 	buf = load_file(filename);
 	str = buf;
     }
-    oj_val_parser_init(&p);
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&p, str, NULL, NULL);
+	v = oj_val_parse_str(&err, str, NULL, NULL);
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
@@ -185,16 +184,14 @@ bench_parse_many(const char *filename) {
     const char		*str = json;
     char		*buf = NULL;
     long		iter = 0;
-    struct _ojParser	p;
     ojVal		v;
     int64_t		start;
 
     printf("oj_val_parse_file includes file load time in results\n");
-    oj_val_parser_init(&p);
     start = clock_micro();
-    v = oj_val_parse_file(&p, filename, destroy_cb, &iter);
+    v = oj_val_parse_file(&err, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_file", iter, dt, &p.err);
+    print_results("oj_val_parse_file", iter, dt, &err);
 
     if (NULL != filename) {
 	int64_t	t0 = clock_micro();
@@ -205,11 +202,10 @@ bench_parse_many(const char *filename) {
     }
     iter = 0;
 
-    oj_val_parser_init(&p);
     start = clock_micro();
-    v = oj_val_parse_str(&p, str, destroy_cb, &iter);
+    v = oj_val_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
-    print_results("oj_val_parse_str", iter, dt, &p.err);
+    print_results("oj_val_parse_str", iter, dt, &err);
 /*
     memset(&p, 0, sizeof(p));
     start = clock_micro();

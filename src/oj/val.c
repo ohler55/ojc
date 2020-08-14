@@ -302,22 +302,21 @@ pop(struct _ojParser *p) {
     */
 }
 
-void
-oj_val_parser_init(ojParser p) {
-    memset(p, 0, sizeof(struct _ojParser));
-    p->push = push;
-    p->pop = pop;
-}
-
 ojVal
-oj_val_parse_str(ojParser p, const char *json, ojParseCallback cb, void *ctx) {
-    p->cb = cb;
-    p->ctx = ctx;
-    oj_parse_str(p, json);
-    if (OJ_OK != p->err.code) {
+oj_val_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.ctx = ctx;
+    oj_parse_str(&p, json);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
 	return NULL;
     }
-    return p->results;
+    return p.results;
 }
 
 ojVal
@@ -329,14 +328,20 @@ oj_val_parse_strp(ojErr err, const char **json) {
 }
 
 ojVal
-oj_val_parse_file(ojParser p, const char *filename, ojParseCallback cb, void *ctx) {
-    p->cb = cb;
-    p->ctx = ctx;
-    oj_parse_file(p, filename);
-    if (OJ_OK != p->err.code) {
+oj_val_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.cb = cb;
+    p.ctx = ctx;
+    oj_parse_file(&p, filename);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
 	return NULL;
     }
-    return p->results;
+    return p.results;
 }
 
 ojVal

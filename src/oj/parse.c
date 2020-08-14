@@ -348,6 +348,7 @@ unicodeToUtf8(uint32_t code, byte *buf) {
     return buf - start;
 }
 
+#if DEBUG
 static void
 print_stack(ojParser p, const char *label) {
     printf("*** %s\n", label);
@@ -357,6 +358,7 @@ print_stack(ojParser p, const char *label) {
 	free(s);
     }
 }
+#endif
 
 static ojStatus
 byteError(ojErr err, const char *map, int off, byte b) {
@@ -409,6 +411,7 @@ byteError(ojErr err, const char *map, int off, byte b) {
     return err->code;
 }
 
+// TBD point to these from parser. Is it faster to keep push-pop outside?
 static ojVal
 push_val(ojParser p, ojType type, ojMod mod) {
     ojVal	val;
@@ -417,6 +420,15 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	val = p->stack;
 	val->type = type;
 	val->mod = mod;
+/*
+    } else if (NULL != (val = p->ready)) {
+	p->ready = NULL;
+	val->type = type;
+	val->mod = mod;
+	val->key.len = 0;
+	val->next = p->stack;
+	p->stack = val;
+*/
     } else {
 	val = oj_val_create();
 	val->type = type;
@@ -425,6 +437,11 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	val->next = p->stack;
 	p->stack = val;
     }
+    /*
+    if (NULL != p->push && (OJ_OBJECT == type || OJ_ARRAY == type)) {
+	p->push(val, p);
+    }
+    */
     return val;
 }
 
@@ -432,6 +449,10 @@ static void
 pop_val(ojParser p) {
     ojVal	parent;
     ojVal	top = p->stack;
+
+    // TBD if NULL != push
+    //  if obj or array then pop
+    //  else push
 
     if (NULL == (parent = top->next)) {
 	if (NULL == p->cb) {
@@ -1119,12 +1140,14 @@ no_pop(ojParser p) {
 
 ojStatus
 oj_parse_str(ojParser p, const char *json) {
+/*
     if (NULL == p->push) {
 	p->push = no_push;
     }
     if (NULL == p->pop) {
 	p->pop = no_pop;
     }
+*/
     p->err.line = 1;
     p->err.col = 0;
     *p->err.msg = '\0';
