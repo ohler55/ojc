@@ -31,7 +31,7 @@ test_push_pop(struct _data *dp) {
 
     oj_buf_init(&buf, 0);
     for (; NULL != dp->json; dp++) {
-	status = oj_pp_parse_str(&err, dp->json, push, pop);
+	status = oj_pp_parse_str(&err, dp->json, push, pop, &buf);
 	if (OJ_OK == dp->status) {
 	    if (ut_handle_oj_error(&err)) {
 		ut_print("error at %d:%d\n",  err.line, err.col);

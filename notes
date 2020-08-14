@@ -14,6 +14,7 @@
     - later could save for reuse
   - for others, use and put on ready
 
+ - rename - remove _val from get functions
 
  - single app for benchmark results
    - app <parse|file|validate|write> <filename> <iter>
@@ -57,3 +58,13 @@
  - write
 
 - TBD stream write functions someday
+
+- article
+ - x vs OjC
+ - cast as a set of field events
+  - start as boxing but then nix that idea as too confrontational
+  - start with goodwill that it is a competition but friendly
+ - explain the competitors
+  - team size, participants and support
+  - breadth of events
+ - maybe event team member match to function(s)

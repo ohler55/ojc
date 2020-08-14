@@ -115,7 +115,7 @@ load_file(const char *filename) {
 static void
 print_results(const char *name, int64_t iter, int64_t usec, ojErr err) {
     if (OJ_OK != err->code) {
-	printf("%-18s: %s at %d:%d\n", name, err->msg, err->line, err->col);
+	printf("%-18s: [%d] %s at %d:%d\n", name, err->code, err->msg, err->line, err->col);
     } else {
 	double	per = (double)usec / (double)iter;
 
@@ -130,7 +130,6 @@ bench_parse(const char *filename, int64_t iter) {
     const char		*str = json;
     char		*buf = NULL;
     struct _ojErr	err = OJ_ERR_INIT;
-    struct _ojParser	p;
     ojVal		v;
     int64_t		start;
 
@@ -144,7 +143,7 @@ bench_parse(const char *filename, int64_t iter) {
 	oj_destroy(v);
     }
     dt = clock_micro() - start;
-    print_results("oj_parse_str", iter, dt, &p.err);
+    print_results("oj_parse_str", iter, dt, &err);
 /*
     memset(&p, 0, sizeof(p));
     start = clock_micro();
@@ -172,6 +171,7 @@ bench_parse(const char *filename, int64_t iter) {
 static bool
 destroy_cb(ojVal val, void *ctx) {
     //walk_oj(val);
+    oj_val_object_find(val, "alg", 3);
     oj_destroy(val);
     *(long*)ctx = *(long*)ctx + 1;
     return true;

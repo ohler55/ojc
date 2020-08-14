@@ -658,7 +658,7 @@ oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
 }
 
 ojVal
-oj_val_object_get(ojVal val, const char *key) {
+oj_val_object_get(ojVal val, const char *key, int len) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_OBJECT == val->type) {
@@ -673,10 +673,28 @@ oj_val_object_get(ojVal val, const char *key) {
 
 	    // TBD until then...
 	    for (v = val->list.head; NULL != v; v = v->next) {
-		if (0 == strcmp(key, oj_val_key(v))) {
+		if (len == v->key.len && 0 == strcmp(key, oj_val_key(v))) {
 		    break;
 		}
 	    }
+	}
+    }
+    return v;
+}
+
+ojVal
+oj_val_object_find(ojVal val, const char *key, int len) {
+    ojVal	v = NULL;
+
+    if (NULL != val && OJ_OBJECT == val->type) {
+	if (OJ_OBJ_RAW == val->mod) {
+	    for (v = val->list.head; NULL != v; v = v->next) {
+		if (len == v->key.len && 0 == strncmp(key, oj_val_key(v), len)) {
+		    break;
+		}
+	    }
+	} else {
+	    // TBD
 	}
     }
     return v;

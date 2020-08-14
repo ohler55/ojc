@@ -138,8 +138,8 @@ extern "C" {
 	struct _ojErr	err;
 
 	// for push-pull parser
-	void		(*push)(ojVal val, struct _ojParser *p);
-	void		(*pop)(struct _ojParser *p);
+	void		(*push)(ojVal val, void *ctx);
+	void		(*pop)(void *ctx);
 	ojVal		ready;
 
 	ojParseCallback	cb;
@@ -148,6 +148,8 @@ extern "C" {
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
+	bool		pp;
+	bool		has_cb;
     } *ojParser;
 
     // General functions.
@@ -174,7 +176,8 @@ extern "C" {
     extern ojStatus	oj_pp_parse_str(ojErr		err,
 					const char	*json,
 					void		(*push)(ojVal val, void *ctx),
-					void		(*pop)(void * ctx));
+					void		(*pop)(void * ctx),
+					void		*ctx);
     extern ojVal	oj_val_parse_strp(ojErr err, const char **json);
     extern ojVal	oj_val_parse_reader(ojErr err, void *src, ojReadFunc rf);
 
@@ -194,7 +197,8 @@ extern "C" {
     extern ojVal	oj_val_array_first(ojVal val);
     extern ojVal	oj_val_array_last(ojVal val);
     extern ojVal	oj_val_array_nth(ojVal val, int n);
-    extern ojVal	oj_val_object_get(ojVal val, const char *key);
+    extern ojVal	oj_val_object_get(ojVal val, const char *key, int len);
+    extern ojVal	oj_val_object_find(ojVal val, const char *key, int len);
     // for object and list, if cb return false then stop
     extern ojVal	oj_val_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx);
 

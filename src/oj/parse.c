@@ -411,23 +411,49 @@ byteError(ojErr err, const char *map, int off, byte b) {
     return err->code;
 }
 
-// TBD for push-pop callback parser make a separate parse functions
-
 static ojVal
 push_val(ojParser p, ojType type, ojMod mod) {
     ojVal	val;
 
-    if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
-	val = p->stack;
-	val->type = type;
-	val->mod = mod;
+    if (p->pp) {
+	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	    val = p->stack;
+	    val->type = type;
+	    val->mod = mod;
+	} else if (NULL != (val = p->ready)) {
+	    p->ready = val->next;
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	    if (OJ_ARRAY == type || OJ_OBJECT == type) {
+		p->push(val, p->ctx);
+	    }
+	} else {
+	    val = oj_val_create();
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	    if (OJ_ARRAY == type || OJ_OBJECT == type) {
+		p->push(val, p->ctx);
+	    }
+	}
     } else {
-	val = oj_val_create();
-	val->type = type;
-	val->mod = mod;
-	val->key.len = 0;
-	val->next = p->stack;
-	p->stack = val;
+	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	    val = p->stack;
+	    val->type = type;
+	    val->mod = mod;
+	} else {
+	    val = oj_val_create();
+	    val->type = type;
+	    val->mod = mod;
+	    val->key.len = 0;
+	    val->next = p->stack;
+	    p->stack = val;
+	}
     }
     return val;
 }
@@ -437,25 +463,41 @@ pop_val(ojParser p) {
     ojVal	parent;
     ojVal	top = p->stack;
 
-    if (NULL == (parent = top->next)) {
-	if (NULL == p->cb) {
-	    top->next = p->results;
-	    p->results = p->stack;
+    if (p->pp) {
+	if (OJ_ARRAY == top->type || OJ_OBJECT == top->type) {
+	    p->pop(p->ctx);
 	} else {
-	    p->cb(top, p->ctx);
+	    p->push(top, p->ctx);
 	}
-	p->stack = NULL;
-	p->map = value_map;
+	p->stack = top->next;
+	top->next = p->ready;
+	p->ready = top;
+	if (NULL == p->stack) {
+	    p->map = value_map;
+	} else {
+	    p->map = after_map;
+	}
     } else {
-	if (NULL == parent->list.head) {
-	    parent->list.head = top;
+	if (NULL == (parent = top->next)) {
+	    if (p->has_cb) {
+		p->cb(top, p->ctx);
+	    } else {
+		top->next = p->results;
+		p->results = p->stack;
+	    }
+	    p->stack = NULL;
+	    p->map = value_map;
 	} else {
-	    parent->list.tail->next = top;
+	    if (NULL == parent->list.head) {
+		parent->list.head = top;
+	    } else {
+		parent->list.tail->next = top;
+	    }
+	    parent->list.tail = top;
+	    top->next = NULL;
+	    p->stack = parent;
+	    p->map = after_map;
 	}
-	parent->list.tail = top;
-	top->next = NULL;
-	p->stack = parent;
-	p->map = after_map;
     }
 }
 
@@ -1199,6 +1241,7 @@ oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
 
     memset(&p, 0, sizeof(p));
     p.cb = cb;
+    p.has_cb = (NULL != cb);
     p.ctx = ctx;
     p.err.line = 1;
     p.map = value_map;
@@ -1213,10 +1256,31 @@ oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx) {
 }
 
 ojStatus
-oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx), void (*pop)(void *ctx)) {
+oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx), void (*pop)(void *ctx), void *ctx) {
+    struct _ojParser	p;
 
-    // TBD
-    return OJ_OK;
+    memset(&p, 0, sizeof(p));
+    p.pp = true;
+    p.ctx = ctx;
+    p.push = push;
+    p.pop = pop;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (OJ_OK != p.err.code && NULL != err) {
+	*err = p.err;
+    }
+    if (NULL != p.ready) {
+	p.ready->type = OJ_ARRAY;
+	p.ready->list.head = p.ready->next;
+	p.ready->list.tail = p.ready->next;
+	if (NULL != p.ready->list.tail) {
+	    for (; NULL != p.ready->list.tail->next; p.ready->list.tail = p.ready->list.tail->next) {
+	    }
+	}
+	oj_destroy(p.ready);
+    }
+    return p.err.code;
 }
 
 ojVal
@@ -1225,6 +1289,7 @@ oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
 
     memset(&p, 0, sizeof(p));
     p.cb = cb;
+    p.has_cb = (NULL != cb);
     p.ctx = ctx;
     p.err.line = 1;
     p.map = value_map;
