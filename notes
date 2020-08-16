@@ -7,6 +7,25 @@
  - test with callback parser - noop
   - separate app
 
+ - number parsing
+  - big
+   - fill big when switching (big_change(ojVal
+   - use append
+
+ - more efficient destroy
+  - maybe keep list on parser and set all_head and all_tail on returned value
+   - if free_head present then use it else process with the current way
+   - maybe a free_me struct being populated for destroy
+    - would need to give that to cb in some manner
+   - also any allocated blocks and s4ks
+   - maybe put special ones on another list and process those first
+    - what to use for links on second
+     - maybe since it will be last added it can just be moved right away
+   - oj_destroy_all(ojAll all)
+    - maybe another reuse allocator
+    - dig - dig into each and destroy (string and big only)
+    - rest or reg(ular)
+
  - single app for benchmark results
    - app <parse|file|validate|write> <filename> <iter>
    - output is json {name, duration, mem-use, error}
@@ -28,6 +47,7 @@
   - string chars (\t in string)
   - numbers (multiple . e -)
   - big numbers accepted? (1.2e310 or int with more than 20 digits)
+   - maybe show max digits and exp (16 vs 19 vs no limit)
   - display error location?
  - can get complete values as native types (array and object should be iteratable)
  - big numbers

@@ -93,14 +93,18 @@ extern "C" {
     } *ojStr;
 
     typedef struct _ojNum {
+	long double	dub;
+	int64_t		fixnum; // holds all digits
+	uint32_t	len;	// TBD leave at 0 until building string
+	int16_t		div;	// 10^div
+	int16_t		exp;
+	uint8_t		shift;	// shift of fixnum to get decimal
+	bool		neg;
+	bool		exp_neg;
+	bool		calc;	// if true value has been calculated
 	union {
-	    int64_t	fixnum;
-	    long double	dub;
-	};
-	int32_t		len;
-	bool		native;	// true if native int64 or dec
-	union {
-	    char	raw[96];
+	    char	raw[88];
+	    union ojS4k	*s4k;
 	    struct {
 		size_t	cap;
 		char	*ptr;

@@ -458,20 +458,6 @@ oj_int_get(ojVal val) {
     int64_t	i = 0;
 
     if (NULL != val && OJ_INT == val->type) {
-	if (!val->num.native) {
-	    if (21 < val->num.len) {
-		val->num.fixnum = 0;
-		val->type = OJ_BIG;
-	    } else {
-		val->num.fixnum = (int64_t)strtoll(val->num.raw, NULL, 10);
-		if ((LLONG_MAX == val->num.fixnum || LLONG_MIN == val->num.fixnum) && 0 != errno) {
-		    val->num.fixnum = 0;
-		    val->type = OJ_BIG;
-		} else {
-		    val->num.native = true;
-		}
-	    }
-	}
 	i = val->num.fixnum;
     }
     return i;
@@ -482,19 +468,6 @@ oj_double_get(ojVal val, bool prec) {
     long double	d = 0.0;
 
     if (NULL != val && OJ_DECIMAL == val->type) {
-	if (!val->num.native) {
-	    if (prec) {
-		val->num.dub = strtold(val->num.raw, NULL);
-	    } else {
-		val->num.dub = strtod(val->num.raw, NULL);
-	    }
-	    if (!isfinite(val->num.dub)) {
-		val->num.dub = 0.0;
-		val->type = OJ_BIG;
-	    } else {
-		val->num.native = true;
-	    }
-	}
 	d = val->num.dub;
     }
     return d;

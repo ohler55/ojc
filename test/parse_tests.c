@@ -91,7 +91,6 @@ parse_mixed_test() {
     bigger_cut[131] = 't';
 
     struct _data	cases[] = {
-/*
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
 	{.json = "\"\\u3074ー\\u305fー\"", .status = OJ_OK, .expect = "\"ぴーたー\"" },
@@ -100,7 +99,7 @@ parse_mixed_test() {
 	{.json = big_cut, .status = OJ_OK },
 	{.json = bigger, .status = OJ_OK },
 	{.json = bigger_cut, .status = OJ_OK },
-*/
+
 	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
@@ -129,6 +128,7 @@ parse_decimal_test() {
     ojVal		val;
 
     val = oj_parse_str(&err, "12.345", NULL, NULL);
+    //val = oj_parse_str(&err, "123e4", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;

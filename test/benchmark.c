@@ -319,6 +319,7 @@ main(int argc, char **argv) {
 	    bench_parse(filename, iter);
 	}
 	oj_cleanup();
+	debug_report();
 	return 0;
     }
     //bench_fill(iter);
