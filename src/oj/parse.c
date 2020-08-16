@@ -12,8 +12,25 @@
 #include "oj.h"
 #include "intern.h"
 
-#define USE_THREAD_LIMIT	100000
 #define DEBUG	0
+
+#define USE_THREAD_LIMIT	100000
+#define MAX_EXP			4932
+// max in the pow_map
+#define MAX_POW			400
+
+#if DEBUG
+static void
+print_stack(ojParser p, const char *label) {
+    printf("*** %s\n", label);
+    for (ojVal v = p->stack; NULL != v; v = v->next) {
+	char	*s = oj_to_str(v, 0);
+	printf("  %s\n", s);
+	free(s);
+    }
+}
+#endif
+
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -47,10 +64,16 @@ enum {
     NEG_DIGIT		= '-',
     STR_SLASH		= 'A',
     ESC_OK		= 'B',
+    BIG_DIGIT		= 'C',
+    BIG_DOT		= 'D',
     U_OK		= 'E',
     TOKEN_OK		= 'F',
     NUM_CLOSE_OBJECT	= 'G',
     NUM_CLOSE_ARRAY	= 'H',
+    BIG_FRAC		= 'I',
+    BIG_E		= 'J',
+    BIG_EXP_SIGN	= 'K',
+    BIG_EXP		= 'L',
     NUM_DIGIT		= 'N',
     NUM_ZERO		= 'O',
     STR_OK		= 'R',
@@ -254,6 +277,66 @@ r...........u...yyyyyyyyyy......\
 ................................\
 ................................X";
 
+static const char	big_digit_map[257] = "\
+.........rs..r..................\
+r...........u.D.CCCCCCCCCC......\
+.....J.......................H..\
+.....J.......................G..\
+................................\
+................................\
+................................\
+................................D";
+
+static const char	big_dot_map[257] = "\
+................................\
+................IIIIIIIIII......\
+................................\
+................................\
+................................\
+................................\
+................................\
+................................o";
+
+static const char	big_frac_map[257] = "\
+.........rs..r..................\
+r...........u...IIIIIIIIII......\
+.....J.......................H..\
+.....J.......................G..\
+................................\
+................................\
+................................\
+................................g";
+
+static const char	big_exp_sign_map[257] = "\
+................................\
+...........K.K..LLLLLLLLLL......\
+................................\
+................................\
+................................\
+................................\
+................................\
+................................B";
+
+static const char	big_exp_zero_map[257] = "\
+................................\
+................LLLLLLLLLL......\
+................................\
+................................\
+................................\
+................................\
+................................\
+................................Z";
+
+static const char	big_exp_map[257] = "\
+.........rs..r..................\
+r...........u...LLLLLLLLLL......\
+.............................H..\
+.............................G..\
+................................\
+................................\
+................................\
+................................Y";
+
 static const char	string_map[257] = "\
 ................................\
 RRzRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
@@ -313,10 +396,6 @@ static const byte	hex_map[256] = "\
 ................................\
 ................................\
 ................................";
-
-#define MAX_EXP	4932
-// max in the pow_map
-#define MAX_POW	400
 
 static long double	pow_map[401] = {
     1.0L,     1.0e1L,   1.0e2L,   1.0e3L,   1.0e4L,   1.0e5L,   1.0e6L,   1.0e7L,   1.0e8L,   1.0e9L,  // 00
@@ -398,18 +477,6 @@ unicodeToUtf8(uint32_t code, byte *buf) {
     }
     return buf - start;
 }
-
-#if DEBUG
-static void
-print_stack(ojParser p, const char *label) {
-    printf("*** %s\n", label);
-    for (ojVal v = p->stack; NULL != v; v = v->next) {
-	char	*s = oj_to_str(v, 0);
-	printf("  %s\n", s);
-	free(s);
-    }
-}
-#endif
 
 static ojStatus
 byteError(ojErr err, const char *map, int off, byte b) {
@@ -590,12 +657,63 @@ calc_num(ojVal v) {
 static void
 big_change(ojVal v) {
     switch (v->type) {
-    case OJ_INT:
-	// TBD
+    case OJ_INT: {
+	// If an int then it will fit in the num.raw so no need to check length;
+	int64_t	i = v->num.fixnum;
+	int	len = 0;
+
+	for (len = 24; 0 < i; len--, i /= 10) {
+	    v->num.raw[len] = '0' + (i % 10);
+	}
+	if (v->num.neg) {
+	    v->num.raw[len] = '-';
+	    len--;
+	}
+	v->num.len = 24 - len;
+	memmove(v->num.raw, v->num.raw + len +1, v->num.len);
+	v->num.raw[v->num.len] = '\0';
+	v->type = OJ_BIG;
 	break;
-    case OJ_DECIMAL:
-	// TBD
+    }
+    case OJ_DECIMAL: {
+	int	shift = v->num.shift;
+	int64_t	i = v->num.fixnum;
+	int	len = 0;
+
+	for (len = 24; 0 < i; len--, i /= 10, shift--) {
+	    if (0 == shift) {
+		v->num.raw[len] = '.';
+		len--;
+	    }
+	    v->num.raw[len] = '0' + (i % 10);
+	}
+	if (v->num.neg) {
+	    v->num.raw[len] = '-';
+	    len--;
+	}
+	v->num.len = 24 - len;
+	memmove(v->num.raw, v->num.raw + len +1, v->num.len);
+	if (0 < v->num.exp) {
+	    int		x = v->num.exp;
+	    int		d;
+	    bool	started = false;
+
+	    v->num.raw[v->num.len++] = 'e';
+	    if (0 < v->num.exp_neg) {
+		v->num.raw[v->num.len++] = '-';
+	    }
+	    // There will at most 4 digits to left to right should be fine.
+	    for (int div = 1000; 0 < div; div /= 10) {
+		d = x / div % 10;
+		if (started || 0 < d) {
+		    v->num.raw[v->num.len++] = '0' + d;
+		}
+	    }
+	}
+	v->num.raw[v->num.len] = '\0';
+	v->type = OJ_BIG;
 	break;
+    }
     }
 }
 
@@ -604,7 +722,7 @@ parse(ojParser p, const byte *json) {
     const byte *start;
     ojVal	v;
 
-    //printf("*** parse %s\n", json);
+    //printf("*** parse %s mode %c\n", json, p->map[256]);
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	//print_stack(p, "loop");
@@ -670,7 +788,6 @@ parse(ojParser p, const byte *json) {
 	    v = push_val(p, OJ_OBJECT, OJ_OBJ_RAW);
 	    v->list.head = NULL;
 	    v->list.tail = NULL;
-	    //p->push(&p->val, p);
 	    p->map = key1_map;
 	    break;
 	case NUM_CLOSE_OBJECT:
@@ -735,12 +852,16 @@ parse(ojParser p, const byte *json) {
 	    v->num.len = 0;
 	    p->map = digit_map;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		int64_t	x = v->num.fixnum * 10 + (int64_t)(*b - '0');
+		uint64_t	x = v->num.fixnum * 10 + (uint64_t)(*b - '0');
 
-		if (0 < x) {
-		    v->num.fixnum = x;
+		// Tried just checking for an int less than zero but that
+		// fails when optimization is on for some reason with the
+		// clang compiler so us a bit mask instead.
+		if (0 == (0x8000000000000000ULL & x)) {
+		    v->num.fixnum = (int64_t)x;
 		} else {
 		    big_change(v);
+		    p->map = big_digit_map;
 		    break;
 		}
 	    }
@@ -748,16 +869,14 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_DIGIT:
 	    v = p->stack;
-
-	    // TBD if big ...
-
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		int64_t	x = v->num.fixnum * 10 + (int64_t)(*b - '0');
+		uint64_t	x = v->num.fixnum * 10 + (uint64_t)(*b - '0');
 
-		if (0 < x) {
-		    v->num.fixnum = x;
+		if (0 == (0x8000000000000000ULL & x)) {
+		    v->num.fixnum = (int64_t)x;
 		} else {
 		    big_change(v);
+		    p->map = big_digit_map;
 		    break;
 		}
 	    }
@@ -765,34 +884,26 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_DOT:
 	    p->stack->type = OJ_DECIMAL;
-
-	    // TBD if big ...
-
 	    p->map = dot_map;
 	    break;
 	case NUM_FRAC:
 	    p->map = frac_map;
 	    v = p->stack;
-
-	    // TBD if big ...
-
 	    for (; NUM_FRAC == frac_map[*b]; b++) {
-		int64_t	x = v->num.fixnum * 10 + (int64_t)(*b - '0');
+		uint64_t	x = v->num.fixnum * 10 + (uint64_t)(*b - '0');
 
-		if (0 < x) {
-		    v->num.fixnum = x;
+		if (0 == (0x8000000000000000ULL & x)) {
+		    v->num.fixnum = (int64_t)x;
 		    v->num.shift++;
 		} else {
 		    big_change(v);
+		    p->map = big_frac_map;
 		    break;
 		}
 	    }
 	    b--;
 	    break;
 	case FRAC_E:
-
-	    // TBD if big ...
-
 	    p->stack->type = OJ_DECIMAL;
 	    p->map = exp_sign_map;
 	    break;
@@ -802,12 +913,13 @@ parse(ojParser p, const byte *json) {
 	case NEG_DIGIT:
 	    v = p->stack;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		int64_t	x = v->num.fixnum * 10 + (int64_t)(*b - '0');
+		uint64_t	x = v->num.fixnum * 10 + (uint64_t)(*b - '0');
 
-		if (0 < x) {
-		    v->num.fixnum = x;
+		if (0 == (0x8000000000000000ULL & x)) {
+		    v->num.fixnum = (int64_t)x;
 		} else {
 		    big_change(v);
+		    p->map = big_digit_map;
 		    break;
 		}
 	    }
@@ -815,17 +927,12 @@ parse(ojParser p, const byte *json) {
 	    p->map = digit_map;
 	    break;
 	case EXP_SIGN:
-
-	    // TBD if big ...
-
 	    p->stack->num.exp_neg = ('-' == *b);
 	    p->map = exp_zero_map;
 	    break;
 	case EXP_DIGIT:
 	    v = p->stack;
-
-	    // TBD if big ...
-
+	    p->map = exp_map;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
 		int16_t	x = v->num.exp * 10 + (int16_t)(*b - '0');
 
@@ -833,11 +940,47 @@ parse(ojParser p, const byte *json) {
 		    v->num.exp = x;
 		} else {
 		    big_change(v);
+		    p->map = big_exp_map;
 		    break;
 		}
 	    }
 	    b--;
-	    p->map = exp_map;
+	    break;
+	case BIG_DIGIT:
+	    start = b;
+	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+	    }
+	    _oj_append_num(p, (char*)start, b - start);
+	    b--;
+	    break;
+	case BIG_DOT:
+	    p->stack->type = OJ_DECIMAL;
+	    _oj_append_num(p, ".", 1);
+	    p->map = big_dot_map;
+	    break;
+	case BIG_FRAC:
+	    p->map = big_frac_map;
+	    start = b;
+	    for (; NUM_FRAC == frac_map[*b]; b++) {
+	    }
+	    _oj_append_num(p, (char*)start, b - start);
+	    b--;
+	case BIG_E:
+	    p->stack->type = OJ_DECIMAL;
+	    _oj_append_num(p, (const char*)b, 1);
+	    p->map = big_exp_sign_map;
+	    break;
+	case BIG_EXP_SIGN:
+	    _oj_append_num(p, (const char*)b, 1);
+	    p->map = big_exp_zero_map;
+	    break;
+	case BIG_EXP:
+	    start = b;
+	    for (; NUM_DIGIT == digit_map[*b]; b++) {
+	    }
+	    _oj_append_num(p, (char*)start, b - start);
+	    b--;
+	    p->map = big_exp_map;
 	    break;
 	case NUM_SPC:
 	    calc_num(p->stack);
@@ -868,7 +1011,6 @@ parse(ojParser p, const byte *json) {
 		p->map = p->next_map;
 		if (':' != p->map[256]) {
 		    pop_val(p);
-		    //p->push(&p->val, p);
 		}
 		break;
 	    }
@@ -881,7 +1023,6 @@ parse(ojParser p, const byte *json) {
 	    p->map = p->next_map;
 	    if (':' != p->map[256]) {
 		pop_val(p);
-		//p->push(&p->val, p);
 	    }
 	    break;
 	case ESC_U:
@@ -921,7 +1062,6 @@ parse(ojParser p, const byte *json) {
 		b += 3;
 		push_val(p, OJ_NULL, 0);
 		pop_val(p);
-		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -945,7 +1085,6 @@ parse(ojParser p, const byte *json) {
 		b += 3;
 		push_val(p, OJ_TRUE, 0);
 		pop_val(p);
-		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -969,7 +1108,6 @@ parse(ojParser p, const byte *json) {
 		b += 4;
 		push_val(p, OJ_FALSE, 0);
 		pop_val(p);
-		//p->push(&p->val, p);
 		break;
 	    }
 	    p->ri = 0;
@@ -1000,7 +1138,6 @@ parse(ojParser p, const byte *json) {
 		    }
 		    push_val(p, OJ_NULL, 0);
 		    pop_val(p);
-		    //p->push(&p->val, p);
 		}
 		break;
 	    case 'F':
@@ -1011,7 +1148,6 @@ parse(ojParser p, const byte *json) {
 		    }
 		    push_val(p, OJ_FALSE, 0);
 		    pop_val(p);
-		    //p->push(&p->val, p);
 		}
 		break;
 	    case 'T':
@@ -1022,7 +1158,6 @@ parse(ojParser p, const byte *json) {
 		    }
 		    push_val(p, OJ_TRUE, 0);
 		    pop_val(p);
-		    //p->push(&p->val, p);
 		}
 		break;
 	    default:
@@ -1047,6 +1182,9 @@ parse(ojParser p, const byte *json) {
 	case 'f':
 	case 'z':
 	case 'X':
+	case 'D':
+	case 'g':
+	case 'Y':
 	    calc_num(p->stack);
 	    pop_val(p);
 	    break;

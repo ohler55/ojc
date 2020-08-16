@@ -144,27 +144,27 @@ static void
 parse_bignum_test() {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
+    const char		*num;
 
     val = oj_parse_str(&err, "-9223372036854775807", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
-    const char	*num;
     int64_t	i = oj_int_get(val);
 
-    ut_same_int(-9223372036854775807, i, "parse bignum");
+    ut_same_int(-9223372036854775807LL, i, "parse int 9223372036854775807");
     oj_destroy(val);
 
-    val = oj_parse_str(&err, "9223372036854775808", NULL, NULL);
+    val = oj_parse_str(&err, "9223372036854775809", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
     }
     i = oj_int_get(val);
-    ut_same_int(0, i, "parse bignum");
+    ut_same_int(0, i, "parse bignum 9223372036854775809");
     num = oj_bignum_get(val);
-    ut_same("9223372036854775808", num);
+    ut_same("9223372036854775809", num);
     oj_destroy(val);
 
     val = oj_parse_str(&err, "-1.2e12345", NULL, NULL);
@@ -173,6 +173,7 @@ parse_bignum_test() {
 	return;
     }
     long double	d = oj_double_get(val, true);
+
 
     ut_same_double(0.0, d, 0.0001, "parse bignum");
     num = oj_bignum_get(val);

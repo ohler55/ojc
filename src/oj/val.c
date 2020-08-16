@@ -310,6 +310,7 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	    break;
 	case OJ_BIG:
 	    oj_buf_append_string(buf, val->num.raw, (size_t)val->num.len);
+	    break;
 	case OJ_STRING: {
 	    const char	*s;
 

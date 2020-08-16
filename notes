@@ -4,15 +4,13 @@
 ^c^s show subtree
 
 - redo parser
- - test with callback parser - noop
-  - separate app
-
- - number parsing
-  - big
-   - fill big when switching (big_change(ojVal
-   - use append
 
  - more efficient destroy
+  - have cb return a op code
+   - OJ_CONTINUE - 0x00
+   - OJ_STOP - 0x01
+   - OJ_DESTROY 0x02
+
   - maybe keep list on parser and set all_head and all_tail on returned value
    - if free_head present then use it else process with the current way
    - maybe a free_me struct being populated for destroy

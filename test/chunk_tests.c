@@ -125,7 +125,7 @@ chunk_decimal_test() {
     const char		*input[] = {"[1.", "23,1", ".23e", "3,-", "1.23", "e3]", NULL};
     struct _data	data = {
 	.input = input,
-	.expect = "[1.23,1.23e3,-1.23e3]",
+	.expect = "[1.23,1230,-1230]",
 	.status = OJ_OK,
     };
     eval_data(&data);
