@@ -583,7 +583,7 @@ pop_val(ojParser p) {
     if (p->pp) {
 	if (OJ_ARRAY == top->type || OJ_OBJECT == top->type) {
 	    p->pop(p->ctx);
-	    // TBD cleanup key, str and big
+	    _oj_val_clear(top);
 	} else {
 	    p->push(top, p->ctx);
 	}
@@ -1644,7 +1644,6 @@ oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx),
 	    for (; NULL != p.ready->list.tail->next; p.ready->list.tail = p.ready->list.tail->next) {
 	    }
 	}
-	// TBD call the fast destroy
 	oj_destroy(p.ready);
     }
     return p.err.code;

@@ -154,6 +154,69 @@ oj_cleanup() {
 }
 
 void
+_oj_val_clear(ojVal v) {
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
+
+    if (sizeof(union ojS4k) < v->key.len) {
+	OJ_FREE(v->key.ptr);
+    } else if (sizeof(v->key.raw) < v->key.len) {
+	v->key.s4k->next = NULL;
+	if (NULL == s4k_h) {
+	    s4k_h = v->key.s4k;
+	} else {
+	    s4k_t->next = v->key.s4k;
+	}
+	s4k_t = v->key.s4k;
+    }
+    v->key.len = 0;
+    switch (v->type) {
+    case OJ_STRING:
+	if (sizeof(union ojS4k) < v->str.len) {
+	    OJ_FREE(v->str.ptr);
+	} else if (sizeof(v->str.raw) < v->str.len) {
+	    v->str.s4k->next = NULL;
+	    if (NULL == s4k_h) {
+		s4k_h = v->str.s4k;
+	    } else {
+		s4k_t->next = v->str.s4k;
+	    }
+	    s4k_t = v->str.s4k;
+	}
+	v->str.len = 0;
+	break;
+    case OJ_BIG:
+	if (sizeof(v->num.raw) <= v->num.len) {
+	    OJ_FREE(v->num.ptr);
+	}
+	v->key.len = 0;
+	break;
+    }
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+    }
+}
+
+void
 oj_destroyer(ojDestroyer d) {
     ojVal	v;
     ojVal	next;

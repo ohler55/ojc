@@ -11,20 +11,27 @@ static void
 bench_parse(const char *filename, long long iter) {
     int64_t		dt;
     ojVal		v;
-    struct _ojParser	p;
     char		*buf = load_file(filename);
     int64_t		start = clock_micro();
     char		mem[16];
+    struct _ojDestroyer	d;
+    struct _ojErr	err = OJ_ERR_INIT;;
 
-    oj_val_parser_init(&p);
     for (int i = iter; 0 < i; i--) {
-	v = oj_val_parse_str(&p, buf, NULL, NULL);
-	oj_destroy(v);
+	v = oj_parse_strd(&err, buf, &d);
+	oj_destroyer(&d);
     }
     dt = clock_micro() - start;
 
-    form_json_results("oj", iter, dt, mem_use(mem, sizeof(mem)), OJ_OK == p.err.code ? NULL : p.err.msg);
+    mem_use(mem, sizeof(mem));
+    if (OJ_OK == err.code) {
+	form_json_results("oj", iter, dt, mem, NULL);
+    } else {
+	char	msg[256];
 
+	snprintf(msg, sizeof(msg), "%s at %d:%d", err.msg, err.line, err.col);
+	form_json_results("oj", iter, dt, mem, msg);
+    }
     if (NULL != buf) {
 	free(buf);
     }
