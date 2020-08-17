@@ -20,6 +20,7 @@ extern "C" {
     extern void		_oj_val_set_key(ojVal val, const char *s, size_t len);
     extern void		_oj_append_str(ojParser p, ojStr str, const byte *s, size_t len);
     extern void		_oj_append_num(ojParser p, const char *s, size_t len);
+    extern void		_oj_fast_destroy(ojVal head, ojVal tail, ojVal dig);
 
 #ifdef __cplusplus
 }

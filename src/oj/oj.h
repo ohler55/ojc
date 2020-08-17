@@ -37,6 +37,7 @@ extern "C" {
 	OJ_ERR_EVAL,
 	OJ_ERR_TLS,
 	OJ_ERR_EOF,
+	OJ_ABORT,
 	OJ_ERR_LAST,
     } ojStatus;
 
@@ -52,6 +53,12 @@ extern "C" {
 	OJ_ARRAY	= 'a',
 	OJ_FREE		= 'X',
     } ojType;
+
+    typedef enum {
+	OJ_CONTINUE	= 0x00,
+	OJ_STOP		= 0x01,
+	OJ_DESTROY	= 0x02,
+    } ojCallbackOp;
 
     typedef enum {
 	OJ_OBJ_RAW	= '\0',
@@ -119,6 +126,7 @@ extern "C" {
 
     typedef struct _ojVal {
 	struct _ojVal		*next;
+	struct _ojVal		*free;
 	struct _ojStr		key;
 	uint32_t		kh;	// key hash
 	uint8_t			type;	// ojType
@@ -131,8 +139,14 @@ extern "C" {
 	};
     } *ojVal;
 
-    typedef bool		(*ojParseCallback)(ojVal val, void *ctx);
+    typedef ojCallbackOp	(*ojParseCallback)(ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
+
+    typedef struct _ojDestroyer {
+	ojVal		head;
+	ojVal		tail;
+	ojVal		dig;
+    } *ojDestroyer;
 
     typedef struct _ojParser {
 	const char	*map;
@@ -140,6 +154,9 @@ extern "C" {
 	ojVal		stack;
 	ojVal		results;
 	struct _ojErr	err;
+	ojVal		all_head;
+	ojVal		all_tail;
+	ojVal		all_dig;
 
 	// for push-pull parser
 	void		(*push)(ojVal val, void *ctx);
@@ -167,6 +184,7 @@ extern "C" {
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
     extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_strd(ojErr err, const char *json, ojDestroyer destroyer);
     extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
@@ -184,6 +202,7 @@ extern "C" {
 
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
+    extern void		oj_destroyer(ojDestroyer d);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
     // TBD set functions and add/append/insert

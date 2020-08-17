@@ -574,7 +574,8 @@ push_val(ojParser p, ojType type, ojMod mod) {
     return val;
 }
 
-static void
+// Return true to stop.
+static bool
 pop_val(ojParser p) {
     ojVal	parent;
     ojVal	top = p->stack;
@@ -582,6 +583,7 @@ pop_val(ojParser p) {
     if (p->pp) {
 	if (OJ_ARRAY == top->type || OJ_OBJECT == top->type) {
 	    p->pop(p->ctx);
+	    // TBD cleanup key, str and big
 	} else {
 	    p->push(top, p->ctx);
 	}
@@ -594,9 +596,37 @@ pop_val(ojParser p) {
 	    p->map = after_map;
 	}
     } else {
+	// add to all list
+	if ((OJ_STRING == top->type && sizeof(top->str.raw) <= top->str.len) ||
+	    (OJ_BIG == top->type && sizeof(top->num.raw) <= top->num.len) ||
+	    sizeof(top->key.raw) <= top->key.len) {
+	    top->free = p->all_dig;
+	    p->all_dig = top;
+	} else {
+	    top->free = p->all_head;
+	    if (NULL == p->all_head) {
+		p->all_tail = top;
+	    }
+	    p->all_head = top;
+	}
 	if (NULL == (parent = top->next)) {
 	    if (p->has_cb) {
-		p->cb(top, p->ctx);
+		ojCallbackOp	op = p->cb(top, p->ctx);
+
+		if (0 != (OJ_DESTROY & op)) {
+		    struct _ojDestroyer	d = {
+			.head = p->all_head,
+			.tail = p->all_tail,
+			.dig = p->all_dig,
+		    };
+		    oj_destroyer(&d);
+		}
+		if (0 != (OJ_STOP & op)) {
+		    return true;
+		}
+		p->all_head = NULL;
+		p->all_tail = NULL;
+		p->all_dig = NULL;
 	    } else {
 		top->next = p->results;
 		p->results = p->stack;
@@ -615,6 +645,7 @@ pop_val(ojParser p) {
 	    p->map = after_map;
 	}
     }
+    return false;
 }
 
 static void
@@ -775,7 +806,9 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if ('"' == *b) {
 		_oj_val_set_str(v, (char*)start, b - start);
-		pop_val(p);
+		if (pop_val(p)) {
+		    return OJ_ABORT;
+		}
 		p->map = (NULL == p->stack) ? value_map : after_map;
 		break;
 	    }
@@ -792,10 +825,14 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_CLOSE_OBJECT:
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    // flow through
 	case CLOSE_OBJECT:
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    break;
 	case OPEN_ARRAY:
 	    v = push_val(p, OJ_ARRAY, 0);
@@ -805,14 +842,20 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_CLOSE_ARRAY:
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    // flow through
 	case CLOSE_ARRAY:
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    break;
 	case NUM_COMMA:
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    if (OJ_OBJECT == p->stack->type) {
 		p->map = key_map;
 	    } else {
@@ -984,11 +1027,15 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case NUM_SPC:
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    break;
 	case NUM_NEWLINE:
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    b++;
 #ifdef SPACE_JUMP
 	    //for (uint32_t *sj = (uint32_t*)b; 0x20202020 == *sj; sj++) { b += 4; }
@@ -1010,7 +1057,9 @@ parse(ojParser p, const byte *json) {
 	    if ('"' == *b) {
 		p->map = p->next_map;
 		if (':' != p->map[256]) {
-		    pop_val(p);
+		    if (pop_val(p)) {
+			return OJ_ABORT;
+		    }
 		}
 		break;
 	    }
@@ -1022,7 +1071,9 @@ parse(ojParser p, const byte *json) {
 	case STR_QUOTE:
 	    p->map = p->next_map;
 	    if (':' != p->map[256]) {
-		pop_val(p);
+		if (pop_val(p)) {
+		    return OJ_ABORT;
+		}
 	    }
 	    break;
 	case ESC_U:
@@ -1061,7 +1112,9 @@ parse(ojParser p, const byte *json) {
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
 		push_val(p, OJ_NULL, 0);
-		pop_val(p);
+		if (pop_val(p)) {
+		    return OJ_ABORT;
+		}
 		break;
 	    }
 	    p->ri = 0;
@@ -1084,7 +1137,9 @@ parse(ojParser p, const byte *json) {
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
 		push_val(p, OJ_TRUE, 0);
-		pop_val(p);
+		if (pop_val(p)) {
+		    return OJ_ABORT;
+		}
 		break;
 	    }
 	    p->ri = 0;
@@ -1107,7 +1162,9 @@ parse(ojParser p, const byte *json) {
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
 		push_val(p, OJ_FALSE, 0);
-		pop_val(p);
+		if (pop_val(p)) {
+		    return OJ_ABORT;
+		}
 		break;
 	    }
 	    p->ri = 0;
@@ -1137,7 +1194,9 @@ parse(ojParser p, const byte *json) {
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
 		    }
 		    push_val(p, OJ_NULL, 0);
-		    pop_val(p);
+		    if (pop_val(p)) {
+			return OJ_ABORT;
+		    }
 		}
 		break;
 	    case 'F':
@@ -1147,7 +1206,9 @@ parse(ojParser p, const byte *json) {
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
 		    }
 		    push_val(p, OJ_FALSE, 0);
-		    pop_val(p);
+		    if (pop_val(p)) {
+			return OJ_ABORT;
+		    }
 		}
 		break;
 	    case 'T':
@@ -1157,7 +1218,9 @@ parse(ojParser p, const byte *json) {
 			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
 		    }
 		    push_val(p, OJ_TRUE, 0);
-		    pop_val(p);
+		    if (pop_val(p)) {
+			return OJ_ABORT;
+		    }
 		}
 		break;
 	    default:
@@ -1186,7 +1249,9 @@ parse(ojParser p, const byte *json) {
 	case 'g':
 	case 'Y':
 	    calc_num(p->stack);
-	    pop_val(p);
+	    if (pop_val(p)) {
+		return OJ_ABORT;
+	    }
 	    break;
 	}
     }
@@ -1579,10 +1644,35 @@ oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx),
 	    for (; NULL != p.ready->list.tail->next; p.ready->list.tail = p.ready->list.tail->next) {
 	    }
 	}
+	// TBD call the fast destroy
 	oj_destroy(p.ready);
     }
     return p.err.code;
 }
+
+ojVal
+oj_parse_strd(ojErr err, const char *json, ojDestroyer destroyer) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.has_cb = false;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (NULL != destroyer) {
+	destroyer->head = p.all_head;
+	destroyer->tail = p.all_tail;
+	destroyer->dig = p.all_dig;
+    }
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return p.results;
+}
+
 
 ojVal
 oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
