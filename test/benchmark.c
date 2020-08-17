@@ -145,7 +145,7 @@ bench_parse(const char *filename, int64_t iter) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		v;
     int64_t		start;
-    struct _ojDestroyer	destroyer = { .head = NULL, .tail = NULL, .dig = NULL };
+    struct _ojReuser	reuser = { .head = NULL, .tail = NULL, .dig = NULL };
 
     if (NULL != filename) {
 	buf = load_file(filename);
@@ -153,8 +153,8 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_strd(&err, str, &destroyer);
-	oj_destroyer(&destroyer);
+	v = oj_parse_strd(&err, str, &reuser);
+	oj_reuse(&reuser);
     }
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &err);

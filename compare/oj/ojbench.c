@@ -14,12 +14,12 @@ bench_parse(const char *filename, long long iter) {
     char		*buf = load_file(filename);
     int64_t		start = clock_micro();
     char		mem[16];
-    struct _ojDestroyer	d;
+    struct _ojReuser	r;
     struct _ojErr	err = OJ_ERR_INIT;;
 
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_strd(&err, buf, &d);
-	oj_destroyer(&d);
+	v = oj_parse_strd(&err, buf, &r);
+	oj_reuse(&r);
     }
     dt = clock_micro() - start;
 

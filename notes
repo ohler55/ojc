@@ -6,9 +6,6 @@
 - redo parser
  - ojDestroyer
   - better name? ojReuse ?
-  - list of s4ks
-   - or better to return at once?
-    - maybe at once
 
  - more efficient destroy
   - have cb return a op code

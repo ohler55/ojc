@@ -64,8 +64,6 @@ static union ojS4k	*volatile s4k_head = NULL;
 static union ojS4k	*volatile s4k_tail = NULL;
 static atomic_flag	s4k_busy = ATOMIC_FLAG_INIT;
 
-// TBD busy check for destroy and frees
-
 static uint32_t
 calc_hash(const char *key, size_t len) {
     uint32_t	h = 0;
@@ -217,7 +215,7 @@ _oj_val_clear(ojVal v) {
 }
 
 void
-oj_destroyer(ojDestroyer d) {
+oj_reuse(ojReuser reuser) {
     ojVal	v;
     ojVal	next;
     union ojS4k	*s4k_h = NULL;
@@ -225,7 +223,7 @@ oj_destroyer(ojDestroyer d) {
 
     // TBD walk dig, destroy str and big and place on head
     // free up
-    for (v = d->dig; NULL != v; v = next) {
+    for (v = reuser->dig; NULL != v; v = next) {
 	next = v->free;
 	if (sizeof(union ojS4k) < v->key.len) {
 	    OJ_FREE(v->key.ptr);
@@ -258,18 +256,18 @@ oj_destroyer(ojDestroyer d) {
 	    }
 	    break;
 	}
-	v->free = d->head;
-	d->head = v;
+	v->free = reuser->head;
+	reuser->head = v;
     }
     if (oj_thread_safe) {
 	while (atomic_flag_test_and_set(&val_busy)) {
 	}
 	if (NULL == free_head) {
-	    free_head = d->head;
+	    free_head = reuser->head;
 	} else {
-	    free_tail->free = d->head;
+	    free_tail->free = reuser->head;
 	}
-	free_tail = d->tail;
+	free_tail = reuser->tail;
 	if (NULL != s4k_h) {
 	    if (NULL == s4k_head) {
 		s4k_head = s4k_h;
@@ -281,11 +279,11 @@ oj_destroyer(ojDestroyer d) {
 	atomic_flag_clear(&val_busy);
     } else {
 	if (NULL == free_head) {
-	    free_head = d->head;
+	    free_head = reuser->head;
 	} else {
-	    free_tail->free = d->head;
+	    free_tail->free = reuser->head;
 	}
-	free_tail = d->tail;
+	free_tail = reuser->tail;
 	if (NULL != s4k_h) {
 	    if (NULL == s4k_head) {
 		s4k_head = s4k_h;

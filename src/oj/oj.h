@@ -142,11 +142,11 @@ extern "C" {
     typedef ojCallbackOp	(*ojParseCallback)(ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
-    typedef struct _ojDestroyer {
+    typedef struct _ojReuser {
 	ojVal		head;
 	ojVal		tail;
 	ojVal		dig;
-    } *ojDestroyer;
+    } *ojReuser;
 
     typedef struct _ojParser {
 	const char	*map;
@@ -184,7 +184,7 @@ extern "C" {
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
     extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_parse_strd(ojErr err, const char *json, ojDestroyer destroyer);
+    extern ojVal	oj_parse_strd(ojErr err, const char *json, ojReuser reuser);
     extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
 
@@ -202,7 +202,7 @@ extern "C" {
 
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
-    extern void		oj_destroyer(ojDestroyer d);
+    extern void		oj_reuse(ojReuser reuser);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
     // TBD set functions and add/append/insert

@@ -614,12 +614,12 @@ pop_val(ojParser p) {
 		ojCallbackOp	op = p->cb(top, p->ctx);
 
 		if (0 != (OJ_DESTROY & op)) {
-		    struct _ojDestroyer	d = {
+		    struct _ojReuser	r = {
 			.head = p->all_head,
 			.tail = p->all_tail,
 			.dig = p->all_dig,
 		    };
-		    oj_destroyer(&d);
+		    oj_reuse(&r);
 		}
 		if (0 != (OJ_STOP & op)) {
 		    return true;
@@ -1650,7 +1650,7 @@ oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx),
 }
 
 ojVal
-oj_parse_strd(ojErr err, const char *json, ojDestroyer destroyer) {
+oj_parse_strd(ojErr err, const char *json, ojReuser reuser) {
     struct _ojParser	p;
 
     memset(&p, 0, sizeof(p));
@@ -1658,10 +1658,10 @@ oj_parse_strd(ojErr err, const char *json, ojDestroyer destroyer) {
     p.err.line = 1;
     p.map = value_map;
     parse(&p, (const byte*)json);
-    if (NULL != destroyer) {
-	destroyer->head = p.all_head;
-	destroyer->tail = p.all_tail;
-	destroyer->dig = p.all_dig;
+    if (NULL != reuser) {
+	reuser->head = p.all_head;
+	reuser->tail = p.all_tail;
+	reuser->dig = p.all_dig;
     }
     if (OJ_OK != p.err.code) {
 	if (NULL != err) {
