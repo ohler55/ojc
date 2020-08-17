@@ -18,7 +18,7 @@ bench_parse(const char *filename, long long iter) {
     struct _ojErr	err = OJ_ERR_INIT;;
 
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_strd(&err, buf, &r);
+	v = oj_parse_strr(&err, buf, &r);
 	oj_reuse(&r);
     }
     dt = clock_micro() - start;

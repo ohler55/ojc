@@ -63,7 +63,7 @@ run_app(App app, const char *m, const char *filename, long iter) {
 	printf("*-*-* exited with error '%s'\n", cmd);
 	return NULL;
     }
-    ojVal	val = oj_parse_strd(&err, out, NULL);
+    ojVal	val = oj_parse_strr(&err, out, NULL);
 
     if (OJ_OK != err.code) {
 	printf("*-*-* failed to parse result from '%s'. %s\n", cmd, err.msg);

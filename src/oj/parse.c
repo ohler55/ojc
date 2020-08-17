@@ -1650,7 +1650,7 @@ oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx),
 }
 
 ojVal
-oj_parse_strd(ojErr err, const char *json, ojReuser reuser) {
+oj_parse_strr(ojErr err, const char *json, ojReuser reuser) {
     struct _ojParser	p;
 
     memset(&p, 0, sizeof(p));
@@ -1729,6 +1729,64 @@ oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
 }
 
 ojVal
+oj_parse_fdr(ojErr err, int fd, ojReuser reuser) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.has_cb = false;
+    p.err.line = 1;
+    p.map = value_map;
+
+    struct stat	info;
+
+    // st_size will be 0 if not a file
+    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
+	// Use threaded version.
+	parse_large(&p, fd);
+	if (OJ_OK != p.err.code) {
+	    if (NULL != err) {
+		*err = p.err;
+	    }
+	    return NULL;
+	}
+	return p.results;
+    }
+    byte	buf[16385];
+    size_t	size = sizeof(buf) - 1;
+    size_t	rsize;
+
+    while (true) {
+	if (0 < (rsize = read(fd, buf, size))) {
+	    buf[rsize] = '\0';
+	    if (OJ_OK != parse(&p, buf)) {
+		break;
+	    }
+	}
+	if (rsize <= 0) {
+	    if (0 != rsize) {
+		if (NULL != err) {
+		    oj_err_no(err, "read error");
+		}
+		return NULL;
+	    }
+	    break;
+	}
+    }
+    if (NULL != reuser) {
+	reuser->head = p.all_head;
+	reuser->tail = p.all_tail;
+	reuser->dig = p.all_dig;
+    }
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+	return NULL;
+    }
+    return p.results;
+}
+
+ojVal
 oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     int	fd = open(filename, O_RDONLY);
 
@@ -1739,6 +1797,23 @@ oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
 	return NULL;
     }
     ojVal	val = oj_parse_fd(err, fd, cb, ctx);
+
+    close(fd);
+
+    return val;
+}
+
+ojVal
+oj_parse_filer(ojErr err, const char *filename, ojReuser reuser) {
+    int	fd = open(filename, O_RDONLY);
+
+    if (fd < 0) {
+	if (NULL != err) {
+	    oj_err_no(err, "error opening %s", filename);
+	}
+	return NULL;
+    }
+    ojVal	val = oj_parse_fdr(err, fd, reuser);
 
     close(fd);
 

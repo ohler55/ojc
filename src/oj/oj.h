@@ -184,10 +184,11 @@ extern "C" {
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
     extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_parse_strd(ojErr err, const char *json, ojReuser reuser);
+    extern ojVal	oj_parse_strr(ojErr err, const char *json, ojReuser reuser);
     extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojVal	oj_parse_filer(ojErr err, const char *filename, ojReuser reuser);
     extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
-
+    extern ojVal	oj_parse_fdr(ojErr err, int fd, ojReuser reuser);
 
     extern ojStatus	oj_pp_parse_str(ojErr		err,
 					const char	*json,
