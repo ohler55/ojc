@@ -145,6 +145,7 @@ bench_parse(const char *filename, int64_t iter) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		v;
     int64_t		start;
+    struct _ojDestroyer	destroyer = { .head = NULL, .tail = NULL, .dig = NULL };
 
     if (NULL != filename) {
 	buf = load_file(filename);
@@ -152,8 +153,8 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_str(&err, str, NULL, NULL);
-	oj_destroy(v);
+	v = oj_parse_strd(&err, str, &destroyer);
+	oj_destroyer(&destroyer);
     }
     dt = clock_micro() - start;
     print_results("oj_parse_str", iter, dt, &err);
@@ -182,12 +183,11 @@ bench_parse(const char *filename, int64_t iter) {
     return 0;
 }
 
-static bool
+static ojCallbackOp
 destroy_cb(ojVal val, void *ctx) {
     //walk_oj(val);
-    oj_destroy(val);
     *(long*)ctx = *(long*)ctx + 1;
-    return true;
+    return OJ_DESTROY;
 }
 
 static int

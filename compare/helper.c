@@ -78,8 +78,6 @@ form_json_results(const char *name, long long iter, long long usec, const char *
     if (NULL != err) {
 	printf("{\"name\":\"oj\",\"err\":\"%s\"}\n", err);
     } else {
-	char	mem[16];
-
 	printf("{\"name\":\"%s\",\"usec\":%lld,\"iter\":%lld,\"mem\":\"%s\"}\n",
 	       name, usec, iter, mem);
     }

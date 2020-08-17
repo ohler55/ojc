@@ -89,7 +89,7 @@ oj_val_create() {
     if (!oj_thread_safe) {
 	ojVal	val = free_head;
 
-	free_head = free_head->next;
+	free_head = free_head->free;
 
 	return val;
     }
@@ -101,7 +101,7 @@ oj_val_create() {
 	val = (ojVal)OJ_CALLOC(1, sizeof(struct _ojVal));
     } else {
 	val = free_head;
-	free_head = free_head->next;
+	free_head = free_head->free;
     }
     atomic_flag_clear(&val_busy);
 
@@ -147,10 +147,154 @@ oj_cleanup() {
 
     ojVal	val;
     while (NULL != (val = free_head)) {
-	free_head = val->next;
+	free_head = val->free;
 	OJ_FREE(val);
     }
     free_tail = NULL;
+}
+
+void
+_oj_val_clear(ojVal v) {
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
+
+    if (sizeof(union ojS4k) < v->key.len) {
+	OJ_FREE(v->key.ptr);
+    } else if (sizeof(v->key.raw) < v->key.len) {
+	v->key.s4k->next = NULL;
+	if (NULL == s4k_h) {
+	    s4k_h = v->key.s4k;
+	} else {
+	    s4k_t->next = v->key.s4k;
+	}
+	s4k_t = v->key.s4k;
+    }
+    v->key.len = 0;
+    switch (v->type) {
+    case OJ_STRING:
+	if (sizeof(union ojS4k) < v->str.len) {
+	    OJ_FREE(v->str.ptr);
+	} else if (sizeof(v->str.raw) < v->str.len) {
+	    v->str.s4k->next = NULL;
+	    if (NULL == s4k_h) {
+		s4k_h = v->str.s4k;
+	    } else {
+		s4k_t->next = v->str.s4k;
+	    }
+	    s4k_t = v->str.s4k;
+	}
+	v->str.len = 0;
+	break;
+    case OJ_BIG:
+	if (sizeof(v->num.raw) <= v->num.len) {
+	    OJ_FREE(v->num.ptr);
+	}
+	v->key.len = 0;
+	break;
+    }
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+    }
+}
+
+void
+oj_destroyer(ojDestroyer d) {
+    ojVal	v;
+    ojVal	next;
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
+
+    // TBD walk dig, destroy str and big and place on head
+    // free up
+    for (v = d->dig; NULL != v; v = next) {
+	next = v->free;
+	if (sizeof(union ojS4k) < v->key.len) {
+	    OJ_FREE(v->key.ptr);
+	} else if (sizeof(v->key.raw) < v->key.len) {
+	    v->key.s4k->next = NULL;
+	    if (NULL == s4k_h) {
+		s4k_h = v->key.s4k;
+	    } else {
+		s4k_t->next = v->key.s4k;
+	    }
+	    s4k_t = v->key.s4k;
+	}
+	switch (v->type) {
+	case OJ_STRING:
+	    if (sizeof(union ojS4k) < v->str.len) {
+		OJ_FREE(v->str.ptr);
+	    } else if (sizeof(v->str.raw) < v->str.len) {
+		v->str.s4k->next = NULL;
+		if (NULL == s4k_h) {
+		    s4k_h = v->str.s4k;
+		} else {
+		    s4k_t->next = v->str.s4k;
+		}
+		s4k_t = v->str.s4k;
+	    }
+	    break;
+	case OJ_BIG:
+	    if (sizeof(v->num.raw) <= v->num.len) {
+		OJ_FREE(v->num.ptr);
+	    }
+	    break;
+	}
+	v->free = d->head;
+	d->head = v;
+    }
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+	if (NULL == free_head) {
+	    free_head = d->head;
+	} else {
+	    free_tail->free = d->head;
+	}
+	free_tail = d->tail;
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL == free_head) {
+	    free_head = d->head;
+	} else {
+	    free_tail->free = d->head;
+	}
+	free_tail = d->tail;
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+    }
 }
 
 void
@@ -163,8 +307,8 @@ oj_destroy(ojVal val) {
     if (NULL == val) {
 	return;
     }
-    val->next = NULL;
-    for (; NULL != v; v = v->next) {
+    val->free = NULL;
+    for (; NULL != v; v = v->free) {
 	if (sizeof(union ojS4k) < v->key.len) {
 	    OJ_FREE(v->key.ptr);
 	} else if (sizeof(v->key.raw) < v->key.len) {
@@ -192,6 +336,7 @@ oj_destroy(ojVal val) {
 	    break;
 	case OJ_INT:
 	case OJ_DECIMAL:
+	    break;
 	case OJ_BIG:
 	    if (sizeof(v->num.raw) <= v->num.len) {
 		OJ_FREE(v->num.ptr);
@@ -199,27 +344,29 @@ oj_destroy(ojVal val) {
 	    break;
 	case OJ_OBJECT:
 	    if (OJ_OBJ_RAW == v->mod) {
-		if (NULL != v->list.head) {
-		    tail->next = v->list.head;
-		    tail = v->list.tail;
+		for (ojVal m = v->list.head; NULL != m; m = m->next) {
+		    m->free = NULL;
+		    tail->free = m;
+		    tail = m;
 		}
 	    } else {
 		ojVal	*bucket = v->hash;
 		ojVal	*bend = bucket + sizeof(v->hash) / sizeof(*v->hash);
 
 		for (; bucket < bend; bucket++) {
-		    if (NULL != *bucket) {
-			tail->next = *bucket;
-			for (; NULL != tail->next; tail = tail->next) {
-			}
+		    for (ojVal m = *bucket; NULL != m; m = m->next) {
+			m->free = NULL;
+			tail->free = m;
+			tail = m;
 		    }
 		}
 	    }
 	    break;
 	case OJ_ARRAY: {
-	    if (NULL != v->list.head) {
-		tail->next = v->list.head;
-		tail = v->list.tail;
+	    for (ojVal m = v->list.head; NULL != m; m = m->next) {
+		m->free = NULL;
+		tail->free = m;
+		tail = m;
 	    }
 	    break;
 	}
@@ -234,7 +381,7 @@ oj_destroy(ojVal val) {
 	if (NULL == free_head) {
 	    free_head = val;
 	} else {
-	    free_tail->next = val;
+	    free_tail->free = val;
 	}
 	free_tail = tail;
 	if (NULL != s4k_h) {
@@ -250,7 +397,7 @@ oj_destroy(ojVal val) {
 	if (NULL == free_head) {
 	    free_head = val;
 	} else {
-	    free_tail->next = val;
+	    free_tail->free = val;
 	}
 	free_tail = tail;
 	if (NULL != s4k_h) {
