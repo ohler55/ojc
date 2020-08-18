@@ -7,9 +7,10 @@
 #include "ut.h"
 
 struct _data {
-    const char	*json;
-    const char	*expect;
-    ojStatus	status;
+    const char		*json;
+    const char		*expect;
+    ojStatus		status;
+    struct _ojErr	err;
 };
 
 static void
@@ -34,7 +35,7 @@ parse_jsons(struct _data *dp) {
 	    } else {
 		ok = ut_same(dp->expect, buf.head);
 	    }
-	    if (ok && ut_verbose) {
+	    if (ut_verbose) {
 		const char	*s = dp->json;
 		char		tmp[64];
 
@@ -49,19 +50,30 @@ parse_jsons(struct _data *dp) {
 		    *t++ = '\0';
 		    s = tmp;
 		}
-		ut_print("--- '%s' - pass\n", s);
+		if (ok) {
+		    ut_print("--- '%s' - \033[92mpass\033[0m\n", s);
+		} else {
+		    ut_print("--- '%s' - \033[91mfail\033[0m\n", s);
+		}
 	    }
 	    oj_buf_cleanup(&buf);
 	    oj_destroy(val);
-	} else if (err.code != dp->status) {
-	    ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, err.code, err.msg);
-	    ut_fail();
+	} else {
+	    ut_same_int(dp->status, err.code, "error code");
+	    ut_same_int(dp->err.line, err.line, "error line");
+	    ut_same_int(dp->err.col, err.col, "error column");
+	    ut_same(dp->err.msg, err.msg);
+	    if (err.code != dp->status) {
+		ut_print("%s: expected error [%d], not [%d] %s\n", dp->json, dp->status, err.code, err.msg);
+		ut_fail();
+	    }
+	    oj_err_init(&err);
 	}
     }
 }
 
 static void
-parse_mixed_test() {
+parse_string_test() {
     char	big[128];
     char	big_cut[128];
 
@@ -94,13 +106,12 @@ parse_mixed_test() {
 	{.json = "\"abc\"", .status = OJ_OK },
 	{.json = "\"ab\\tcd\"", .status = OJ_OK },
 	{.json = "\"\\u3074ー\\u305fー\"", .status = OJ_OK, .expect = "\"ぴーたー\"" },
+	{.json = "\"a\xf8z\"", .status = OJ_ERR_PARSE, .err = {.line = 1, .col = 3, .msg = "invalid JSON character 0xf8"}},
 
 	{.json = big, .status = OJ_OK },
 	{.json = big_cut, .status = OJ_OK },
 	{.json = bigger, .status = OJ_OK },
 	{.json = bigger_cut, .status = OJ_OK },
-
-	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
 	{.json = NULL }};
 
     parse_jsons(cases);
@@ -120,6 +131,14 @@ parse_int_test() {
 
     ut_same_int(12345, i, "parse int");
     oj_destroy(val);
+
+    struct _data	cases[] = {
+	{.json = "-12345", .status = OJ_OK },
+	{.json = "12345678901234567890", .status = OJ_OK },
+	{.json = "123456789012345678901", .status = OJ_OK },
+	{.json = NULL }};
+
+    parse_jsons(cases);
 }
 
 static void
@@ -182,10 +201,32 @@ parse_bignum_test() {
     oj_destroy(val);
 }
 
+static void
+parse_mixed_test() {
+    struct _data	cases[] = {
+	{.json = "{\"x\":true,\"y\":false}", .status = OJ_OK },
+	{.json = "[true,false]", .status = OJ_OK },
+	{.json = NULL }};
+
+    parse_jsons(cases);
+}
+
+static void
+parse_invalid_test() {
+    struct _data	cases[] = {
+	{.json = "{\"x\":true]", .status = OJ_ERR_PARSE, .err = {.line = 1, .col = 10, .msg = "unexpected array close"}},
+	{.json = "[true}", .status = OJ_ERR_PARSE, .err = {.line = 1, .col = 6, .msg = "unexpected object close"}},
+	{.json = NULL }};
+
+    parse_jsons(cases);
+}
+
 void
 append_parse_tests(Test tests) {
-    ut_append(tests, "parse.mixed", parse_mixed_test);
+    ut_append(tests, "parse.string", parse_string_test);
     ut_append(tests, "parse.int", parse_int_test);
     ut_append(tests, "parse.decimal", parse_decimal_test);
     ut_append(tests, "parse.bignum", parse_bignum_test);
+    ut_append(tests, "parse.mixed", parse_mixed_test);
+    ut_append(tests, "parse.invalid", parse_invalid_test);
 }

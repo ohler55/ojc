@@ -8,9 +8,12 @@
 #include "oj/buf.h"
 
 typedef struct _benchResult {
-    long	cnt;
-    double	msecs;
-    long	bytes;
+    struct _benchResult	*next;
+    const char		*name;
+    int64_t		cnt;
+    int64_t		usec;
+    const char		*err;
+    const char		*mem;
 } *BenchResult;
 
 typedef struct _app {
@@ -18,8 +21,23 @@ typedef struct _app {
 
 } *App;
 
+typedef struct _result {
+    const char	*mode;
+    const char	*filename;
+    const char	*size;
+    long	iter;
+    BenchResult	results; // one for each app
+} *Result;
+
+static struct _result	results[] = {
+    { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 10000, .results = NULL },
+    { .mode = NULL },
+};
+
 static const char	*mode = NULL;
-static const char	*modes[] = { "parse", "small", "medium", "large", "validate", "write", NULL };
+static const char	*size = NULL;
+static const char	*modes[] = { "validate", "extract", "parse", "encode", "test", NULL };
+static const char	*sizes[] = { "small", "medium", "5GB", "large", NULL };
 
 static void
 usage(const char *appName) {
@@ -34,20 +52,31 @@ usage(const char *appName) {
     printf("\n");
     printf("  Compare JSON tools with some simple validation checks and benchmarks.\n");
     printf("\n");
-    printf("  -c comparison   (%s), default all.\n", buf.head);
+    printf("  -o operation  (one of the operations), default all.\n");
+    printf("                test - run validation tests to assure compliance\n");
+    printf("                validate - validate the file only\n");
+    printf("                extract - parse and extract a single value\n");
+    printf("                parse - parse and assure all elements have been parsed\n");
+    printf("                encode - create a small set of objects in memory and encode\n");
+    printf("\n");
+    printf("  -s size       (one of the sizes), default all.\n");
+    printf("                small - single JSON entry less than 100KB in memory\n");
+    printf("                medium - multiple JSON entries just under 4GB in size\n");
+    printf("                5GB - multiple JSON entries about 5GB in size\n");
+    printf("                large - multiple JSON entries with size larger than machine memory\n");
     printf("\n");
     oj_buf_cleanup(&buf);
     exit(0);
 }
 
 static ojVal
-run_app(App app, const char *m, const char *filename, long iter) {
+run_app(const char *app, const char *m, const char *filename, long iter) {
     char		cmd[1024];
     char		out[4096];
     struct _ojErr	err = OJ_ERR_INIT;
     FILE		*f;
 
-    snprintf(cmd, sizeof(cmd), "%s %s \"%s\" %ld\n", app->path, m, filename, iter);
+    snprintf(cmd, sizeof(cmd), "%s %s \"%s\" %ld\n", app, m, filename, iter);
     if (NULL == (f = popen(cmd, "r"))) {
 	printf("*-*-* failed to run %s\n", cmd);
 	return NULL;
@@ -63,7 +92,7 @@ run_app(App app, const char *m, const char *filename, long iter) {
 	printf("*-*-* exited with error '%s'\n", cmd);
 	return NULL;
     }
-    ojVal	val = oj_parse_strr(&err, out, NULL);
+    ojVal	val = oj_parse_str_reuse(&err, out, NULL);
 
     if (OJ_OK != err.code) {
 	printf("*-*-* failed to parse result from '%s'. %s\n", cmd, err.msg);
@@ -72,49 +101,57 @@ run_app(App app, const char *m, const char *filename, long iter) {
     return val;
 }
 
-typedef struct _fileIter {
-    const char	*filename;
-    long	iter;
-} *FileIter;
-
-static struct _fileIter	files[] = {
-    { .filename = "files/patient.json", .iter = 100000 },
-    { .filename = "files/ca.json", .iter = 10000 },
-    { .filename = NULL },
-};
-
 static void
-run_parse(App apps) {
-    for (FileIter fi = files; NULL != fi->filename; fi++) {
-	for (App a = apps; NULL != a->path; a++) {
-	    ojVal	val = run_app(a, "parse", fi->filename, fi->iter);
+run(const char **apps) {
+    for (Result r = results; NULL != r->mode; r++) {
+	if (NULL != mode && 0 != strcmp(mode, r->mode)) {
+	    continue;
+	}
+	if (NULL != size && 0 != strcmp(size, r->size)) {
+	    continue;
+	}
+	printf("Parse %s (%s) %ld times\n", r->filename, r->size, r->iter);
+	for (const char **a = apps; NULL != *a; a++) {
+	    BenchResult	br = (BenchResult)calloc(1, sizeof(struct _benchResult));
+	    ojVal	val = run_app(*a, "parse", r->filename, r->iter);
 
 	    if (NULL != val) {
-		const char	*name = oj_str_get(oj_object_get(val, "name", 4));
-		const char	*err = oj_str_get(oj_object_get(val, "err", 3));
-		int64_t		usec = oj_int_get(oj_object_get(val, "usec", 4));
-		int64_t		iter = oj_int_get(oj_object_get(val, "iter", 4));
-		const char	*mem = oj_str_get(oj_object_get(val, "mem", 3));
+		br->name = oj_str_get(oj_object_get(val, "name", 4));
+		br->err = oj_str_get(oj_object_get(val, "err", 3));
+		br->usec = oj_int_get(oj_object_get(val, "usec", 4));
+		br->cnt = oj_int_get(oj_object_get(val, "iter", 4));
+		br->mem = oj_str_get(oj_object_get(val, "mem", 3));
 
-		if (NULL != err) {
-		    printf("%-10s: %s\n", name, err);
+		if (NULL != br->err) {
+		    printf("%-10s: %s\n", br->name, br->err);
 		} else {
-		    double	per = (double)usec / (double)iter;
+		    double	per = (double)br->usec / (double)br->cnt;
 
 		    printf("%-10s: %10lld entries in %8.3f msecs. (%7.1f usec/iterations) used %s of memory\n",
-			   name, (long long)iter, (double)usec / 1000.0, per, mem);
+			   br->name, (long long)br->cnt, (double)br->usec / 1000.0, per, br->mem);
 		}
 		oj_destroy(val);
 	    }
+	    // TBD add br to results
 	}
     }
+}
+
+static bool
+includes(const char *s, const char **choices) {
+    for (; NULL != *choices; choices++) {
+	if (0 == strcmp(s, *choices)) {
+	    return true;
+	}
+    }
+    return false;
 }
 
 int
 main(int argc, char **argv) {
     char	*appName = *argv;
     char	*a;
-    struct _app	apps[16];
+    const char	*apps[16];
     int		app_cnt = 0;
 
     memset(apps, 0, sizeof(apps));
@@ -124,33 +161,36 @@ main(int argc, char **argv) {
 	a = *argv;
 	if ('-' == *a) {
 	    switch (a[1]) {
-	    case 'c':
+	    case 'o':
 		argv++;
 		argc--;
 		mode = *argv;
-		// TBD check value is one of modes
+		if (!includes(mode, modes)) {
+		    printf("*-*-* %s is not a valid mode\n", mode);
+		    usage(appName);
+		    return 1;
+		}
+		break;
+	    case 's':
+		argv++;
+		argc--;
+		size = *argv;
+		if (!includes(size, sizes)) {
+		    printf("*-*-* %s is not a valid size\n", size);
+		    usage(appName);
+		    return 1;
+		}
 		break;
 	    default:
 		usage(appName);
 		break;
 	    }
 	} else {
-	    apps[app_cnt].path = a;
+	    apps[app_cnt] = a;
 	    app_cnt++;
 	}
     }
-    if (NULL == mode || 0 == strcmp(mode, "parse")) {
-	run_parse(apps);
-    }
-
-    //
-    // TBD results for
-    // validate same file for performance
-    // parse small file (100M log file)
-    // parse medium file (5G log file)
-    // parse larger file (20G log file)
-    // validate small files with errors or not to check validation
-
+    run(apps);
 
     return 0;
 }

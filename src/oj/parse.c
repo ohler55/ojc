@@ -74,9 +74,13 @@ enum {
     BIG_E		= 'J',
     BIG_EXP_SIGN	= 'K',
     BIG_EXP		= 'L',
+    UTF1		= 'M', // expect 1 more follow byte
     NUM_DIGIT		= 'N',
     NUM_ZERO		= 'O',
+    UTF2		= 'P', // expect 2 more follow byte
+    UTF3		= 'Q', // expect 3 more follow byte
     STR_OK		= 'R',
+    UTFX		= 'S', // following bytes
     ESC_U		= 'U',
     CHAR_ERR		= '.',
     DONE		= 'X',
@@ -342,10 +346,10 @@ static const char	string_map[257] = "\
 RRzRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRARRR\
 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\
-RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRs";
+................................\
+................................\
+MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM\
+PPPPPPPPPPPPPPPPQQQQQQQQ........s";
 
 static const char	esc_map[257] = "\
 ................................\
@@ -376,6 +380,16 @@ static const char	u_map[257] = "\
 ................................\
 ................................\
 ................................u";
+
+static const char	utf_map[257] = "\
+................................\
+................................\
+................................\
+................................\
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\
+................................\
+................................8";
 
 static const char	space_map[257] = "\
 .........ab..a..................\
@@ -480,7 +494,7 @@ unicodeToUtf8(uint32_t code, byte *buf) {
 
 static ojStatus
 byteError(ojErr err, const char *map, int off, byte b) {
-    err->col = off - err->col;
+    err->col = off - err->col + 1;
     switch (map[256]) {
     case 'N': // null_map
 	oj_err_set(err, OJ_ERR_PARSE, "expected null");
@@ -830,6 +844,10 @@ parse(ojParser p, const byte *json) {
 	    }
 	    // flow through
 	case CLOSE_OBJECT:
+	    if (OJ_OBJECT != p->stack->type) {
+		p->err.col = b - json - p->err.col + 1;
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
+	    }
 	    if (pop_val(p)) {
 		return OJ_ABORT;
 	    }
@@ -847,6 +865,10 @@ parse(ojParser p, const byte *json) {
 	    }
 	    // flow through
 	case CLOSE_ARRAY:
+	    if (OJ_ARRAY != p->stack->type) {
+		p->err.col = b - json - p->err.col + 1;
+		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
+	    }
 	    if (pop_val(p)) {
 		return OJ_ABORT;
 	    }
@@ -1108,6 +1130,44 @@ parse(ojParser p, const byte *json) {
 	    }
 	    p->map = string_map;
 	    break;
+	case UTF1:
+	    p->ri = 1;
+	    p->map = utf_map;
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->stack->key, b, 1);
+	    } else {
+		_oj_append_str(p, &p->stack->str, b, 1);
+	    }
+	    break;
+	case UTF2:
+	    p->ri = 2;
+	    p->map = utf_map;
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->stack->key, b, 1);
+	    } else {
+		_oj_append_str(p, &p->stack->str, b, 1);
+	    }
+	    break;
+	case UTF3:
+	    p->ri = 3;
+	    p->map = utf_map;
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->stack->key, b, 1);
+	    } else {
+		_oj_append_str(p, &p->stack->str, b, 1);
+	    }
+	    break;
+	case UTFX:
+	    p->ri--;
+	    if (':' == p->next_map[256]) {
+		_oj_append_str(p, &p->stack->key, b, 1);
+	    } else {
+		_oj_append_str(p, &p->stack->str, b, 1);
+	    }
+	    if (p->ri <= 0) {
+		p->map = string_map;
+	    }
+	    break;
 	case VAL_NULL:
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
@@ -1311,8 +1371,10 @@ validate(ojValidator v, const byte *json) {
 		v->next_map = (0 == v->depth) ? value_map : after_map;
 		break;
 	    default:
-		v->err.col = b - json - v->err.col;
-		return oj_err_set(&v->err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", *b);
+		b--;
+		v->map = string_map;
+		v->next_map = (0 == v->depth) ? value_map : after_map;
+		break;
 	    }
 	    break;
 	case OPEN_OBJECT:
@@ -1430,6 +1492,24 @@ validate(ojValidator v, const byte *json) {
 	case ESC_OK:
 	    v->map = string_map;
 	    break;
+	case UTF1:
+	    v->ri = 1;
+	    v->map = utf_map;
+	    break;
+	case UTF2:
+	    v->ri = 2;
+	    v->map = utf_map;
+	    break;
+	case UTF3:
+	    v->ri = 3;
+	    v->map = utf_map;
+	    break;
+	case UTFX:
+	    v->ri--;
+	    if (v->ri <= 0) {
+		v->map = string_map;
+	    }
+	    break;
 	case VAL_NULL:
 	    //if (*(uint32_t*)b == *(uint32_t*)"null") {
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
@@ -1487,7 +1567,6 @@ read_block(int fd, ReadBlock b) {
 
     if (0 < rcnt) {
 	b->buf[rcnt] = '\0';
-	//printf("*** %s\n", (char*)b->buf);
     }
     if (rcnt != sizeof(b->buf) - 1) {
 	if (0 == rcnt) {
@@ -1650,7 +1729,7 @@ oj_pp_parse_str(ojErr err, const char *json, void (*push)(ojVal val, void *ctx),
 }
 
 ojVal
-oj_parse_strr(ojErr err, const char *json, ojReuser reuser) {
+oj_parse_str_reuse(ojErr err, const char *json, ojReuser reuser) {
     struct _ojParser	p;
 
     memset(&p, 0, sizeof(p));
@@ -1729,7 +1808,7 @@ oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
 }
 
 ojVal
-oj_parse_fdr(ojErr err, int fd, ojReuser reuser) {
+oj_parse_fd_reuse(ojErr err, int fd, ojReuser reuser) {
     struct _ojParser	p;
 
     memset(&p, 0, sizeof(p));
@@ -1804,7 +1883,7 @@ oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
 }
 
 ojVal
-oj_parse_filer(ojErr err, const char *filename, ojReuser reuser) {
+oj_parse_file_reuse(ojErr err, const char *filename, ojReuser reuser) {
     int	fd = open(filename, O_RDONLY);
 
     if (fd < 0) {
@@ -1813,7 +1892,7 @@ oj_parse_filer(ojErr err, const char *filename, ojReuser reuser) {
 	}
 	return NULL;
     }
-    ojVal	val = oj_parse_fdr(err, fd, reuser);
+    ojVal	val = oj_parse_fd_reuse(err, fd, reuser);
 
     close(fd);
 

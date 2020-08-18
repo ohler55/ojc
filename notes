@@ -4,20 +4,11 @@
 ^c^s show subtree
 
 - redo parser
- - try 3 variations
-  - validate
-  - no val check
-  - walk
-
- - validate utf-8
-  - inline or switch
-   - switch
-    - map for each level
 
  - callback thread option
   - maybe implement ojCaller
    - provide a func and ctx
-   - provide stack depth
+   - provide queue depth
    - hand to a parser
     - use a stack like file reader
 

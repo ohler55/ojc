@@ -147,12 +147,12 @@ ut_done(void) {
 	    skip++;
 	    break;
 	case 0:
-	    result = "FAILED";
+	    result = "\033[91mFAILED\033[0m";
 	    fail++;
 	    break;
 	case 1:
 	default:
-	    result = "Passed";
+	    result = "\033[92mPassed\033[0m";
 	    break;
 	}
 	cnt++;
@@ -246,14 +246,14 @@ ut_same(const char *expected, const char *actual) {
     }
     if ('\0' != *a) {
 	if ('\0' == *e) {
-	    ut_print("%s.%s Failed: Actual result longer than expected\n", group, currentTest->name);
+	    ut_print("%s.%s \033[91mFailed: Actual result longer than expected\033[0m\n", group, currentTest->name);
 	    pass = 0;
 	    if (ut_verbose) {
 		ut_print("expected: '%s'\n", expected);
 		ut_print("  actual: '%s'\n\n", actual);
 	    }
 	} else {
-	    ut_print("%s.%s Failed: Mismatch at line %d, column %d\n", group, currentTest->name, line, col);
+	    ut_print("%s.%s \033[91mFailed: Mismatch at line %d, column %d\033[0m\n", group, currentTest->name, line, col);
 	    if (ut_verbose) {
 		ut_print("expected: '%s'\n", expected);
 		ut_print("  actual: '%s'\n\n", actual);
@@ -261,7 +261,7 @@ ut_same(const char *expected, const char *actual) {
 	    pass = 0;
 	}
     } else if ('\0' != *e) {
-	ut_print("%s.%s Failed: Actual result shorter than expected\n", group, currentTest->name);
+	ut_print("%s.%s \033[91mFailed: Actual result shorter than expected\033[0m\n", group, currentTest->name);
 	pass = 0;
 	if (ut_verbose) {
 	    ut_print("expected: '%s'\n", expected);
@@ -287,7 +287,7 @@ ut_same_int(int64_t expected, int64_t actual, const char *format, ...) {
 	va_start(ap, format);
 	vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
-	ut_print("%s.%s Failed: %s\n  expected: %lld\n  actual: %lld\n",
+	ut_print("%s.%s \033[91mFailed\033[0m: %s\n  expected: %lld\n  actual: %lld\n",
 		 group, currentTest->name, buf, expected, actual);
     }
     if (0 != currentTest->pass) {	// don't replace failed status
@@ -309,7 +309,7 @@ ut_same_double(long double expected, long double actual, long double prec, const
 	va_start(ap, format);
 	vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
-	ut_print("%s.%s Failed: %s\n  expected: %Lg\n  actual: %Lg\n",
+	ut_print("%s.%s \033[91mFailed\033[0m: %s\n  expected: %Lg\n  actual: %Lg\n",
 		 group, currentTest->name, buf, expected, actual);
     }
     if (0 != currentTest->pass) {	// don't replace failed status
@@ -398,11 +398,11 @@ ut_reportTest(const char *testName) {
 	result = "Skipped";
 	break;
     case 0:
-	result = "FAILED";
+	result = "\033[91mFAILED\033[0m";
 	break;
     case 1:
     default:
-	result = "Passed";
+	result = "\033[92mPassed\033[0m";
 	break;
     }
     ut_print("%s: %s", t->name, result);

@@ -153,7 +153,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_strr(&err, str, &reuser);
+	v = oj_parse_str_reuse(&err, str, &reuser);
 	oj_reuse(&reuser);
     }
     dt = clock_micro() - start;
