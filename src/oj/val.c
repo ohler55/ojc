@@ -221,8 +221,6 @@ oj_reuse(ojReuser reuser) {
     union ojS4k	*s4k_h = NULL;
     union ojS4k	*s4k_t = NULL;
 
-    // TBD walk dig, destroy str and big and place on head
-    // free up
     for (v = reuser->dig; NULL != v; v = next) {
 	next = v->free;
 	if (sizeof(union ojS4k) < v->key.len) {
@@ -497,12 +495,13 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 		}
 		oj_buf_append(buf, '}');
 	    } else {
-		int	d2 = depth + 1;
+		int		d2 = depth + 1;
+		const char	*k;
 
 		for (ojVal v = val->list.head; NULL != v; v = v->next) {
-		    // TBD handle longer key as well as with esc chars
+		    k = oj_key(v);
 		    oj_buf_append(buf, '"');
-		    oj_buf_append_string(buf, v->key.raw, v->key.len);
+		    oj_buf_append_string(buf, k, v->key.len);
 		    oj_buf_append(buf, '"');
 		    oj_buf_append(buf, ':');
 		    oj_buf(buf, v, indent, d2);
@@ -720,27 +719,41 @@ oj_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx) {
     return v;
 }
 
+// has to be a OJ_OBJ_HASH
+static ojVal
+object_get(ojVal val, const char *key, int len) {
+    uint32_t	kh = calc_hash(key, len);
+    ojVal	v = val->hash[kh & 0x0000000F];
+
+    for (; NULL != v; v = v->next) {
+	if (v->kh == kh && len == v->key.len && 0 == strncmp(key, oj_key(v), len)) {
+	    break;
+	}
+    }
+    return v;
+}
+
 ojVal
 oj_object_get(ojVal val, const char *key, int len) {
     ojVal	v = NULL;
 
     if (NULL != val && OJ_OBJECT == val->type) {
 	if (OJ_OBJ_RAW == val->mod) {
-	    v = val->list.head;
-	    // memset(val->hash, 0, sizeof(val->hash));
-	    for (; NULL != v; v = v->next) {
-		v->kh = calc_hash(oj_key(v), val->key.len);
-		// place into hash
-	    }
-	    // TBD val->type = OJ_OBJ_HASH;
+	    uint32_t	u;
+	    ojVal	next;
 
-	    // TBD until then...
-	    for (v = val->list.head; NULL != v; v = v->next) {
-		if (len == v->key.len && 0 == strcmp(key, oj_key(v))) {
-		    break;
-		}
+	    v = val->list.head;
+	    memset(val->hash, 0, sizeof(val->hash));
+	    for (; NULL != v; v = next) {
+		next = v->next;
+		v->kh = calc_hash(oj_key(v), v->key.len);
+		u = v->kh & 0x0000000F;
+		v->next = val->hash[u];
+		val->hash[u] = v;
 	    }
+	    val->mod = OJ_OBJ_HASH;
 	}
+	v = object_get(val, key, len);
     }
     return v;
 }
@@ -757,12 +770,13 @@ oj_object_find(ojVal val, const char *key, int len) {
 		}
 	    }
 	} else {
-	    // TBD
+	    v = object_get(val, key, len);
 	}
     }
     return v;
 }
 
+// TBD candidates for common function
 void
 _oj_val_set_key(ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->key.raw)) {

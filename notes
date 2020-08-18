@@ -8,10 +8,11 @@
   - validate
   - no val check
   - walk
- - test return from a longer int is correct
 
  - validate utf-8
   - inline or switch
+   - switch
+    - map for each level
 
  - callback thread option
   - maybe implement ojCaller
@@ -28,7 +29,7 @@
 
  - val parse tests
 
- - object hash
+- val create functions
 
 - make sure follow works
 
