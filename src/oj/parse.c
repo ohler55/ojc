@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
+#include <signal.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -641,6 +642,8 @@ pop_val(ojParser p) {
 		p->all_head = NULL;
 		p->all_tail = NULL;
 		p->all_dig = NULL;
+	    } else if (p->has_caller) {
+		oj_caller_push(p, p->caller, top);
 	    } else {
 		top->next = p->results;
 		p->results = p->stack;
@@ -1751,6 +1754,25 @@ oj_parse_str_reuse(ojErr err, const char *json, ojReuser reuser) {
     return p.results;
 }
 
+ojStatus
+oj_parse_str_call(ojErr err, const char *json, ojCaller caller) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.has_cb = false;
+    p.has_caller = true;
+    p.caller = caller;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    oj_caller_push(&p, caller, NULL);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+    }
+    return p.err.code;;
+}
 
 ojVal
 oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
@@ -1865,6 +1887,13 @@ oj_parse_fd_reuse(ojErr err, int fd, ojReuser reuser) {
     return p.results;
 }
 
+ojStatus
+oj_parse_fd_call(ojErr err, int fd, ojCaller caller) {
+    // TBD
+
+    return OJ_OK;
+}
+
 ojVal
 oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     int	fd = open(filename, O_RDONLY);
@@ -1900,6 +1929,12 @@ oj_parse_file_reuse(ojErr err, const char *filename, ojReuser reuser) {
 }
 
 ojStatus
+oj_parse_file_call(ojErr err, const char *filename, ojCaller caller) {
+    // TBD
+    return OJ_OK;
+}
+
+ojStatus
 oj_parse_reader(ojParser p, void *src, ojReadFunc rf) {
     // TBD
     return OJ_OK;
@@ -1909,4 +1944,103 @@ ojStatus
 oj_parse_file_follow(ojParser p, FILE *file) {
     // TBD
     return OJ_OK;
+}
+
+static void*
+caller_loop(void *ctx) {
+    ojCaller		caller = (ojCaller)ctx;
+    ojValMu		vm = caller->queue;
+    ojValMu		next;
+    ojCallbackOp	op;
+
+    pthread_mutex_lock(&vm->mu);
+    while (true) {
+	next = vm + 1;
+	if (caller->end <= next) {
+	    next = caller->queue;
+	}
+	if (NULL == vm->val) {
+	    break;
+	}
+	op = caller->cb(vm->val, caller->ctx);
+	if (0 != (OJ_DESTROY & op)) {
+	    oj_reuse(&vm->reuser);
+	}
+	if (0 != (OJ_STOP & op)) {
+	    // TBD need some indicator of stopped
+	    break;
+	}
+	pthread_mutex_lock(&next->mu);
+	pthread_mutex_unlock(&vm->mu);
+	vm = next;
+    }
+    pthread_mutex_unlock(&vm->mu);
+
+    return NULL;
+}
+
+void
+oj_caller_push(ojParser p, ojCaller caller, ojVal val) {
+    caller->qp->val = val;
+    caller->qp->reuser.head = p->all_head;
+    caller->qp->reuser.tail = p->all_tail;
+    caller->qp->reuser.dig = p->all_dig;
+    p->all_head = NULL;
+    p->all_tail = NULL;
+    p->all_dig = NULL;
+
+    ojValMu	next = caller->qp + 1;
+
+    if (caller->end <= next) {
+	next = caller->queue;
+    }
+    if (NULL != val) {
+	pthread_mutex_lock(&next->mu);
+    }
+    pthread_mutex_unlock(&caller->qp->mu);
+    caller->qp = next;
+}
+
+ojStatus
+oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx) {
+    caller->cb = cb;
+    caller->ctx = ctx;
+    caller->end = caller->queue + sizeof(caller->queue) / sizeof(*caller->queue);
+    caller->qp = caller->queue;
+    for (ojValMu vm = caller->queue; vm < caller->end; vm++) {
+	vm->val = NULL;
+	vm->reuser.head = NULL;
+	vm->reuser.tail = NULL;
+	vm->reuser.dig = NULL;
+	if (0 != pthread_mutex_init(&vm->mu, NULL)) {
+	    return oj_err_no(err, "initializing mutex on caller queue");
+	}
+    }
+    pthread_mutex_lock(&caller->queue->mu);
+
+    int	status;
+
+    if (0 != (status = pthread_create(&caller->thread, NULL, caller_loop, (void*)caller))) {
+	pthread_mutex_unlock(&caller->queue->mu);
+	return oj_err_set(err, status, "failed to create caller thread");
+    }
+    // TBD wait for thread to start
+    usleep(1000000);
+    return OJ_OK;
+}
+
+void
+oj_caller_shutdown(ojCaller caller) {
+    //pthread_kill(caller->thread, SIGKILL);
+    pthread_cancel(caller->thread);
+    pthread_join(caller->thread, NULL);
+    for (ojValMu vm = caller->queue; vm < caller->end; vm++) {
+	pthread_mutex_destroy(&vm->mu);
+    }
+}
+
+void
+oj_caller_wait(ojCaller caller) {
+    pthread_join(caller->thread, NULL);
+    // TBD try thread wait first then mutex if too slow
 }

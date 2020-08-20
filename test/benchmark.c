@@ -190,6 +190,13 @@ destroy_cb(ojVal val, void *ctx) {
     return OJ_DESTROY;
 }
 
+static ojCallbackOp
+destroy_cbx(ojVal val, void *ctx) {
+    //walk_oj(val);
+    *(long*)ctx = *(long*)ctx + 1;
+    return OJ_DESTROY;
+}
+
 static int
 bench_parse_many(const char *filename) {
     struct _ojErr	err = OJ_ERR_INIT;
@@ -199,6 +206,8 @@ bench_parse_many(const char *filename) {
     long		iter = 0;
     int64_t		file_load_time;
     int64_t		start;
+
+    oj_thread_safe = true;
 
     printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
@@ -229,6 +238,21 @@ bench_parse_many(const char *filename) {
     dt += file_load_time;
     print_results("oj_pp_parse_str", iter, dt, &err);
 
+    oj_err_init(&err);
+    struct _ojCaller	caller;
+
+    iter = 0;
+    oj_caller_start(&err, &caller, destroy_cbx, &iter);
+    // TBD wait for caller to be started
+    start = clock_micro();
+    oj_parse_str_call(&err, str, &caller);
+    //oj_caller_wait(&caller);
+    dt = clock_micro() - start;
+    printf("*** before shutdown\n");
+    oj_caller_shutdown(&caller);
+    print_results("oj_parse_str_call", iter, dt, &err);
+
+    oj_err_init(&err);
     start = clock_micro();
     oj_validate_str(&err, str);
     dt = clock_micro() - start;
