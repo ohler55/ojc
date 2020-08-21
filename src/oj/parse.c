@@ -1,12 +1,16 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
-#include <string.h>
+#include <signal.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "oj.h"
@@ -18,6 +22,20 @@
 #define MAX_EXP			4932
 // max in the pow_map
 #define MAX_POW			400
+#define MIN_SLEEP		(1000000000L / CLOCKS_PER_SEC)
+
+static void
+one_beat() {
+
+    // TBD should select be used for sleeping?
+
+    struct timespec	req, rem;
+
+    req.tv_sec = 0;
+    req.tv_nsec = MIN_SLEEP;
+    //req.tv_nsec = 100;
+    nanosleep(&req, &rem);
+}
 
 #if DEBUG
 static void
@@ -30,7 +48,6 @@ print_stack(ojParser p, const char *label) {
     }
 }
 #endif
-
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -455,6 +472,8 @@ static long double	pow_map[401] = {
     1.0e400L
 };
 
+static void	oj_caller_push(ojParser p, ojCaller caller, ojVal val);
+
 // Works with extended unicode as well. \Uffffffff if support is desired in
 // the future.
 static size_t
@@ -508,34 +527,6 @@ byteError(ojErr err, const char *map, int off, byte b) {
     case 's': // string_map
 	oj_err_set(err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", b);
 	break;
-
-/*
-	case trueMap:
-		err.Message = "expected true"
-	case falseMap:
-		err.Message = "expected false"
-	case afterMap:
-		err.Message = fmt.Sprintf("expected a comma or close, not '%c'", b)
-	case key1Map:
-		err.Message = fmt.Sprintf("expected a string start or object close, not '%c'", b)
-	case keyMap:
-		err.Message = fmt.Sprintf("expected a string start, not '%c'", b)
-	case colonMap:
-		err.Message = fmt.Sprintf("expected a colon, not '%c'", b)
-	case negMap, zeroMap, digitMap, dotMap, fracMap, expSignMap, expZeroMap, expMap:
-		err.Message = "invalid number"
-	case stringMap:
-		err.Message = fmt.Sprintf("invalid JSON character 0x%02x", b)
-	case escMap:
-		err.Message = fmt.Sprintf("invalid JSON escape character '\\%c'", b)
-	case uMap:
-		err.Message = fmt.Sprintf("invalid JSON unicode character '%c'", b)
-	case spaceMap:
-		err.Message = fmt.Sprintf("extra characters after close, '%c'", b)
-	default:
-		err.Message = fmt.Sprintf("unexpected character '%c'", b)
-	}
-*/
     default:
 	oj_err_set(err, OJ_ERR_PARSE, "unexpected character '%c' in '%c' mode", b, map[256]);
 	break;
@@ -641,6 +632,11 @@ pop_val(ojParser p) {
 		p->all_head = NULL;
 		p->all_tail = NULL;
 		p->all_dig = NULL;
+	    } else if (p->has_caller) {
+		oj_caller_push(p, p->caller, top);
+		p->stack = NULL;
+		p->map = value_map;
+		return p->caller->done;
 	    } else {
 		top->next = p->results;
 		p->results = p->stack;
@@ -1751,6 +1747,24 @@ oj_parse_str_reuse(ojErr err, const char *json, ojReuser reuser) {
     return p.results;
 }
 
+ojStatus
+oj_parse_str_call(ojErr err, const char *json, ojCaller caller) {
+    struct _ojParser	p;
+
+    memset(&p, 0, sizeof(p));
+    p.has_cb = false;
+    p.has_caller = true;
+    p.caller = caller;
+    p.err.line = 1;
+    p.map = value_map;
+    parse(&p, (const byte*)json);
+    if (OJ_OK != p.err.code) {
+	if (NULL != err) {
+	    *err = p.err;
+	}
+    }
+    return p.err.code;;
+}
 
 ojVal
 oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
@@ -1865,6 +1879,13 @@ oj_parse_fd_reuse(ojErr err, int fd, ojReuser reuser) {
     return p.results;
 }
 
+ojStatus
+oj_parse_fd_call(ojErr err, int fd, ojCaller caller) {
+    // TBD
+
+    return OJ_OK;
+}
+
 ojVal
 oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx) {
     int	fd = open(filename, O_RDONLY);
@@ -1900,6 +1921,12 @@ oj_parse_file_reuse(ojErr err, const char *filename, ojReuser reuser) {
 }
 
 ojStatus
+oj_parse_file_call(ojErr err, const char *filename, ojCaller caller) {
+    // TBD
+    return OJ_OK;
+}
+
+ojStatus
 oj_parse_reader(ojParser p, void *src, ojReadFunc rf) {
     // TBD
     return OJ_OK;
@@ -1909,4 +1936,113 @@ ojStatus
 oj_parse_file_follow(ojParser p, FILE *file) {
     // TBD
     return OJ_OK;
+}
+
+static void*
+caller_loop(void *ctx) {
+    ojCaller		caller = (ojCaller)ctx;
+    struct _ojCall	c;
+    ojCallbackOp	op;
+    ojCall		head = caller->queue;
+    ojCall		next;
+
+    atomic_flag_clear(&caller->starting);
+    while (atomic_flag_test_and_set(&head->busy)) {
+	one_beat();
+    }
+    while (true) {
+	next = head + 1;
+	if (caller->end <= next) {
+	    next = caller->queue;
+	}
+	c = *head;
+	head->val = NULL;
+	if (NULL == c.val) {
+	    atomic_flag_clear(&head->busy);
+	    break;
+	}
+	op = caller->cb(c.val, caller->ctx);
+	if (0 != (OJ_DESTROY & op)) {
+	    oj_reuse(&c.reuser);
+	}
+	if (0 != (OJ_STOP & op)) {
+	    caller->done = true;
+	    break;
+	}
+	while (atomic_flag_test_and_set(&next->busy)) {
+	    one_beat();
+	}
+	atomic_flag_clear(&head->busy);
+	head = next;
+    }
+    return NULL;
+}
+
+static void
+oj_caller_push(ojParser p, ojCaller caller, ojVal val) {
+    // Should be sitting on a slot waiting for a push.
+    ojCall	tail = caller->tail;
+
+    tail->val = val;
+    tail->reuser.head = p->all_head;
+    tail->reuser.tail = p->all_tail;
+    tail->reuser.dig = p->all_dig;
+
+    tail++;
+    if (caller->end <= tail) {
+	tail = caller->queue;
+    }
+    while (atomic_flag_test_and_set(&tail->busy)) {
+	one_beat();
+    }
+    atomic_flag_clear(&caller->tail->busy);
+    caller->tail = tail;
+    p->all_head = NULL;
+    p->all_tail = NULL;
+    p->all_dig = NULL;
+}
+
+ojStatus
+oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx) {
+    memset(caller, 0, sizeof(struct _ojCaller));
+    caller->cb = cb;
+    caller->ctx = ctx;
+    caller->end = caller->queue + sizeof(caller->queue) / sizeof(*caller->queue);
+    caller->tail = caller->queue;
+    for (ojCall c = caller->queue; c < caller->end; c++) {
+	atomic_flag_clear(&c->busy);
+    }
+    atomic_flag_test_and_set(&caller->queue->busy);
+    atomic_flag_test_and_set(&caller->starting);
+
+    int	status;
+
+    if (0 != (status = pthread_create(&caller->thread, NULL, caller_loop, (void*)caller))) {
+	return oj_err_set(err, status, "failed to create caller thread");
+    }
+    while (atomic_flag_test_and_set(&caller->starting)) {
+	one_beat();
+    }
+    atomic_flag_clear(&caller->starting);
+
+    return OJ_OK;
+}
+
+void
+oj_caller_shutdown(ojCaller caller) {
+    pthread_cancel(caller->thread);
+    pthread_join(caller->thread, NULL);
+}
+
+void
+oj_caller_wait(ojCaller caller) {
+    ojCall	tail = caller->tail;
+
+    tail->val = NULL;
+    tail->reuser.head = NULL;
+    tail->reuser.tail = NULL;
+    tail->reuser.dig = NULL;
+    atomic_flag_clear(&tail->busy);
+
+    pthread_join(caller->thread, NULL);
 }

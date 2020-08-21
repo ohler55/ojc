@@ -7,7 +7,9 @@
 extern "C" {
 #endif
 
+#include <stdatomic.h>
 #include <errno.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -143,10 +145,27 @@ extern "C" {
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
     typedef struct _ojReuser {
-	ojVal		head;
-	ojVal		tail;
-	ojVal		dig;
+	ojVal			head;
+	ojVal			tail;
+	ojVal			dig;
     } *ojReuser;
+
+    typedef struct _ojCall {
+	ojVal			val;
+	struct _ojReuser	reuser;
+	atomic_flag		busy;
+    } *ojCall;
+
+    typedef struct _ojCaller {
+	struct _ojCall		queue[256];
+	pthread_t		thread;
+	ojParseCallback		cb;
+	void			*ctx;
+	ojCall			end;
+	ojCall			tail;
+	atomic_flag		starting;
+	volatile bool		done;
+    } *ojCaller;
 
     typedef struct _ojParser {
 	const char	*map;
@@ -166,11 +185,15 @@ extern "C" {
 	ojParseCallback	cb;
 	void		*ctx;
 
+	ojCaller	caller;
+
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
+	// TBD maybe an enum instead of 3 bools (check performance?)
 	bool		pp;
 	bool		has_cb;
+	bool		has_caller;
     } *ojParser;
 
     // General functions.
@@ -181,14 +204,23 @@ extern "C" {
     extern void		oj_err_init(ojErr err);
     extern const char*	oj_status_str(ojStatus code);
 
+    extern ojStatus	oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx);
+    extern void		oj_caller_shutdown(ojCaller caller);
+    extern void		oj_caller_wait(ojCaller caller);
+
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
     extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
     extern ojVal	oj_parse_str_reuse(ojErr err, const char *json, ojReuser reuser);
+    extern ojStatus	oj_parse_str_call(ojErr err, const char *json, ojCaller caller);
+
     extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojVal	oj_parse_file_reuse(ojErr err, const char *filename, ojReuser reuser);
+    extern ojStatus	oj_parse_file_call(ojErr err, const char *filename, ojCaller caller);
+
     extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
     extern ojVal	oj_parse_fd_reuse(ojErr err, int fd, ojReuser reuser);
+    extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
 
     extern ojStatus	oj_pp_parse_str(ojErr		err,
 					const char	*json,

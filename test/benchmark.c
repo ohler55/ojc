@@ -25,11 +25,10 @@ clock_micro() {
     return (uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec;
 }
 
-#if 0
+#if 1
 static int
 walk_oj(ojVal val) {
     int	cnt = 0;
-
     switch (val->type) {
     case OJ_NULL:
 	cnt++;
@@ -40,12 +39,12 @@ walk_oj(ojVal val) {
 	cnt++;
 	break;
     case OJ_INT:
-	if (0 == oj_val_get_int(val)) {
+	if (0 == val->num.fixnum) {
 	    cnt++;
 	}
 	break;
     case OJ_DECIMAL:
-	if (0.0 == oj_val_get_double(val, false)) {
+	if (0.0 == val->num.dub) {
 	    cnt++;
 	}
 	break;
@@ -185,7 +184,22 @@ bench_parse(const char *filename, int64_t iter) {
 
 static ojCallbackOp
 destroy_cb(ojVal val, void *ctx) {
-    //walk_oj(val);
+    /*
+    if (-1 == walk_oj(val)) {
+	printf("dummy\n");
+    }
+    */
+    *(long*)ctx = *(long*)ctx + 1;
+    return OJ_DESTROY;
+}
+
+static ojCallbackOp
+destroy_cbx(ojVal val, void *ctx) {
+    for (int i = 0; 0 < i; i--) {
+	if (-1 == walk_oj(val)) {
+	    printf("dummy\n");
+	}
+    }
     *(long*)ctx = *(long*)ctx + 1;
     return OJ_DESTROY;
 }
@@ -199,6 +213,8 @@ bench_parse_many(const char *filename) {
     long		iter = 0;
     int64_t		file_load_time;
     int64_t		start;
+
+    oj_thread_safe = true;
 
     printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
@@ -229,6 +245,18 @@ bench_parse_many(const char *filename) {
     dt += file_load_time;
     print_results("oj_pp_parse_str", iter, dt, &err);
 
+    oj_err_init(&err);
+    struct _ojCaller	caller;
+
+    iter = 0;
+    oj_caller_start(&err, &caller, destroy_cbx, &iter);
+    start = clock_micro();
+    oj_parse_str_call(&err, str, &caller);
+    oj_caller_wait(&caller);
+    dt = clock_micro() - start;
+    print_results("oj_parse_str_call", iter, dt, &err);
+
+    oj_err_init(&err);
     start = clock_micro();
     oj_validate_str(&err, str);
     dt = clock_micro() - start;
