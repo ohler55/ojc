@@ -1781,7 +1781,6 @@ oj_parse_str_call(ojErr err, const char *json, ojCaller caller) {
     p.err.line = 1;
     p.map = value_map;
     parse(&p, (const byte*)json);
-    oj_caller_push(&p, caller, NULL);
     if (OJ_OK != p.err.code) {
 	if (NULL != err) {
 	    *err = p.err;
@@ -1962,38 +1961,27 @@ oj_parse_file_follow(ojParser p, FILE *file) {
     return OJ_OK;
 }
 
-static void
-caller_pop(ojCaller caller, ojCall c) {
-    ojCall	head;
-
-    head = (ojCall)atomic_load(&caller->head);
-    if (NULL != head->val || head->done) {
-	*c = *head;
-	head->val = NULL;
-	return;
-    }
-    head++;
-    if (caller->end <= head) {
-	head = caller->queue;
-    }
-    // If the next is the tail then wait for something to be appended.
-    while (atomic_load(&caller->tail) == head) {
-	one_beat();
-    }
-    *c = *head;
-    head->val = NULL;
-    atomic_store(&caller->head, head);
-}
-
 static void*
 caller_loop(void *ctx) {
     ojCaller		caller = (ojCaller)ctx;
     struct _ojCall	c;
     ojCallbackOp	op;
+    ojCall		head = caller->queue;
+    ojCall		next;
 
+    atomic_flag_clear(&caller->starting);
+    while (atomic_flag_test_and_set(&head->busy)) {
+	one_beat();
+    }
     while (true) {
-	caller_pop(caller, &c);
-	if (c.done) {
+	next = head + 1;
+	if (caller->end <= next) {
+	    next = caller->queue;
+	}
+	c = *head;
+	head->val = NULL;
+	if (NULL == c.val) {
+	    atomic_flag_clear(&head->busy);
 	    break;
 	}
 	op = caller->cb(c.val, caller->ctx);
@@ -2004,30 +1992,34 @@ caller_loop(void *ctx) {
 	    // TBD need some indicator of stopped, push null
 	    break;
 	}
+	while (atomic_flag_test_and_set(&next->busy)) {
+	    one_beat();
+	}
+	atomic_flag_clear(&head->busy);
+	head = next;
     }
     return NULL;
 }
 
 void
 oj_caller_push(ojParser p, ojCaller caller, ojVal val) {
-    ojCall	tail;
+    // Should be sitting on a slot waiting for a push.
+    ojCall	tail = caller->tail;
 
-    // Wait for head to move on.
-    while (atomic_load(&caller->head) == atomic_load(&caller->tail)) {
-	one_beat();
-    }
-    tail = (ojCall)atomic_load(&caller->tail);
     tail->val = val;
     tail->reuser.head = p->all_head;
     tail->reuser.tail = p->all_tail;
     tail->reuser.dig = p->all_dig;
-    tail->done = val == NULL;
 
     tail++;
     if (caller->end <= tail) {
 	tail = caller->queue;
     }
-    atomic_store(&caller->tail, tail);
+    while (atomic_flag_test_and_set(&tail->busy)) {
+	one_beat();
+    }
+    atomic_flag_clear(&caller->tail->busy);
+    caller->tail = tail;
     p->all_head = NULL;
     p->all_tail = NULL;
     p->all_dig = NULL;
@@ -2039,17 +2031,23 @@ oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx) {
     caller->cb = cb;
     caller->ctx = ctx;
     caller->end = caller->queue + sizeof(caller->queue) / sizeof(*caller->queue);
-
-    atomic_init(&caller->head, caller->queue);
-    atomic_init(&caller->tail, caller->queue + 1);
+    caller->tail = caller->queue;
+    for (ojCall c = caller->queue; c < caller->end; c++) {
+	atomic_flag_clear(&c->busy);
+    }
+    atomic_flag_test_and_set(&caller->queue->busy);
+    atomic_flag_test_and_set(&caller->starting);
 
     int	status;
 
     if (0 != (status = pthread_create(&caller->thread, NULL, caller_loop, (void*)caller))) {
 	return oj_err_set(err, status, "failed to create caller thread");
     }
-    // TBD wait for thread to start
-    usleep(1000000);
+    while (atomic_flag_test_and_set(&caller->starting)) {
+	one_beat();
+    }
+    atomic_flag_clear(&caller->starting);
+
     return OJ_OK;
 }
 
@@ -2061,6 +2059,14 @@ oj_caller_shutdown(ojCaller caller) {
 
 void
 oj_caller_wait(ojCaller caller) {
+    ojCall	tail = caller->tail;
+
+    tail->val = NULL;
+    tail->reuser.head = NULL;
+    tail->reuser.tail = NULL;
+    tail->reuser.dig = NULL;
+    atomic_flag_clear(&tail->busy);
+
     pthread_join(caller->thread, NULL);
     // TBD try thread wait first then mutex if too slow
 }

@@ -5,12 +5,24 @@
 
 - redo parser
 
- - callback thread option
-  - maybe implement ojCaller
-   - provide a func and ctx
-   - provide queue depth
-   - hand to a parser
-    - use a stack like file reader
+ - try atomic flags with large file reader
+
+ - log file generator
+  - model after graphql logs
+   - request in attachment
+   - response in attachment
+  - parse files for each
+   - change time and write
+  - put in compare
+   - check and if not present then create
+    - use song query response
+    - separate .c file
+     - parse string of response and query
+
+ - function to usecase of doing something to a log file
+  - compare time range
+  - walk to touch everything as if reformatting to display
+  - regex on something like the msg
 
  - single app for benchmark results
    - app <parse|file|validate|write> <filename> <iter>

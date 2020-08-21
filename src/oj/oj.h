@@ -153,19 +153,17 @@ extern "C" {
     typedef struct _ojCall {
 	ojVal			val;
 	struct _ojReuser	reuser;
-	bool			done;
+	atomic_flag		busy;
     } *ojCall;
 
     typedef struct _ojCaller {
 	pthread_t		thread;
 	ojParseCallback		cb;
 	void			*ctx;
-	struct _ojCall		queue[320];
+	struct _ojCall		queue[256];
 	ojCall			end;
-	_Atomic(ojCall)		head;
-	_Atomic(ojCall)		tail;
-	atomic_flag		push_lock; // set to true when push in progress
-	atomic_flag		pop_lock; // set to true when push in progress
+	ojCall			tail;
+	atomic_flag		starting;
     } *ojCaller;
 
     typedef struct _ojParser {

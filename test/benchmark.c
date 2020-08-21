@@ -184,17 +184,21 @@ bench_parse(const char *filename, int64_t iter) {
 
 static ojCallbackOp
 destroy_cb(ojVal val, void *ctx) {
+    /*
     if (-1 == walk_oj(val)) {
 	printf("dummy\n");
     }
+    */
     *(long*)ctx = *(long*)ctx + 1;
     return OJ_DESTROY;
 }
 
 static ojCallbackOp
 destroy_cbx(ojVal val, void *ctx) {
-    if (-1 == walk_oj(val)) {
-	printf("dummy\n");
+    for (int i = 20; 0 < i; i--) {
+	if (-1 == walk_oj(val)) {
+	    printf("dummy\n");
+	}
     }
     *(long*)ctx = *(long*)ctx + 1;
     return OJ_DESTROY;
@@ -251,8 +255,6 @@ bench_parse_many(const char *filename) {
     oj_parse_str_call(&err, str, &caller);
     oj_caller_wait(&caller);
     dt = clock_micro() - start;
-    printf("*** before shutdown\n");
-    oj_caller_shutdown(&caller);
     print_results("oj_parse_str_call", iter, dt, &err);
 
     oj_err_init(&err);
