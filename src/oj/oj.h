@@ -157,13 +157,14 @@ extern "C" {
     } *ojCall;
 
     typedef struct _ojCaller {
+	struct _ojCall		queue[256];
 	pthread_t		thread;
 	ojParseCallback		cb;
 	void			*ctx;
-	struct _ojCall		queue[256];
 	ojCall			end;
 	ojCall			tail;
 	atomic_flag		starting;
+	volatile bool		done;
     } *ojCaller;
 
     typedef struct _ojParser {
@@ -204,7 +205,6 @@ extern "C" {
     extern const char*	oj_status_str(ojStatus code);
 
     extern ojStatus	oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx);
-    extern void		oj_caller_push(ojParser p, ojCaller caller, ojVal val);
     extern void		oj_caller_shutdown(ojCaller caller);
     extern void		oj_caller_wait(ojCaller caller);
 

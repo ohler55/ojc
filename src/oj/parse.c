@@ -472,6 +472,8 @@ static long double	pow_map[401] = {
     1.0e400L
 };
 
+static void	oj_caller_push(ojParser p, ojCaller caller, ojVal val);
+
 // Works with extended unicode as well. \Uffffffff if support is desired in
 // the future.
 static size_t
@@ -525,34 +527,6 @@ byteError(ojErr err, const char *map, int off, byte b) {
     case 's': // string_map
 	oj_err_set(err, OJ_ERR_PARSE, "invalid JSON character 0x%02x", b);
 	break;
-
-/*
-	case trueMap:
-		err.Message = "expected true"
-	case falseMap:
-		err.Message = "expected false"
-	case afterMap:
-		err.Message = fmt.Sprintf("expected a comma or close, not '%c'", b)
-	case key1Map:
-		err.Message = fmt.Sprintf("expected a string start or object close, not '%c'", b)
-	case keyMap:
-		err.Message = fmt.Sprintf("expected a string start, not '%c'", b)
-	case colonMap:
-		err.Message = fmt.Sprintf("expected a colon, not '%c'", b)
-	case negMap, zeroMap, digitMap, dotMap, fracMap, expSignMap, expZeroMap, expMap:
-		err.Message = "invalid number"
-	case stringMap:
-		err.Message = fmt.Sprintf("invalid JSON character 0x%02x", b)
-	case escMap:
-		err.Message = fmt.Sprintf("invalid JSON escape character '\\%c'", b)
-	case uMap:
-		err.Message = fmt.Sprintf("invalid JSON unicode character '%c'", b)
-	case spaceMap:
-		err.Message = fmt.Sprintf("extra characters after close, '%c'", b)
-	default:
-		err.Message = fmt.Sprintf("unexpected character '%c'", b)
-	}
-*/
     default:
 	oj_err_set(err, OJ_ERR_PARSE, "unexpected character '%c' in '%c' mode", b, map[256]);
 	break;
@@ -660,6 +634,9 @@ pop_val(ojParser p) {
 		p->all_dig = NULL;
 	    } else if (p->has_caller) {
 		oj_caller_push(p, p->caller, top);
+		p->stack = NULL;
+		p->map = value_map;
+		return p->caller->done;
 	    } else {
 		top->next = p->results;
 		p->results = p->stack;
@@ -1989,7 +1966,7 @@ caller_loop(void *ctx) {
 	    oj_reuse(&c.reuser);
 	}
 	if (0 != (OJ_STOP & op)) {
-	    // TBD need some indicator of stopped, push null
+	    caller->done = true;
 	    break;
 	}
 	while (atomic_flag_test_and_set(&next->busy)) {
@@ -2001,7 +1978,7 @@ caller_loop(void *ctx) {
     return NULL;
 }
 
-void
+static void
 oj_caller_push(ojParser p, ojCaller caller, ojVal val) {
     // Should be sitting on a slot waiting for a push.
     ojCall	tail = caller->tail;
@@ -2068,5 +2045,4 @@ oj_caller_wait(ojCaller caller) {
     atomic_flag_clear(&tail->busy);
 
     pthread_join(caller->thread, NULL);
-    // TBD try thread wait first then mutex if too slow
 }

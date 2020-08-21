@@ -19,7 +19,7 @@
     - separate .c file
      - parse string of response and query
 
- - function to usecase of doing something to a log file
+ - function to use case of doing something to a log file
   - compare time range
   - walk to touch everything as if reformatting to display
   - regex on something like the msg

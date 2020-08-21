@@ -195,7 +195,7 @@ destroy_cb(ojVal val, void *ctx) {
 
 static ojCallbackOp
 destroy_cbx(ojVal val, void *ctx) {
-    for (int i = 20; 0 < i; i--) {
+    for (int i = 0; 0 < i; i--) {
 	if (-1 == walk_oj(val)) {
 	    printf("dummy\n");
 	}
@@ -250,7 +250,6 @@ bench_parse_many(const char *filename) {
 
     iter = 0;
     oj_caller_start(&err, &caller, destroy_cbx, &iter);
-    // TBD wait for caller to be started
     start = clock_micro();
     oj_parse_str_call(&err, str, &caller);
     oj_caller_wait(&caller);
