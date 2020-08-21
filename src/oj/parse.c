@@ -1,13 +1,16 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "oj.h"
@@ -19,6 +22,20 @@
 #define MAX_EXP			4932
 // max in the pow_map
 #define MAX_POW			400
+#define MIN_SLEEP		(1000000000L / CLOCKS_PER_SEC)
+
+static void
+one_beat() {
+
+    // TBD should select be used for sleeping?
+
+    struct timespec	req, rem;
+
+    req.tv_sec = 0;
+    req.tv_nsec = MIN_SLEEP;
+    //req.tv_nsec = 100;
+    nanosleep(&req, &rem);
+}
 
 #if DEBUG
 static void
@@ -31,7 +48,6 @@ print_stack(ojParser p, const char *label) {
     }
 }
 #endif
-
 
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
@@ -1946,82 +1962,90 @@ oj_parse_file_follow(ojParser p, FILE *file) {
     return OJ_OK;
 }
 
+static void
+caller_pop(ojCaller caller, ojCall c) {
+    ojCall	head;
+
+    head = (ojCall)atomic_load(&caller->head);
+    if (NULL != head->val || head->done) {
+	*c = *head;
+	head->val = NULL;
+	return;
+    }
+    head++;
+    if (caller->end <= head) {
+	head = caller->queue;
+    }
+    // If the next is the tail then wait for something to be appended.
+    while (atomic_load(&caller->tail) == head) {
+	one_beat();
+    }
+    *c = *head;
+    head->val = NULL;
+    atomic_store(&caller->head, head);
+}
+
 static void*
 caller_loop(void *ctx) {
     ojCaller		caller = (ojCaller)ctx;
-    ojValMu		vm = caller->queue;
-    ojValMu		next;
+    struct _ojCall	c;
     ojCallbackOp	op;
 
-    pthread_mutex_lock(&vm->mu);
     while (true) {
-	next = vm + 1;
-	if (caller->end <= next) {
-	    next = caller->queue;
-	}
-	if (NULL == vm->val) {
+	caller_pop(caller, &c);
+	if (c.done) {
 	    break;
 	}
-	op = caller->cb(vm->val, caller->ctx);
+	op = caller->cb(c.val, caller->ctx);
 	if (0 != (OJ_DESTROY & op)) {
-	    oj_reuse(&vm->reuser);
+	    oj_reuse(&c.reuser);
 	}
 	if (0 != (OJ_STOP & op)) {
-	    // TBD need some indicator of stopped
+	    // TBD need some indicator of stopped, push null
 	    break;
 	}
-	pthread_mutex_lock(&next->mu);
-	pthread_mutex_unlock(&vm->mu);
-	vm = next;
     }
-    pthread_mutex_unlock(&vm->mu);
-
     return NULL;
 }
 
 void
 oj_caller_push(ojParser p, ojCaller caller, ojVal val) {
-    caller->qp->val = val;
-    caller->qp->reuser.head = p->all_head;
-    caller->qp->reuser.tail = p->all_tail;
-    caller->qp->reuser.dig = p->all_dig;
+    ojCall	tail;
+
+    // Wait for head to move on.
+    while (atomic_load(&caller->head) == atomic_load(&caller->tail)) {
+	one_beat();
+    }
+    tail = (ojCall)atomic_load(&caller->tail);
+    tail->val = val;
+    tail->reuser.head = p->all_head;
+    tail->reuser.tail = p->all_tail;
+    tail->reuser.dig = p->all_dig;
+    tail->done = val == NULL;
+
+    tail++;
+    if (caller->end <= tail) {
+	tail = caller->queue;
+    }
+    atomic_store(&caller->tail, tail);
     p->all_head = NULL;
     p->all_tail = NULL;
     p->all_dig = NULL;
-
-    ojValMu	next = caller->qp + 1;
-
-    if (caller->end <= next) {
-	next = caller->queue;
-    }
-    if (NULL != val) {
-	pthread_mutex_lock(&next->mu);
-    }
-    pthread_mutex_unlock(&caller->qp->mu);
-    caller->qp = next;
 }
 
 ojStatus
 oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx) {
+    memset(caller, 0, sizeof(struct _ojCaller));
     caller->cb = cb;
     caller->ctx = ctx;
     caller->end = caller->queue + sizeof(caller->queue) / sizeof(*caller->queue);
-    caller->qp = caller->queue;
-    for (ojValMu vm = caller->queue; vm < caller->end; vm++) {
-	vm->val = NULL;
-	vm->reuser.head = NULL;
-	vm->reuser.tail = NULL;
-	vm->reuser.dig = NULL;
-	if (0 != pthread_mutex_init(&vm->mu, NULL)) {
-	    return oj_err_no(err, "initializing mutex on caller queue");
-	}
-    }
-    pthread_mutex_lock(&caller->queue->mu);
+
+    atomic_init(&caller->head, caller->queue);
+    atomic_init(&caller->tail, caller->queue + 1);
 
     int	status;
 
     if (0 != (status = pthread_create(&caller->thread, NULL, caller_loop, (void*)caller))) {
-	pthread_mutex_unlock(&caller->queue->mu);
 	return oj_err_set(err, status, "failed to create caller thread");
     }
     // TBD wait for thread to start
@@ -2031,12 +2055,8 @@ oj_caller_start(ojErr err, ojCaller caller, ojParseCallback cb, void *ctx) {
 
 void
 oj_caller_shutdown(ojCaller caller) {
-    //pthread_kill(caller->thread, SIGKILL);
     pthread_cancel(caller->thread);
     pthread_join(caller->thread, NULL);
-    for (ojValMu vm = caller->queue; vm < caller->end; vm++) {
-	pthread_mutex_destroy(&vm->mu);
-    }
 }
 
 void

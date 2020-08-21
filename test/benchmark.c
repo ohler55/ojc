@@ -25,11 +25,10 @@ clock_micro() {
     return (uint64_t)tv.tv_sec * 1000000ULL + (uint64_t)tv.tv_usec;
 }
 
-#if 0
+#if 1
 static int
 walk_oj(ojVal val) {
     int	cnt = 0;
-
     switch (val->type) {
     case OJ_NULL:
 	cnt++;
@@ -40,12 +39,12 @@ walk_oj(ojVal val) {
 	cnt++;
 	break;
     case OJ_INT:
-	if (0 == oj_val_get_int(val)) {
+	if (0 == val->num.fixnum) {
 	    cnt++;
 	}
 	break;
     case OJ_DECIMAL:
-	if (0.0 == oj_val_get_double(val, false)) {
+	if (0.0 == val->num.dub) {
 	    cnt++;
 	}
 	break;
@@ -185,14 +184,18 @@ bench_parse(const char *filename, int64_t iter) {
 
 static ojCallbackOp
 destroy_cb(ojVal val, void *ctx) {
-    //walk_oj(val);
+    if (-1 == walk_oj(val)) {
+	printf("dummy\n");
+    }
     *(long*)ctx = *(long*)ctx + 1;
     return OJ_DESTROY;
 }
 
 static ojCallbackOp
 destroy_cbx(ojVal val, void *ctx) {
-    //walk_oj(val);
+    if (-1 == walk_oj(val)) {
+	printf("dummy\n");
+    }
     *(long*)ctx = *(long*)ctx + 1;
     return OJ_DESTROY;
 }
@@ -246,7 +249,7 @@ bench_parse_many(const char *filename) {
     // TBD wait for caller to be started
     start = clock_micro();
     oj_parse_str_call(&err, str, &caller);
-    //oj_caller_wait(&caller);
+    oj_caller_wait(&caller);
     dt = clock_micro() - start;
     printf("*** before shutdown\n");
     oj_caller_shutdown(&caller);

@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#include <stdatomic.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -144,24 +145,27 @@ extern "C" {
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
 
     typedef struct _ojReuser {
-	ojVal		head;
-	ojVal		tail;
-	ojVal		dig;
+	ojVal			head;
+	ojVal			tail;
+	ojVal			dig;
     } *ojReuser;
 
-    typedef struct _ojValMu {
+    typedef struct _ojCall {
 	ojVal			val;
 	struct _ojReuser	reuser;
-	pthread_mutex_t		mu;
-    } *ojValMu;
+	bool			done;
+    } *ojCall;
 
     typedef struct _ojCaller {
 	pthread_t		thread;
-	struct _ojValMu		queue[16];
-	ojValMu			end;
 	ojParseCallback		cb;
 	void			*ctx;
-	ojValMu			qp;
+	struct _ojCall		queue[320];
+	ojCall			end;
+	_Atomic(ojCall)		head;
+	_Atomic(ojCall)		tail;
+	atomic_flag		push_lock; // set to true when push in progress
+	atomic_flag		pop_lock; // set to true when push in progress
     } *ojCaller;
 
     typedef struct _ojParser {
