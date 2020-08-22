@@ -31,7 +31,6 @@ oj_buf_finit(ojBuf buf, char *str, size_t slen) {
 
 inline static void
 oj_buf_reset(ojBuf buf) {
-    buf->head = buf->base;
     buf->tail = buf->head;
     *buf->head = '\0';
     buf->err = OJ_OK;

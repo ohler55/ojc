@@ -14,8 +14,8 @@ clean:
 	$(RM) $(OBJS)
 	$(RM) $(TARGET)
 
-$(TARGET): compare.o
-	$(CC) -o $@ compare.o -L$(LIB_DIR) $(LIBS)
+$(TARGET): compare.o genlog.o
+	$(CC) -o $@ compare.o genlog.o -L$(LIB_DIR) $(LIBS)
 
 %.o : %.c  $(HEADERS) $(LIB_DIR)/liboj.a
 	$(CC) -O3 -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<

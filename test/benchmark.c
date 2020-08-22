@@ -254,6 +254,7 @@ bench_parse_many(const char *filename) {
     oj_parse_str_call(&err, str, &caller);
     oj_caller_wait(&caller);
     dt = clock_micro() - start;
+    dt += file_load_time;
     print_results("oj_parse_str_call", iter, dt, &err);
 
     oj_err_init(&err);

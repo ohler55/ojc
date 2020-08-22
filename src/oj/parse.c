@@ -22,19 +22,12 @@
 #define MAX_EXP			4932
 // max in the pow_map
 #define MAX_POW			400
-#define MIN_SLEEP		(1000000000L / CLOCKS_PER_SEC)
 
 static void
 one_beat() {
+    struct timespec	ts = { .tv_sec = 0, .tv_nsec = 100 };
 
-    // TBD should select be used for sleeping?
-
-    struct timespec	req, rem;
-
-    req.tv_sec = 0;
-    req.tv_nsec = MIN_SLEEP;
-    //req.tv_nsec = 100;
-    nanosleep(&req, &rem);
+    pselect(0, NULL, NULL, NULL, &ts, 0);
 }
 
 #if DEBUG

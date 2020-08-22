@@ -29,6 +29,8 @@ typedef struct _result {
     BenchResult	results; // one for each app
 } *Result;
 
+extern int	genlog(FILE *f, long size);
+
 static struct _result	results[] = {
     { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 10000, .results = NULL },
     { .mode = NULL },
@@ -148,11 +150,30 @@ includes(const char *s, const char **choices) {
 }
 
 int
+check_write(const char *filename, size_t size) {
+    FILE	*f = fopen(filename, "r");
+
+    if (NULL == f) {
+	if (NULL == (f = fopen(filename, "w"))) {
+	    return errno;
+	}
+	genlog(f, size);
+    }
+    fclose(f);
+
+    return 0;
+}
+
+int
 main(int argc, char **argv) {
     char	*appName = *argv;
     char	*a;
     const char	*apps[16];
     int		app_cnt = 0;
+
+    check_write("files/100K.json", 100 * 1024);
+    check_write("files/1M.json", 1024 * 1024);
+    check_write("files/1G.json", 1024 * 1024 * 1024);
 
     memset(apps, 0, sizeof(apps));
     argc--;
