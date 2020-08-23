@@ -107,14 +107,16 @@ typedef struct _ojValidator {
 } *ojValidator;
 
 typedef struct _ReadBlock {
-    pthread_mutex_t	mu;
+    atomic_flag		busy;
     ojStatus		status;
     bool		eof;
     byte		buf[16385];
+    //byte		buf[32769];
+    //byte		buf[65537];
 } *ReadBlock;
 
 typedef struct _ReadCtx {
-    struct _ReadBlock	blocks[8];
+    struct _ReadBlock	blocks[16];
     ReadBlock		bend;
     int			fd;
 } *ReadCtx;
@@ -756,7 +758,7 @@ parse(ojParser p, const byte *json) {
     const byte *start;
     ojVal	v;
 
-    //printf("*** parse %s mode %c\n", json, p->map[256]);
+    //printf("*** parse '%s' mode %c\n", json, p->map[256]);
     for (const byte *b = json; '\0' != *b; b++) {
 	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	//print_stack(p, "loop");
@@ -1569,10 +1571,9 @@ read_block(int fd, ReadBlock b) {
 static void*
 reader(void *ctx) {
     ReadCtx	rc = (ReadCtx)ctx;
-    ReadBlock	b = rc->blocks + 1;
+    ReadBlock	b = rc->blocks;
     ReadBlock	next;
 
-    pthread_mutex_lock(&b->mu);
     while (true) {
 	if (OJ_OK != b->status) {
 	    break;
@@ -1585,11 +1586,13 @@ reader(void *ctx) {
 	if (rc->bend <= next) {
 	    next = rc->blocks;
 	}
-	pthread_mutex_lock(&next->mu);
-	pthread_mutex_unlock(&b->mu);
+	while (atomic_flag_test_and_set(&next->busy)) {
+	    one_beat();
+	}
+	atomic_flag_clear(&b->busy);
 	b = next;
     }
-    pthread_mutex_unlock(&b->mu);
+    atomic_flag_clear(&b->busy);
     pthread_exit(0);
 
     return NULL;
@@ -1599,22 +1602,23 @@ static ojStatus
 parse_large(ojParser p, int fd) {
     struct _ReadCtx	rc;
     ReadBlock		b; // current block being parsed
+    ReadBlock		prev;
 
-    //printf("*** large - %ld\n", sizeof(*rc.blocks));
     memset(&rc, 0, sizeof(rc));
     rc.bend = rc.blocks + sizeof(rc.blocks) / sizeof(*rc.blocks);
     rc.fd = fd;
 
     for (b = rc.blocks; b < rc.bend; b++) {
-	if (0 != pthread_mutex_init(&b->mu, NULL)) {
-	    return oj_err_no(&p->err, "initializing mutex on concurrent file reader");
-	}
+	atomic_flag_clear(&b->busy);
     }
-    // Lock the first 2 blocks, the first to read into and the second to stop
-    // the new thread of reading into the second block which should not happen
-    // until the reading of the first completes.
-    pthread_mutex_lock(&rc.blocks->mu);
-    pthread_mutex_lock(&rc.blocks[1].mu);
+    prev = rc.bend - 1;
+    b = rc.blocks;
+
+    // Lock the prev block as if the parser has already finished but not yet
+    // grabbed the next block.
+    atomic_flag_test_and_set(&prev->busy);
+    // Lock the first block for the reader.
+    atomic_flag_test_and_set(&b->busy);
 
     pthread_t	t;
     int		err;
@@ -1624,34 +1628,31 @@ parse_large(ojParser p, int fd) {
     }
     pthread_detach(t);
 
-    ReadBlock	next;
-
-    b = rc.blocks;
-    read_block(fd, b);
-
-    // Release the second block so the reader can start reading additional
-    // blocks.
-    pthread_mutex_unlock(&rc.blocks[1].mu);
     while (true) {
-	if (OJ_OK != b->status) {
+	// Get the lock on the current before unlocking the previous to assure
+	// the reader doesn't overtake the parser.
+	while (atomic_flag_test_and_set(&b->busy)) {
+	    one_beat();
+	}
+	atomic_flag_clear(&prev->busy);
+	if (OJ_OK != b->status) { // could be set by reader
 	    oj_err_set(&p->err, b->status, "read failed");
 	    break;
 	}
-	if (OJ_OK != parse(p, b->buf) || b->eof) {
+	if (b->eof) {
+	    break;
+	}
+	if (OJ_OK != parse(p, b->buf)) {
 	    b->status = p->err.code;
 	    break;
 	}
-	// Lock next before unlocking the current to assure the reader doesn't
-	// overtake the parser.
-	next = b + 1;
-	if (rc.bend <= next) {
-	    next = rc.blocks;
+	prev = b;
+	b++;
+	if (rc.bend <= b) {
+	    b = rc.blocks;
 	}
-	pthread_mutex_lock(&next->mu);
-	pthread_mutex_unlock(&b->mu);
-	b = next;
     }
-    pthread_mutex_unlock(&b->mu);
+    atomic_flag_clear(&b->busy);
 
     return p->err.code;
 }
@@ -1773,7 +1774,7 @@ oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx) {
     struct stat	info;
 
     // st_size will be 0 if not a file
-    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size && false) {
+    if (0 == fstat(fd, &info) && USE_THREAD_LIMIT < info.st_size) {
 	// Use threaded version.
 	parse_large(&p, fd);
 	if (OJ_OK != p.err.code) {

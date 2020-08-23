@@ -5,19 +5,41 @@
 
 - redo parser
 
- - try atomic flags with large file reader
+ - try reverse large file threads
+  - reader as main thread and parser is secondary
 
- - log file generator
-  - model after graphql logs
-   - request in attachment
-   - response in attachment
-  - parse files for each
-   - change time and write
-  - put in compare
-   - check and if not present then create
-    - use song query response
-    - separate .c file
-     - parse string of response and query
+ - complete all parsers
+
+    extern ojVal	oj_parse_str(ojErr err, const char *json, ojReuser reuser);
+    extern ojVal	oj_parse_strp(ojErr err, const char **json, ojReuser reuser);
+    extern ojStatus	oj_parse_str_cb(ojErr err, const char *json, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_parse_str_call(ojErr err, const char *json, ojCaller caller);
+
+    extern ojVal	oj_parse_file(ojErr err, const char *filepath, ojReuser reuser); // return on completion of 1 element
+    extern ojStatus	oj_parse_file_cb(ojErr err, const char *filepath, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_parse_file_call(ojErr err, const char *filepath, ojCaller caller);
+
+    extern ojVal	oj_parse_fd(ojErr err, int fd, ojReuser reuser); // return on completion of 1 element
+     // calling until eof for a follow
+    extern ojStatus	oj_parse_fd_cb(ojErr err, int fd, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
+
+    extern ojStatus	oj_pp_parse_str(ojErr		err,
+					const char	*json,
+					void		(*push)(ojVal val, void *ctx),
+					void		(*pop)(void * ctx),
+					void		*ctx);
+    extern ojStatus	oj_pp_parse_file(ojErr		err,
+					const char	*filepath,
+					void		(*push)(ojVal val, void *ctx),
+					void		(*pop)(void * ctx),
+					void		*ctx);
+    extern ojStatus	oj_pp_parse_fd(ojErr		err,
+					int             fd,
+					void		(*push)(ojVal val, void *ctx),
+					void		(*pop)(void * ctx),
+					void		*ctx);
+
 
  - function to use case of doing something to a log file
   - compare time range

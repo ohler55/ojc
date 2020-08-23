@@ -230,8 +230,6 @@ extern "C" {
 
 
     extern ojStatus	oj_parse_strp(ojParser p, const char **json);
-    extern ojStatus	oj_parse_reader(ojParser p, void *src, ojReadFunc rf);
-    extern ojStatus	oj_parse_file_follow(ojParser p, FILE *file);
 
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);

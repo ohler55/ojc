@@ -233,6 +233,7 @@ bench_parse_many(const char *filename) {
     file_load_time = clock_micro() - start;
     iter = 0;
 
+    oj_err_init(&err);
     start = clock_micro();
     oj_parse_str(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
@@ -248,6 +249,7 @@ bench_parse_many(const char *filename) {
     oj_err_init(&err);
     struct _ojCaller	caller;
 
+    oj_err_init(&err);
     iter = 0;
     oj_caller_start(&err, &caller, destroy_cbx, &iter);
     start = clock_micro();
