@@ -20,7 +20,7 @@ parse_jsons(struct _data *dp) {
     struct _ojBuf	buf;
 
     for (; NULL != dp->json; dp++) {
-	val = oj_parse_str(&err, dp->json, NULL, NULL);
+	val = oj_parse_str(&err, dp->json, NULL);
 	if (OJ_OK == dp->status) {
 	    bool	ok;
 
@@ -122,7 +122,7 @@ parse_int_test() {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
 
-    val = oj_parse_str(&err, "12345", NULL, NULL);
+    val = oj_parse_str(&err, "12345", NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
@@ -146,7 +146,7 @@ parse_decimal_test() {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
 
-    val = oj_parse_str(&err, "12.345", NULL, NULL);
+    val = oj_parse_str(&err, "12.345", NULL);
     //val = oj_parse_str(&err, "123e4", NULL, NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
@@ -165,7 +165,7 @@ parse_bignum_test() {
     ojVal		val;
     const char		*num;
 
-    val = oj_parse_str(&err, "-9223372036854775807", NULL, NULL);
+    val = oj_parse_str(&err, "-9223372036854775807", NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
@@ -175,7 +175,7 @@ parse_bignum_test() {
     ut_same_int(-9223372036854775807LL, i, "parse int 9223372036854775807");
     oj_destroy(val);
 
-    val = oj_parse_str(&err, "9223372036854775809", NULL, NULL);
+    val = oj_parse_str(&err, "9223372036854775809", NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;
@@ -186,7 +186,7 @@ parse_bignum_test() {
     ut_same("9223372036854775809", num);
     oj_destroy(val);
 
-    val = oj_parse_str(&err, "-1.2e12345", NULL, NULL);
+    val = oj_parse_str(&err, "-1.2e12345", NULL);
     if (ut_handle_oj_error(&err)) {
 	ut_print("error at %d:%d\n",  err.line, err.col);
 	return;

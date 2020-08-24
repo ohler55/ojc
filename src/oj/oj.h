@@ -176,6 +176,7 @@ extern "C" {
 	ojVal		all_head;
 	ojVal		all_tail;
 	ojVal		all_dig;
+	const char	*end;
 
 	// for push-pull parser
 	void		(*push)(ojVal val, void *ctx);
@@ -190,7 +191,6 @@ extern "C" {
 	char		token[8];
 	int		ri;
 	uint32_t	ucode;
-	// TBD maybe an enum instead of 3 bools (check performance?)
 	bool		pp;
 	bool		has_cb;
 	bool		has_caller;
@@ -210,32 +210,40 @@ extern "C" {
 
     extern ojStatus	oj_validate_str(ojErr err, const char *json);
 
-    extern ojVal	oj_parse_str(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_parse_str_reuse(ojErr err, const char *json, ojReuser reuser);
+    extern ojVal	oj_parse_str(ojErr err, const char *json, ojReuser reuser);
+    extern ojVal	oj_parse_strp(ojErr err, const char **json, ojReuser reuser);
+    extern ojStatus	oj_parse_str_cb(ojErr err, const char *json, ojParseCallback cb, void *ctx);
     extern ojStatus	oj_parse_str_call(ojErr err, const char *json, ojCaller caller);
-
-    extern ojVal	oj_parse_file(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_parse_file_reuse(ojErr err, const char *filename, ojReuser reuser);
-    extern ojStatus	oj_parse_file_call(ojErr err, const char *filename, ojCaller caller);
-
-    extern ojVal	oj_parse_fd(ojErr err, int fd, ojParseCallback cb, void *ctx);
-    extern ojVal	oj_parse_fd_reuse(ojErr err, int fd, ojReuser reuser);
-    extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
-
     extern ojStatus	oj_pp_parse_str(ojErr		err,
 					const char	*json,
 					void		(*push)(ojVal val, void *ctx),
 					void		(*pop)(void * ctx),
 					void		*ctx);
 
+    extern ojVal	oj_parse_fd(ojErr err, int fd, ojReuser reuser);
+    extern ojStatus	oj_parse_fd_cb(ojErr err, int fd, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
+    extern ojStatus	oj_pp_parse_fd(ojErr	err,
+				       int	fd,
+				       void	(*push)(ojVal val, void *ctx),
+				       void	(*pop)(void * ctx),
+				       void	*ctx);
 
-    extern ojStatus	oj_parse_strp(ojParser p, const char **json);
+    extern ojVal	oj_parse_file(ojErr err, const char *filename, ojReuser reuser);
+    extern ojStatus	oj_parse_file_cb(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
+    extern ojStatus	oj_parse_file_call(ojErr err, const char *filename, ojCaller caller);
+    extern ojStatus	oj_pp_parse_file(ojErr		err,
+					 const char	*filepath,
+					 void		(*push)(ojVal val, void *ctx),
+					 void		(*pop)(void * ctx),
+					 void		*ctx);
 
     extern ojVal	oj_val_create();
     extern void		oj_destroy(ojVal val);
     extern void		oj_reuse(ojReuser reuser);
 
     extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
+
     // TBD set functions and add/append/insert
     // TBD create functions
 
@@ -255,8 +263,8 @@ extern "C" {
     extern char*	oj_to_str(ojVal val, int indent);
     extern size_t	oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);
     extern size_t	oj_buf(ojBuf buf, ojVal val, int indent, int depth);
-    extern size_t	oj_write(ojErr err, ojVal val, int indent, int socket);
-    extern size_t	oj_fwrite(ojErr err, ojVal val, int indent, FILE *file);
+    extern size_t	oj_write(ojErr err, ojVal val, int indent, int fd);
+    extern size_t	oj_fwrite(ojErr err, ojVal val, int indent, const char *filepath);
 
     extern bool		oj_thread_safe;
 

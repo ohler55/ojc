@@ -152,7 +152,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_str_reuse(&err, str, &reuser);
+	v = oj_parse_str(&err, str, &reuser);
 	oj_reuse(&reuser);
     }
     dt = clock_micro() - start;
@@ -218,7 +218,7 @@ bench_parse_many(const char *filename) {
 
     printf("oj_parse_file includes file load time in results\n");
     start = clock_micro();
-    oj_parse_file(&err, filename, destroy_cb, &iter);
+    oj_parse_file_cb(&err, filename, destroy_cb, &iter);
     dt = clock_micro() - start;
     print_results("oj_parse_file", iter, dt, &err);
 
@@ -235,7 +235,7 @@ bench_parse_many(const char *filename) {
 
     oj_err_init(&err);
     start = clock_micro();
-    oj_parse_str(&err, str, destroy_cb, &iter);
+    oj_parse_str_cb(&err, str, destroy_cb, &iter);
     dt = clock_micro() - start;
     dt += file_load_time;
     print_results("oj_parse_str", iter, dt, &err);

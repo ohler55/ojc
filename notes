@@ -5,40 +5,7 @@
 
 - redo parser
 
- - try reverse large file threads
-  - reader as main thread and parser is secondary
-
- - complete all parsers
-
-    extern ojVal	oj_parse_str(ojErr err, const char *json, ojReuser reuser);
-    extern ojVal	oj_parse_strp(ojErr err, const char **json, ojReuser reuser);
-    extern ojStatus	oj_parse_str_cb(ojErr err, const char *json, ojParseCallback cb, void *ctx);
-    extern ojStatus	oj_parse_str_call(ojErr err, const char *json, ojCaller caller);
-
-    extern ojVal	oj_parse_file(ojErr err, const char *filepath, ojReuser reuser); // return on completion of 1 element
-    extern ojStatus	oj_parse_file_cb(ojErr err, const char *filepath, ojParseCallback cb, void *ctx);
-    extern ojStatus	oj_parse_file_call(ojErr err, const char *filepath, ojCaller caller);
-
-    extern ojVal	oj_parse_fd(ojErr err, int fd, ojReuser reuser); // return on completion of 1 element
-     // calling until eof for a follow
-    extern ojStatus	oj_parse_fd_cb(ojErr err, int fd, ojParseCallback cb, void *ctx);
-    extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
-
-    extern ojStatus	oj_pp_parse_str(ojErr		err,
-					const char	*json,
-					void		(*push)(ojVal val, void *ctx),
-					void		(*pop)(void * ctx),
-					void		*ctx);
-    extern ojStatus	oj_pp_parse_file(ojErr		err,
-					const char	*filepath,
-					void		(*push)(ojVal val, void *ctx),
-					void		(*pop)(void * ctx),
-					void		*ctx);
-    extern ojStatus	oj_pp_parse_fd(ojErr		err,
-					int             fd,
-					void		(*push)(ojVal val, void *ctx),
-					void		(*pop)(void * ctx),
-					void		*ctx);
+- val create functions
 
 
  - function to use case of doing something to a log file
@@ -53,10 +20,6 @@
 
 
  - val parse tests
-
-- val create functions
-
-- make sure follow works
 
 - compare other libs
  - :question: for not exactly follow by a number for comment/note
@@ -79,6 +42,8 @@
  - small file (under 4G)
  - medium file (over 4G)
  - large file (larger than memory)
+ - docs
+ - examples
 - performance (speed and memory use)
  - validate (no checking that values were extracted) (mark as not really validated if compare shows invalid are not detected)
  - single file as string (patient)
