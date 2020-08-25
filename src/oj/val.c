@@ -111,6 +111,100 @@ oj_cleanup() {
     free_tail = NULL;
 }
 
+static void
+clear_key(ojVal v) {
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
+
+    if (sizeof(union ojS4k) < v->key.len) {
+	OJ_FREE(v->key.ptr);
+    } else if (sizeof(v->key.raw) < v->key.len) {
+	v->key.s4k->next = NULL;
+	if (NULL == s4k_h) {
+	    s4k_h = v->key.s4k;
+	} else {
+	    s4k_t->next = v->key.s4k;
+	}
+	s4k_t = v->key.s4k;
+    }
+    v->key.len = 0;
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+    }
+}
+
+static void
+clear_value(ojVal v) {
+    union ojS4k	*s4k_h = NULL;
+    union ojS4k	*s4k_t = NULL;
+
+    switch (v->type) {
+    case OJ_STRING:
+	if (sizeof(union ojS4k) < v->str.len) {
+	    OJ_FREE(v->str.ptr);
+	} else if (sizeof(v->str.raw) < v->str.len) {
+	    v->str.s4k->next = NULL;
+	    if (NULL == s4k_h) {
+		s4k_h = v->str.s4k;
+	    } else {
+		s4k_t->next = v->str.s4k;
+	    }
+	    s4k_t = v->str.s4k;
+	}
+	v->str.len = 0;
+	break;
+    case OJ_BIG:
+	if (sizeof(v->num.raw) <= v->num.len) {
+	    OJ_FREE(v->num.ptr);
+	}
+	v->key.len = 0;
+	break;
+    }
+    if (oj_thread_safe) {
+	while (atomic_flag_test_and_set(&val_busy)) {
+	}
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+	atomic_flag_clear(&val_busy);
+    } else {
+	if (NULL != s4k_h) {
+	    if (NULL == s4k_head) {
+		s4k_head = s4k_h;
+	    } else {
+		s4k_tail->next = s4k_h;
+	    }
+	    s4k_tail = s4k_t;
+	}
+    }
+}
+
+// code copied from clear_key and clear_value btu separate to avoid locking
+// the s4k head and tail twice.
 void
 _oj_val_clear(ojVal v) {
     union ojS4k	*s4k_h = NULL;
@@ -367,8 +461,40 @@ oj_destroy(ojVal val) {
     }
 }
 
+//// set functions
+
+void
+oj_null_set(ojVal val) {
+    clear_value(val);
+    val->type = OJ_NULL;
+}
+
+void
+oj_bool_set(ojVal val, bool b) {
+    clear_value(val);
+    val->type = (b ? OJ_TRUE : OJ_FALSE);
+}
+
+void
+oj_int_set(ojVal val, int64_t fixnum) {
+    clear_value(val);
+    val->type = OJ_INT;
+    val->num.fixnum = fixnum;
+    val->num.len = 0;
+}
+
+void
+oj_double_set(ojVal val, long double dub) {
+    clear_value(val);
+    val->type = OJ_DECIMAL;
+    val->num.dub = dub;
+    val->num.len = 0;
+}
+
 ojStatus
-oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
+oj_str_set(ojErr err, ojVal val, const char *s, size_t len) {
+    clear_value(val);
+    val->type = OJ_STRING;
     if (len < sizeof(val->str.raw)) {
 	memcpy(val->str.raw, s, len);
 	val->str.raw[len] = '\0';
@@ -379,12 +505,157 @@ oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len) {
 	memcpy(val->str.s4k->str, s, len);
 	val->str.s4k->str[len] = '\0';
     } else {
-	val->str.ptr = (char*)OJ_MALLOC(len + 1);
+	if (NULL == (val->str.ptr = (char*)OJ_MALLOC(len + 1))) {
+	    return OJ_ERR_MEM(err, "string");
+	}
 	val->str.cap = len + 1;
 	memcpy(val->str.ptr, s, len);
 	val->str.ptr[len] = '\0';
     }
     return OJ_OK;
+}
+
+// Setting the key when the val is in an object in hash mode will corrupt the hash.
+ojStatus
+oj_key_set(ojErr err, ojVal val, const char *s, size_t len) {
+    clear_key(val);
+    // TBD
+    return OJ_OK;
+}
+
+ojStatus
+oj_bignum_set(ojErr err, ojVal val, const char *s, size_t len) {
+    // TBD validate string first
+    clear_value(val);
+    val->type = OJ_BIG;
+    if (len < sizeof(val->num.raw)) {
+	memcpy(val->num.raw, s, len);
+	val->num.raw[len] = '\0';
+    } else if (len < sizeof(union ojS4k)) {
+	union ojS4k	*s4k = s4k_create();
+
+	val->num.s4k = s4k;
+	memcpy(val->num.s4k->str, s, len);
+	val->num.s4k->str[len] = '\0';
+    } else {
+	if (NULL == (val->num.ptr = (char*)OJ_MALLOC(len + 1))) {
+	    return OJ_ERR_MEM(err, "string");
+	}
+	val->num.cap = len + 1;
+	memcpy(val->num.ptr, s, len);
+	val->num.ptr[len] = '\0';
+    }
+    return OJ_OK;
+}
+
+ojStatus
+oj_append(ojErr err, ojVal val, ojVal member) {
+    if (NULL == val || NULL == member) {
+	return oj_err_set(err, OJ_ERR_ARG, "can not append null");
+    }
+    switch (val->type) {
+    case OJ_ARRAY:
+	val->next = NULL;
+	if (NULL == val->list.head) {
+	    val->list.head = val;
+	} else {
+	    val->list.tail->next = val;
+	}
+	val->list.tail = val;
+	break;
+    case OJ_OBJECT:
+	if (OJ_OBJ_HASH == val->mod) {
+	    member->kh = calc_hash(oj_key(member), member->key.len);
+	    member->next = val->hash[member->kh & 0x0000000F];
+	    val->hash[member->kh & 0x0000000F] = member;
+	} else {
+	    val->next = NULL;
+	    if (NULL == val->list.head) {
+		val->list.head = val;
+	    } else {
+		val->list.tail->next = val;
+	    }
+	    val->list.tail = val;
+	}
+	break;
+    default:
+	return oj_err_set(err, OJ_ERR_TYPE, "can not append to a %s", oj_type_str(val->type));
+    }
+    return OJ_OK;
+}
+
+ojStatus
+oj_object_set(ojErr err, ojVal val, const char *key, ojVal member) {
+    if (OJ_OBJECT != val->type) {
+	return oj_err_set(err, OJ_ERR_TYPE, "can not perform an object set on a %s", oj_type_str(val->type));
+    }
+    if (OJ_OK != oj_key_set(err, val, key, strlen(key))) {
+	return err->code;
+    }
+    if (OJ_OBJ_HASH == val->mod) {
+	member->kh = calc_hash(oj_key(member), member->key.len);
+	member->next = val->hash[member->kh & 0x0000000F];
+	val->hash[member->kh & 0x0000000F] = member;
+    } else {
+	val->next = NULL;
+	if (NULL == val->list.head) {
+	    val->list.head = val;
+	} else {
+	    val->list.tail->next = val;
+	}
+	val->list.tail = val;
+    }
+    return OJ_OK;
+}
+
+//// create functions
+
+ojVal
+oj_null_create(ojErr err) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_bool_create(ojErr err, bool b) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_str_create(ojErr err, const char *s, size_t len) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_int_create(ojErr err, int64_t fixnum) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_double_create(ojErr err, long double dub) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_bignum_create(ojErr err, const char *s, size_t len) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_array_create(ojErr err) {
+    // TBD
+    return NULL;
+}
+
+ojVal
+oj_object_create(ojErr err) {
+    // TBD
+    return NULL;
 }
 
 const char*

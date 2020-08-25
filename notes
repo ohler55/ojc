@@ -6,7 +6,11 @@
 - redo parser
 
 - val create functions
+ - create and set
+- set functions
+ - if already set, cleanup
 
+- indented writes
 
  - function to use case of doing something to a log file
   - compare time range

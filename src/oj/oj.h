@@ -242,10 +242,24 @@ extern "C" {
     extern void		oj_destroy(ojVal val);
     extern void		oj_reuse(ojReuser reuser);
 
-    extern ojStatus	oj_val_set_str(ojErr err, ojVal val, const char *s, size_t len);
+    extern void		oj_null_set(ojVal val);
+    extern void		oj_bool_set(ojVal val, bool b);
+    extern void		oj_int_set(ojVal val, int64_t fixnum);
+    extern void		oj_double_set(ojVal val, long double dub);
+    extern ojStatus	oj_str_set(ojErr err, ojVal val, const char *s, size_t len);
+    extern ojStatus	oj_key_set(ojErr err, ojVal val, const char *s, size_t len);
+    extern ojStatus	oj_bignum_set(ojErr err, ojVal val, const char *s, size_t len);
+    extern ojStatus	oj_append(ojErr err, ojVal val, ojVal member);
+    extern ojStatus	oj_object_set(ojErr err, ojVal val, const char *key, ojVal member);
 
-    // TBD set functions and add/append/insert
-    // TBD create functions
+    extern ojVal	oj_null_create(ojErr err);
+    extern ojVal	oj_bool_create(ojErr err, bool b);
+    extern ojVal	oj_str_create(ojErr err, const char *s, size_t len);
+    extern ojVal	oj_int_create(ojErr err, int64_t fixnum);
+    extern ojVal	oj_double_create(ojErr err, long double dub);
+    extern ojVal	oj_bignum_create(ojErr err, const char *s, size_t len);
+    extern ojVal	oj_array_create(ojErr err);
+    extern ojVal	oj_object_create(ojErr err);
 
     extern const char*	oj_key(ojVal val);
     extern const char*	oj_str_get(ojVal val);
