@@ -44,6 +44,7 @@ extern "C" {
     } ojStatus;
 
     typedef enum {
+	OJ_NONE		= '\0',
 	OJ_NULL		= 'n',
 	OJ_TRUE		= 't',
 	OJ_FALSE	= 'f',
@@ -53,7 +54,6 @@ extern "C" {
 	OJ_STRING	= 's',
 	OJ_OBJECT	= 'o',
 	OJ_ARRAY	= 'a',
-	OJ_FREE		= 'X',
     } ojType;
 
     typedef enum {

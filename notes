@@ -3,15 +3,16 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- redo parser
+- tests
+- docs
+ - ruby to generate doc template?
+  - extern for functions
+  - typedef struct
+  - other typedef
 
-- val create functions
- - create and set
-- set functions
- - if already set, cleanup
+- examples/readme
 
-- indented writes
-
+- field events
  - function to use case of doing something to a log file
   - compare time range
   - walk to touch everything as if reformatting to display

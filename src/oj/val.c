@@ -423,7 +423,7 @@ oj_destroy(ojVal val) {
 	default:
 	    break;
 	}
-	v->type = OJ_FREE;
+	v->type = OJ_NONE;
     }
     if (oj_thread_safe) {
 	while (atomic_flag_test_and_set(&val_busy)) {
@@ -519,7 +519,23 @@ oj_str_set(ojErr err, ojVal val, const char *s, size_t len) {
 ojStatus
 oj_key_set(ojErr err, ojVal val, const char *s, size_t len) {
     clear_key(val);
-    // TBD
+    if (len < sizeof(val->key.raw)) {
+	memcpy(val->key.raw, s, len);
+	val->key.raw[len] = '\0';
+    } else if (len < sizeof(union ojS4k)) {
+	union ojS4k	*s4k = s4k_create();
+
+	val->key.s4k = s4k;
+	memcpy(val->key.s4k->str, s, len);
+	val->key.s4k->str[len] = '\0';
+    } else {
+	if (NULL == (val->key.ptr = (char*)OJ_MALLOC(len + 1))) {
+	    return OJ_ERR_MEM(err, "string");
+	}
+	val->key.cap = len + 1;
+	memcpy(val->key.ptr, s, len);
+	val->key.ptr[len] = '\0';
+    }
     return OJ_OK;
 }
 
@@ -612,50 +628,114 @@ oj_object_set(ojErr err, ojVal val, const char *key, ojVal member) {
 
 ojVal
 oj_null_create(ojErr err) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_NULL;
+    }
+    return val;
 }
 
 ojVal
 oj_bool_create(ojErr err, bool b) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = (b ? OJ_TRUE : OJ_FALSE);
+    }
+    return val;
 }
 
 ojVal
 oj_str_create(ojErr err, const char *s, size_t len) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_NONE;
+	if (OJ_OK != oj_str_set(err, val, s, len)) {
+	    val = NULL;
+	}
+    }
+    return val;
 }
 
 ojVal
 oj_int_create(ojErr err, int64_t fixnum) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_INT;
+	val->num.fixnum = fixnum;
+	val->num.len = 0;
+    }
+    return val;
 }
 
 ojVal
 oj_double_create(ojErr err, long double dub) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_DECIMAL;
+	val->num.dub = dub;
+	val->num.len = 0;
+    }
+    return val;
 }
 
 ojVal
 oj_bignum_create(ojErr err, const char *s, size_t len) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_NONE;
+	if (OJ_OK != oj_bignum_set(err, val, s, len)) {
+	    val = NULL;
+	}
+    }
+    return val;
 }
 
 ojVal
 oj_array_create(ojErr err) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_ARRAY;
+	val->list.head = NULL;
+	val->list.tail = NULL;
+    }
+    return val;
 }
 
 ojVal
 oj_object_create(ojErr err) {
-    // TBD
-    return NULL;
+    ojVal	val = oj_val_create();
+
+    if (NULL == val) {
+	OJ_ERR_MEM(err, "ojVal");
+    } else {
+	val->type = OJ_OBJECT;
+	val->mod = OJ_OBJ_HASH;
+	for (ojVal *bucket = val->hash + sizeof(val->hash) / sizeof(*val->hash) - 1; val->hash <= bucket; bucket--) {
+	    *bucket = NULL;
+	}
+    }
+    return val;
 }
 
 const char*

@@ -19,6 +19,9 @@ parse_jsons(struct _data *dp) {
     ojVal		val;
     struct _ojBuf	buf;
 
+    if (ut_verbose) {
+	ut_print("%s\n", ut_name());
+    }
     for (; NULL != dp->json; dp++) {
 	val = oj_parse_str(&err, dp->json, NULL);
 	if (OJ_OK == dp->status) {

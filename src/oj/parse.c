@@ -545,7 +545,7 @@ push_val(ojParser p, ojType type, ojMod mod) {
     ojVal	val;
 
     if (p->pp) {
-	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	if (NULL != p->stack && OJ_NONE == p->stack->type) { // indicates a object member
 	    val = p->stack;
 	    val->type = type;
 	    val->mod = mod;
@@ -569,7 +569,7 @@ push_val(ojParser p, ojType type, ojMod mod) {
 	    p->push(val, p->ctx);
 	}
     } else {
-	if (NULL != p->stack && OJ_FREE == p->stack->type) { // indicates a object member
+	if (NULL != p->stack && OJ_NONE == p->stack->type) { // indicates a object member
 	    val = p->stack;
 	    val->type = type;
 	    val->mod = mod;
@@ -795,7 +795,7 @@ parse(ojParser p, const byte *json) {
 	case SKIP_CHAR:
 	    break;
 	case KEY_QUOTE:
-	    v = push_val(p, OJ_FREE, 0);
+	    v = push_val(p, OJ_NONE, 0);
 	    b++;
 	    start = b;
 	    for (; STR_OK == string_map[*b]; b++) {

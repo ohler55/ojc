@@ -46,6 +46,8 @@ static struct _Esc	esc_map[0x20] = {
     { .len = 6, .seq = "\\u001f" },
 };
 
+static const char	spaces[258] = "\n                                                                                                                                                                                                                                                                ";
+
 const char*
 oj_version() {
     return OJ_VERSION;
@@ -83,7 +85,6 @@ buf_append_json(ojBuf buf, const char *s) {
     }
 }
 
-// TBD handle indent
 size_t
 oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
     size_t	start = oj_buf_len(buf);
@@ -131,60 +132,135 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	}
 	case OJ_OBJECT:
 	    oj_buf_append(buf, '{');
-	    if (OJ_OBJ_HASH == val->mod) {
-		ojVal	*bucket = val->hash;
-		ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
-		ojVal	v;
+	    if (0 < indent) {
 		int	d2 = depth + 1;
+		int	i = indent * depth + 1;
+		int	i2 = i + 2;
+		ojVal	v;
 		bool	first = true;
 
-		oj_buf_append(buf, '{');
-		for (; bucket < bend; bucket++) {
-		    for (v = *bucket; NULL != v; v = v->next) {
+		if (sizeof(spaces) <= i2) {
+		    i2 = sizeof(spaces) - 1;
+		    if (sizeof(spaces) <= i) {
+			i = sizeof(spaces) - 1;
+		    }
+		}
+		if (OJ_OBJ_HASH == val->mod) {
+		    ojVal	*bucket = val->hash;
+		    ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
+
+		    oj_buf_append(buf, '{');
+		    for (; bucket < bend; bucket++) {
+			for (v = *bucket; NULL != v; v = v->next) {
+			    if (first) {
+				first = false;
+			    } else {
+				oj_buf_append(buf, ',');
+			    }
+			    oj_buf_append_string(buf, spaces, i2);
+			    oj_buf_append(buf, '"');
+			    oj_buf_append_string(buf, oj_key(v), v->key.len);
+			    oj_buf_append(buf, '"');
+			    oj_buf_append(buf, ':');
+			    oj_buf(buf, v, indent, d2);
+			}
+		    }
+		    oj_buf_append(buf, '}');
+		} else {
+		    for (v = val->list.head; NULL != v; v = v->next) {
+			if (first) {
+			    first = false;
+			} else {
+			    oj_buf_append(buf, ',');
+			}
+			oj_buf_append_string(buf, spaces, i2);
+			oj_buf_append(buf, '"');
+			oj_buf_append_string(buf, oj_key(v), v->key.len);
+			oj_buf_append(buf, '"');
+			oj_buf_append(buf, ':');
+			oj_buf(buf, v, indent, d2);
+		    }
+		}
+		oj_buf_append_string(buf, spaces, i);
+	    } else {
+		ojVal	v;
+		bool	first = true;
+
+		if (OJ_OBJ_HASH == val->mod) {
+		    ojVal	*bucket = val->hash;
+		    ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
+
+		    oj_buf_append(buf, '{');
+		    for (; bucket < bend; bucket++) {
+			for (v = *bucket; NULL != v; v = v->next) {
+			    if (first) {
+				first = false;
+			    } else {
+				oj_buf_append(buf, ',');
+			    }
+			    oj_buf_append(buf, '"');
+			    oj_buf_append_string(buf, oj_key(v), v->key.len);
+			    oj_buf_append(buf, '"');
+			    oj_buf_append(buf, ':');
+			    oj_buf(buf, v, 0, 0);
+			}
+		    }
+		    oj_buf_append(buf, '}');
+		} else {
+		    for (v = val->list.head; NULL != v; v = v->next) {
 			if (first) {
 			    first = false;
 			} else {
 			    oj_buf_append(buf, ',');
 			}
 			oj_buf_append(buf, '"');
-			oj_buf_append_string(buf, v->key.raw, v->key.len);
+			oj_buf_append_string(buf, oj_key(v), v->key.len);
 			oj_buf_append(buf, '"');
 			oj_buf_append(buf, ':');
-			oj_buf(buf, v, indent, d2);
-		    }
-		}
-		oj_buf_append(buf, '}');
-	    } else {
-		int		d2 = depth + 1;
-		const char	*k;
-
-		for (ojVal v = val->list.head; NULL != v; v = v->next) {
-		    k = oj_key(v);
-		    oj_buf_append(buf, '"');
-		    oj_buf_append_string(buf, k, v->key.len);
-		    oj_buf_append(buf, '"');
-		    oj_buf_append(buf, ':');
-		    oj_buf(buf, v, indent, d2);
-		    if (NULL != v->next) {
-			oj_buf_append(buf, ',');
+			oj_buf(buf, v, 0, 0);
 		    }
 		}
 	    }
 	    oj_buf_append(buf, '}');
 	    break;
-	case OJ_ARRAY: {
-	    int	d2 = depth + 1;
-
+	case OJ_ARRAY:
 	    oj_buf_append(buf, '[');
-	    for (ojVal v = val->list.head; NULL != v; v = v->next) {
-		oj_buf(buf, v, indent, d2);
-		if (NULL != v->next) {
-		    oj_buf_append(buf, ',');
+	    if (0 < indent) {
+		int	d2 = depth + 1;
+		int	i = indent * depth + 1;
+		int	i2 = i + 2;
+		bool	first = true;
+
+		if (sizeof(spaces) <= i2) {
+		    i2 = sizeof(spaces) - 1;
+		    if (sizeof(spaces) <= i) {
+			i = sizeof(spaces) - 1;
+		    }
+		}
+		for (ojVal v = val->list.head; NULL != v; v = v->next) {
+		    if (first) {
+			first = false;
+		    } else {
+			oj_buf_append(buf, ',');
+		    }
+		    oj_buf_append_string(buf, spaces, i2);
+		    oj_buf(buf, v, indent, d2);
+		}
+		oj_buf_append_string(buf, spaces, i);
+	    } else {
+		bool	first = true;
+
+		for (ojVal v = val->list.head; NULL != v; v = v->next) {
+		    if (first) {
+			first = false;
+		    } else {
+			oj_buf_append(buf, ',');
+		    }
+		    oj_buf(buf, v, 0, 0);
 		}
 	    }
 	    oj_buf_append(buf, ']');
 	    break;
-	}
 	default:
 	    oj_buf_append_string(buf, "??", 2);
 	    break;

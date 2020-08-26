@@ -22,6 +22,14 @@ static const char	*group = NULL;
 static Test		tests = NULL;
 static Test		currentTest = NULL;
 
+const char*
+ut_name() {
+    if (NULL == currentTest) {
+	return "none";
+    }
+    return currentTest->name;
+}
+
 void
 ut_print(const char *format, ...) {
     va_list	ap;
