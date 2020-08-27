@@ -37,7 +37,76 @@ class Enum
   end
 end
 
+class Param
+  attr_accessor :name
+  attr_accessor :type
+
+  def initialize(name, type)
+    @name = name
+    @type = type
+  end
+end
+
+class Type
+  attr_accessor :name
+  attr_accessor :synopsis
+  attr_accessor :fields
+
+  def initialize(name, s)
+    @name = name.gsub('*', '')
+    @synopsis = s
+    @fields = []
+    s[0..-2].split("\n").each { |line|
+      next unless line.include?(';')
+      next if line.include?('{') || line.include?('}')
+      line = line.split(';')[0]
+      line.strip!
+      parts = line.split("\t")
+      @fields << Param.new(parts[-1], parts[0])
+    }
+  end
+end
+
+class Global
+  attr_accessor :name
+  attr_accessor :synopsis
+
+  def initialize(s)
+    @name = s.strip[0..-2].split("\t")[-1]
+    @synopsis = s.gsub(/\t+/, "\t")
+  end
+end
+
+class Func
+  attr_accessor :name
+  attr_accessor :synopsis
+  attr_accessor :params
+
+  def initialize(s)
+    @synopsis = s
+    # TBD
+  end
+end
+
 $enums = []
+$types = []
+$globals = []
+$funcs = []
+
+def type_end(s, i)
+  cnt = 1
+  i = s.index('{', i) # get things started
+  while true
+    i = s.index(/[{}]/, i + 1)
+    if '{' == s[i]
+      cnt += 1
+    else
+      cnt -= 1
+    end
+    break if 0 == cnt
+  end
+  i
+end
 
 def gather_enums
   i = 0
@@ -49,7 +118,41 @@ def gather_enums
   $enums.sort_by! { |e| e.name }
 end
 
+def gather_types
+  i = 0
+  while (!(i = $header.index('typedef union', i + 1)).nil?)
+    close = type_end($header, i)
+    semi = $header.index(';', close)
+    $types << Type.new($header[close + 1...semi].strip, $header[i..semi])
+    i = semi
+  end
+  i = 0
+  while (!(i = $header.index('typedef struct', i + 1)).nil?)
+    close = type_end($header, i)
+    semi = $header.index(';', close)
+    $types << Type.new($header[close + 1...semi].strip, $header[i..semi])
+    i = semi
+  end
+  $types.sort_by! { |e| e.name }
+end
+
+def gather_globals
+  i = 0
+  $header.split("\n").each { |line|
+    next unless line.include?('extern') && line.include?(';')
+    next if line.include?('(')
+    line.strip!
+    $globals << Global.new(line)
+  }
+end
+
+def gather_funcs
+end
+
 gather_enums
+gather_types
+gather_globals
+gather_funcs
 
 $out = %|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
@@ -76,8 +179,22 @@ $enums.each { |e|
 |
 }
 
-# TBD types
-# TBD globals
+$out += %|        <span class="cat">Types</span>
+|
+$types.each { |t|
+  $out += %|        <button class="item level2" onclick="displayDesc(event,'#{t.name}')">#{t.name}</button>
+|
+}
+
+$out += %|        <span class="cat">Globals</span>
+|
+$globals.each { |g|
+  $out += %|        <button class="item level2" onclick="displayDesc(event,'#{g.name}')">#{g.name}</button>
+|
+}
+
+$out += %|        <span class="cat">Functions</span>
+|
 # TBD functions
 
 $out += %|      </div>
@@ -118,8 +235,37 @@ $enums.each { |e|
 |
 }
 
-# TBD types
-# TBD globals
+$types.each { |t|
+  $out += %|
+        <div id="#{t.name}" class="desc">
+          <div class="title">#{t.name}</div>
+          <div class="synopsis">#{t.synopsis}</div>
+          <p class="desc-text">
+	  TBD
+          </p>
+          <table class="params">
+|
+  t.fields.each { |f|
+    $out += %|            <tr><td><span class="param">#{f.type}</span></td><td><span class="param">#{f.name}</span></td><td>TBD</td></tr>
+|
+  }
+  $out += %|          </table>
+        </div>
+|
+}
+
+$globals.each { |g|
+  $out += %|
+        <div id="#{g.name}" class="desc">
+          <div class="title">#{g.name}</div>
+          <div class="synopsis">#{g.synopsis}</div>
+          <p class="desc-text">
+	  TBD
+          </p>
+        </div>
+|
+}
+
 # TBD functions
 
 $out += %|

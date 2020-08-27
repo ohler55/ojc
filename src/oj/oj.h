@@ -14,7 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#define OJ_VERSION	"3.1.1"
+#define OJ_VERSION	"4.0.0"
 #define OJ_ERR_INIT	{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
 #define OJ_ERR_START	300
 
@@ -84,16 +84,16 @@ extern "C" {
 	char		msg[256];
     } *ojErr;
 
-    union ojS4k {
-	union ojS4k	*next;
+    typedef union _ojS4k {
+	union _ojS4k	*next;
 	char		str[4096];
-    };
+    } *ojS4k;
 
     typedef struct _ojStr {
 	int		len;	// length of raw or ptr excluding \0
 	union {
 	    char	raw[120];
-	    union ojS4k	*s4k;
+	    union _ojS4k	*s4k;
 	    struct {
 		size_t	cap;
 		char	*ptr;
@@ -104,7 +104,7 @@ extern "C" {
     typedef struct _ojNum {
 	long double	dub;
 	int64_t		fixnum; // holds all digits
-	uint32_t	len;	// TBD leave at 0 until building string
+	uint32_t	len;
 	int16_t		div;	// 10^div
 	int16_t		exp;
 	uint8_t		shift;	// shift of fixnum to get decimal
@@ -113,7 +113,7 @@ extern "C" {
 	bool		calc;	// if true value has been calculated
 	union {
 	    char	raw[88];
-	    union ojS4k	*s4k;
+	    ojS4k	s4k;
 	    struct {
 		size_t	cap;
 		char	*ptr;
@@ -166,35 +166,6 @@ extern "C" {
 	atomic_flag		starting;
 	volatile bool		done;
     } *ojCaller;
-
-    typedef struct _ojParser {
-	const char	*map;
-	const char	*next_map;
-	ojVal		stack;
-	ojVal		results;
-	struct _ojErr	err;
-	ojVal		all_head;
-	ojVal		all_tail;
-	ojVal		all_dig;
-	const char	*end;
-
-	// for push-pull parser
-	void		(*push)(ojVal val, void *ctx);
-	void		(*pop)(void *ctx);
-	ojVal		ready;
-
-	ojParseCallback	cb;
-	void		*ctx;
-
-	ojCaller	caller;
-
-	char		token[8];
-	int		ri;
-	uint32_t	ucode;
-	bool		pp;
-	bool		has_cb;
-	bool		has_caller;
-    } *ojParser;
 
     // General functions.
     extern const char*	oj_version(void);

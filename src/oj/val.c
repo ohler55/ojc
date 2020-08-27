@@ -16,12 +16,12 @@
 
 bool oj_thread_safe = false;
 
-static struct _ojVal	*volatile free_head = NULL;
-static struct _ojVal	*volatile free_tail = NULL;
+static ojVal		volatile free_head = NULL;
+static ojVal		volatile free_tail = NULL;
 static atomic_flag	val_busy = ATOMIC_FLAG_INIT;
 
-static union ojS4k	*volatile s4k_head = NULL;
-static union ojS4k	*volatile s4k_tail = NULL;
+static ojS4k		volatile s4k_head = NULL;
+static ojS4k		volatile s4k_tail = NULL;
 static atomic_flag	s4k_busy = ATOMIC_FLAG_INIT;
 
 static uint32_t
@@ -66,14 +66,14 @@ oj_val_create() {
     return val;
 }
 
-union ojS4k*
+ojS4k
 s4k_create() {
-    union ojS4k	*s = NULL;
+    union _ojS4k	*s = NULL;
 
     // Carelessly check to see if a new val is needed. It doesn't matter if we
     // get it wrong here.
     if (NULL == s4k_head) {
-	s = (union ojS4k*)OJ_CALLOC(1, sizeof(union ojS4k));
+	s = (ojS4k)OJ_CALLOC(1, sizeof(union _ojS4k));
     } else {
 	// Looks like we need to lock it down for a moment using the atomic busy
 	// flag.
@@ -82,7 +82,7 @@ s4k_create() {
 	    }
 	}
 	if (NULL == s4k_head) {
-	    s = (union ojS4k*)OJ_CALLOC(1, sizeof(union ojS4k));
+	    s = (ojS4k)OJ_CALLOC(1, sizeof(union _ojS4k));
 	} else {
 	    s = s4k_head;
 	    s4k_head = s4k_head->next;
@@ -96,7 +96,8 @@ s4k_create() {
 
 void
 oj_cleanup() {
-    union ojS4k	*s4k;
+    ojS4k	s4k;
+
     while (NULL != (s4k = s4k_head)) {
 	s4k_head = s4k->next;
 	OJ_FREE(s4k);
@@ -113,10 +114,10 @@ oj_cleanup() {
 
 static void
 clear_key(ojVal v) {
-    union ojS4k	*s4k_h = NULL;
-    union ojS4k	*s4k_t = NULL;
+    ojS4k	s4k_h = NULL;
+    ojS4k	s4k_t = NULL;
 
-    if (sizeof(union ojS4k) < v->key.len) {
+    if (sizeof(union _ojS4k) < v->key.len) {
 	OJ_FREE(v->key.ptr);
     } else if (sizeof(v->key.raw) < v->key.len) {
 	v->key.s4k->next = NULL;
@@ -154,12 +155,12 @@ clear_key(ojVal v) {
 
 static void
 clear_value(ojVal v) {
-    union ojS4k	*s4k_h = NULL;
-    union ojS4k	*s4k_t = NULL;
+    ojS4k	s4k_h = NULL;
+    ojS4k	s4k_t = NULL;
 
     switch (v->type) {
     case OJ_STRING:
-	if (sizeof(union ojS4k) < v->str.len) {
+	if (sizeof(union _ojS4k) < v->str.len) {
 	    OJ_FREE(v->str.ptr);
 	} else if (sizeof(v->str.raw) < v->str.len) {
 	    v->str.s4k->next = NULL;
@@ -207,10 +208,10 @@ clear_value(ojVal v) {
 // the s4k head and tail twice.
 void
 _oj_val_clear(ojVal v) {
-    union ojS4k	*s4k_h = NULL;
-    union ojS4k	*s4k_t = NULL;
+    ojS4k	s4k_h = NULL;
+    ojS4k	s4k_t = NULL;
 
-    if (sizeof(union ojS4k) < v->key.len) {
+    if (sizeof(union _ojS4k) < v->key.len) {
 	OJ_FREE(v->key.ptr);
     } else if (sizeof(v->key.raw) < v->key.len) {
 	v->key.s4k->next = NULL;
@@ -224,7 +225,7 @@ _oj_val_clear(ojVal v) {
     v->key.len = 0;
     switch (v->type) {
     case OJ_STRING:
-	if (sizeof(union ojS4k) < v->str.len) {
+	if (sizeof(union _ojS4k) < v->str.len) {
 	    OJ_FREE(v->str.ptr);
 	} else if (sizeof(v->str.raw) < v->str.len) {
 	    v->str.s4k->next = NULL;
@@ -272,12 +273,12 @@ void
 oj_reuse(ojReuser reuser) {
     ojVal	v;
     ojVal	next;
-    union ojS4k	*s4k_h = NULL;
-    union ojS4k	*s4k_t = NULL;
+    ojS4k	s4k_h = NULL;
+    ojS4k	s4k_t = NULL;
 
     for (v = reuser->dig; NULL != v; v = next) {
 	next = v->free;
-	if (sizeof(union ojS4k) < v->key.len) {
+	if (sizeof(union _ojS4k) < v->key.len) {
 	    OJ_FREE(v->key.ptr);
 	} else if (sizeof(v->key.raw) < v->key.len) {
 	    v->key.s4k->next = NULL;
@@ -290,7 +291,7 @@ oj_reuse(ojReuser reuser) {
 	}
 	switch (v->type) {
 	case OJ_STRING:
-	    if (sizeof(union ojS4k) < v->str.len) {
+	    if (sizeof(union _ojS4k) < v->str.len) {
 		OJ_FREE(v->str.ptr);
 	    } else if (sizeof(v->str.raw) < v->str.len) {
 		v->str.s4k->next = NULL;
@@ -351,15 +352,15 @@ void
 oj_destroy(ojVal val) {
     ojVal	tail = val;
     ojVal	v = val;
-    union ojS4k	*s4k_h = NULL;
-    union ojS4k	*s4k_t = NULL;
+    ojS4k	s4k_h = NULL;
+    ojS4k	s4k_t = NULL;
 
     if (NULL == val) {
 	return;
     }
     val->free = NULL;
     for (; NULL != v; v = v->free) {
-	if (sizeof(union ojS4k) < v->key.len) {
+	if (sizeof(union _ojS4k) < v->key.len) {
 	    OJ_FREE(v->key.ptr);
 	} else if (sizeof(v->key.raw) < v->key.len) {
 	    v->key.s4k->next = NULL;
@@ -372,7 +373,7 @@ oj_destroy(ojVal val) {
 	}
 	switch (v->type) {
 	case OJ_STRING:
-	    if (sizeof(union ojS4k) < v->str.len) {
+	    if (sizeof(union _ojS4k) < v->str.len) {
 		OJ_FREE(v->str.ptr);
 	    } else if (sizeof(v->str.raw) < v->str.len) {
 		v->str.s4k->next = NULL;
@@ -498,8 +499,8 @@ oj_str_set(ojErr err, ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->str.raw)) {
 	memcpy(val->str.raw, s, len);
 	val->str.raw[len] = '\0';
-    } else if (len < sizeof(union ojS4k)) {
-	union ojS4k	*s4k = s4k_create();
+    } else if (len < sizeof(union _ojS4k)) {
+	ojS4k	s4k = s4k_create();
 
 	val->str.s4k = s4k;
 	memcpy(val->str.s4k->str, s, len);
@@ -522,8 +523,8 @@ oj_key_set(ojErr err, ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->key.raw)) {
 	memcpy(val->key.raw, s, len);
 	val->key.raw[len] = '\0';
-    } else if (len < sizeof(union ojS4k)) {
-	union ojS4k	*s4k = s4k_create();
+    } else if (len < sizeof(union _ojS4k)) {
+	ojS4k	s4k = s4k_create();
 
 	val->key.s4k = s4k;
 	memcpy(val->key.s4k->str, s, len);
@@ -547,8 +548,8 @@ oj_bignum_set(ojErr err, ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->num.raw)) {
 	memcpy(val->num.raw, s, len);
 	val->num.raw[len] = '\0';
-    } else if (len < sizeof(union ojS4k)) {
-	union ojS4k	*s4k = s4k_create();
+    } else if (len < sizeof(union _ojS4k)) {
+	ojS4k	s4k = s4k_create();
 
 	val->num.s4k = s4k;
 	memcpy(val->num.s4k->str, s, len);
@@ -745,7 +746,7 @@ oj_key(ojVal val) {
     if (NULL != val) {
 	if (val->key.len < sizeof(val->key.raw)) {
 	    k = val->key.raw;
-	} else if (val->key.len < sizeof(union ojS4k)) {
+	} else if (val->key.len < sizeof(union _ojS4k)) {
 	    k = val->key.s4k->str;
 	} else {
 	    k = val->key.ptr;
@@ -761,7 +762,7 @@ oj_str_get(ojVal val) {
     if (NULL != val && OJ_STRING == val->type) {
 	if (val->str.len < sizeof(val->str.raw)) {
 	    s = val->str.raw;
-	} else if (val->str.len < sizeof(union ojS4k)) {
+	} else if (val->str.len < sizeof(union _ojS4k)) {
 	    s = val->str.s4k->str;
 	} else {
 	    s = val->str.ptr;
@@ -954,8 +955,8 @@ _oj_val_set_key(ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->key.raw)) {
 	memcpy(val->key.raw, s, len);
 	val->key.raw[len] = '\0';
-    } else if (len < sizeof(union ojS4k)) {
-	union ojS4k	*s4k = s4k_create();
+    } else if (len < sizeof(union _ojS4k)) {
+	ojS4k	s4k = s4k_create();
 
 	val->key.s4k = s4k;
 	memcpy(val->key.s4k->str, s, len);
@@ -974,8 +975,8 @@ _oj_val_set_str(ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->str.raw)) {
 	memcpy(val->str.raw, s, len);
 	val->str.raw[len] = '\0';
-    } else if (len < sizeof(union ojS4k)) {
-	union ojS4k	*s4k = s4k_create();
+    } else if (len < sizeof(union _ojS4k)) {
+	ojS4k	s4k = s4k_create();
 
 	val->str.s4k = s4k;
 	memcpy(val->str.s4k->str, s, len);
@@ -989,56 +990,56 @@ _oj_val_set_str(ojVal val, const char *s, size_t len) {
 }
 
 void
-_oj_append_num(ojParser p, const char *s, size_t len) {
-    size_t	nl = p->stack->num.len + len;
+_oj_append_num(ojErr err, ojNum num, const char *s, size_t len) {
+    size_t	nl = num->len + len;
 
-    if (p->stack->num.len < sizeof(p->stack->num.raw)) {
-	if (nl < sizeof(p->stack->num.raw)) {
-	    memcpy(p->stack->num.raw + p->stack->num.len, s, len);
-	    p->stack->num.raw[nl] = '\0';
+    if (num->len < sizeof(num->raw)) {
+	if (nl < sizeof(num->raw)) {
+	    memcpy(num->raw + num->len, s, len);
+	    num->raw[nl] = '\0';
 	} else {
 	    size_t	cap = nl * 3 / 2;
 	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
-		OJ_ERR_MEM(&p->err, "number");
-		p->stack->num.len = 0;
+		OJ_ERR_MEM(err, "number");
+		num->len = 0;
 		return;
 	    }
-	    memcpy(ptr, p->stack->num.raw, p->stack->num.len);
-	    memcpy(ptr + p->stack->num.len, s, len);
+	    memcpy(ptr, num->raw, num->len);
+	    memcpy(ptr + num->len, s, len);
 	    ptr[nl] = '\0';
-	    p->stack->num.cap = cap;
-	    p->stack->num.ptr = ptr;
+	    num->cap = cap;
+	    num->ptr = ptr;
 	}
     } else {
-	if (nl < p->stack->num.cap) {
-	    memcpy(p->stack->num.ptr + p->stack->num.len, s, len);
+	if (nl < num->cap) {
+	    memcpy(num->ptr + num->len, s, len);
 	} else {
-	    p->stack->num.cap = nl * 3 / 2;
-	    if (NULL == (p->stack->num.ptr = OJ_REALLOC(p->stack->num.ptr, p->stack->num.cap))) {
-		OJ_ERR_MEM(&p->err, "string");
-		p->stack->num.len = 0;
+	    num->cap = nl * 3 / 2;
+	    if (NULL == (num->ptr = OJ_REALLOC(num->ptr, num->cap))) {
+		OJ_ERR_MEM(err, "string");
+		num->len = 0;
 		return;
 	    } else {
-		memcpy(p->stack->num.ptr + p->stack->num.len, s, len);
+		memcpy(num->ptr + num->len, s, len);
 	    }
 	}
-	p->stack->num.ptr[nl] = '\0';
+	num->ptr[nl] = '\0';
     }
-    p->stack->num.len = nl;
+    num->len = nl;
 }
 
 void
-_oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
+_oj_append_str(ojErr err, ojStr str, const byte *s, size_t len) {
     size_t	nl = str->len + len;
 
     if (str->len < sizeof(str->raw)) {
 	if (nl < sizeof(str->raw)) {
 	    memcpy(str->raw + str->len, s, len);
 	    str->raw[nl] = '\0';
-	} else if (nl < sizeof(union ojS4k)) {
-	    union ojS4k	*s4k = s4k_create();
+	} else if (nl < sizeof(union _ojS4k)) {
+	    ojS4k	s4k = s4k_create();
 
 	    memcpy(s4k->str, str->raw, str->len);
 	    memcpy(s4k->str + str->len, s, len);
@@ -1049,7 +1050,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
-		OJ_ERR_MEM(&p->err, "string");
+		OJ_ERR_MEM(err, "string");
 		str->len = 0;
 		return;
 	    }
@@ -1059,8 +1060,8 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    str->cap = cap;
 	    str->ptr = ptr;
 	}
-    } else if (str->len < sizeof(union ojS4k)) {
-	if (nl < sizeof(union ojS4k)) {
+    } else if (str->len < sizeof(union _ojS4k)) {
+	if (nl < sizeof(union _ojS4k)) {
 	    memcpy(str->s4k->str + str->len, s, len);
 	    str->s4k->str[nl] = '\0';
 	} else {
@@ -1068,7 +1069,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	    char	*ptr = (char*)OJ_MALLOC(cap);
 
 	    if (NULL == ptr) {
-		OJ_ERR_MEM(&p->err, "string");
+		OJ_ERR_MEM(err, "string");
 		str->len = 0;
 		return;
 	    }
@@ -1091,7 +1092,7 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	} else {
 	    str->cap = nl * 3 / 2;
 	    if (NULL == (str->ptr = OJ_REALLOC(str->ptr, str->cap))) {
-		OJ_ERR_MEM(&p->err, "string");
+		OJ_ERR_MEM(err, "string");
 		str->len = 0;
 		return;
 	    } else {
@@ -1101,9 +1102,4 @@ _oj_append_str(ojParser p, ojStr str, const byte *s, size_t len) {
 	str->ptr[nl] = '\0';
     }
     str->len = nl;
-}
-
-void
-_oj_val_append_str(ojParser p, const byte *s, size_t len) {
-    _oj_append_str(p, &p->stack->str, s, len);
 }

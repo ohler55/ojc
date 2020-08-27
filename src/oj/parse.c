@@ -106,6 +106,35 @@ typedef struct _ojValidator {
     char		stack[256];
 } *ojValidator;
 
+typedef struct _ojParser {
+    const char		*map;
+    const char		*next_map;
+    ojVal		stack;
+    ojVal		results;
+    struct _ojErr	err;
+    ojVal		all_head;
+    ojVal		all_tail;
+    ojVal		all_dig;
+    const char		*end;
+
+    // for push-pull parser
+    void		(*push)(ojVal val, void *ctx);
+    void		(*pop)(void *ctx);
+    ojVal		ready;
+
+    ojParseCallback	cb;
+    void		*ctx;
+
+    ojCaller		caller;
+
+    char		token[8];
+    int			ri;
+    uint32_t		ucode;
+    bool		pp;
+    bool		has_cb;
+    bool		has_caller;
+} *ojParser;
+
 typedef struct _ReadBlock {
     atomic_flag		busy;
     ojStatus		status;
@@ -1020,12 +1049,12 @@ parse(ojParser p, const byte *json) {
 	    start = b;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
 	    }
-	    _oj_append_num(p, (char*)start, b - start);
+	    _oj_append_num(&p->err, &p->stack->num, (char*)start, b - start);
 	    b--;
 	    break;
 	case BIG_DOT:
 	    p->stack->type = OJ_DECIMAL;
-	    _oj_append_num(p, ".", 1);
+	    _oj_append_num(&p->err, &p->stack->num, ".", 1);
 	    p->map = big_dot_map;
 	    break;
 	case BIG_FRAC:
@@ -1033,22 +1062,22 @@ parse(ojParser p, const byte *json) {
 	    start = b;
 	    for (; NUM_FRAC == frac_map[*b]; b++) {
 	    }
-	    _oj_append_num(p, (char*)start, b - start);
+	    _oj_append_num(&p->err, &p->stack->num, (char*)start, b - start);
 	    b--;
 	case BIG_E:
 	    p->stack->type = OJ_DECIMAL;
-	    _oj_append_num(p, (const char*)b, 1);
+	    _oj_append_num(&p->err, &p->stack->num, (const char*)b, 1);
 	    p->map = big_exp_sign_map;
 	    break;
 	case BIG_EXP_SIGN:
-	    _oj_append_num(p, (const char*)b, 1);
+	    _oj_append_num(&p->err, &p->stack->num, (const char*)b, 1);
 	    p->map = big_exp_zero_map;
 	    break;
 	case BIG_EXP:
 	    start = b;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
 	    }
-	    _oj_append_num(p, (char*)start, b - start);
+	    _oj_append_num(&p->err, &p->stack->num, (char*)start, b - start);
 	    b--;
 	    p->map = big_exp_map;
 	    break;
@@ -1077,9 +1106,9 @@ parse(ojParser p, const byte *json) {
 	    for (; STR_OK == string_map[*b]; b++) {
 	    }
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, start, b - start);
+		_oj_append_str(&p->err, &p->stack->key, start, b - start);
 	    } else {
-		_oj_append_str(p, &p->stack->str, start, b - start);
+		_oj_append_str(&p->err, &p->stack->str, start, b - start);
 	    }
 	    if ('"' == *b) {
 		p->map = p->next_map;
@@ -1117,9 +1146,9 @@ parse(ojParser p, const byte *json) {
 
 		if (0 < ulen) {
 		    if (':' == p->next_map[256]) {
-			_oj_append_str(p, &p->stack->key, utf8, ulen);
+			_oj_append_str(&p->err, &p->stack->key, utf8, ulen);
 		    } else {
-			_oj_append_str(p, &p->stack->str, utf8, ulen);
+			_oj_append_str(&p->err, &p->stack->str, utf8, ulen);
 		    }
 		} else {
 		    return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid unicode");
@@ -1129,9 +1158,9 @@ parse(ojParser p, const byte *json) {
 	    break;
 	case ESC_OK:
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, (byte*)&esc_byte_map[*b], 1);
+		_oj_append_str(&p->err, &p->stack->key, (byte*)&esc_byte_map[*b], 1);
 	    } else {
-		_oj_append_str(p, &p->stack->str, (byte*)&esc_byte_map[*b], 1);
+		_oj_append_str(&p->err, &p->stack->str, (byte*)&esc_byte_map[*b], 1);
 	    }
 	    p->map = string_map;
 	    break;
@@ -1139,35 +1168,35 @@ parse(ojParser p, const byte *json) {
 	    p->ri = 1;
 	    p->map = utf_map;
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, b, 1);
+		_oj_append_str(&p->err, &p->stack->key, b, 1);
 	    } else {
-		_oj_append_str(p, &p->stack->str, b, 1);
+		_oj_append_str(&p->err, &p->stack->str, b, 1);
 	    }
 	    break;
 	case UTF2:
 	    p->ri = 2;
 	    p->map = utf_map;
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, b, 1);
+		_oj_append_str(&p->err, &p->stack->key, b, 1);
 	    } else {
-		_oj_append_str(p, &p->stack->str, b, 1);
+		_oj_append_str(&p->err, &p->stack->str, b, 1);
 	    }
 	    break;
 	case UTF3:
 	    p->ri = 3;
 	    p->map = utf_map;
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, b, 1);
+		_oj_append_str(&p->err, &p->stack->key, b, 1);
 	    } else {
-		_oj_append_str(p, &p->stack->str, b, 1);
+		_oj_append_str(&p->err, &p->stack->str, b, 1);
 	    }
 	    break;
 	case UTFX:
 	    p->ri--;
 	    if (':' == p->next_map[256]) {
-		_oj_append_str(p, &p->stack->key, b, 1);
+		_oj_append_str(&p->err, &p->stack->key, b, 1);
 	    } else {
-		_oj_append_str(p, &p->stack->str, b, 1);
+		_oj_append_str(&p->err, &p->stack->str, b, 1);
 	    }
 	    if (p->ri <= 0) {
 		p->map = string_map;
@@ -2134,4 +2163,9 @@ oj_caller_wait(ojCaller caller) {
     atomic_flag_clear(&tail->busy);
 
     pthread_join(caller->thread, NULL);
+}
+
+void
+_oj_val_append_str(ojParser p, const byte *s, size_t len) {
+    _oj_append_str(&p->err, &p->stack->str, s, len);
 }

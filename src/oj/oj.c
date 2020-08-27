@@ -118,7 +118,7 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 	case OJ_STRING: {
 	    const char	*s;
 
-	    if (sizeof(union ojS4k) < val->str.len) {
+	    if (sizeof(union _ojS4k) < val->str.len) {
 		s = val->str.ptr;
 	    } else if (sizeof(val->str.raw) < val->str.len) {
 		s = val->str.s4k->str;
