@@ -3,12 +3,24 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- compare app
+ - tests
+ - uses
+  - validate
+  - check each (minimal use)
+  - build string (heavier load)
+ - string
+ - mutiple file (small)
+ - mutiple file (4G)
+ - mutiple file (large)
+ - mutiple indented file (small)
+ - write (to string with indent)
+ - should ppp be separate app?
+  - return not supported for heavy load or maybe add to buf anyway
+  - validate just use no-op funcs
+
 - tests
 - docs
- - ruby to generate doc template?
-  - extern for functions
-  - typedef struct
-  - other typedef
 
 - examples/readme
 

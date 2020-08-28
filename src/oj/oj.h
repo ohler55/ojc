@@ -93,7 +93,7 @@ extern "C" {
 	int		len;	// length of raw or ptr excluding \0
 	union {
 	    char	raw[120];
-	    union _ojS4k	*s4k;
+	    ojS4k	s4k;
 	    struct {
 		size_t	cap;
 		char	*ptr;
@@ -143,6 +143,8 @@ extern "C" {
 
     typedef ojCallbackOp	(*ojParseCallback)(ojVal val, void *ctx);
     typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
+    typedef void		(*ojPushFunc)(ojVal val, void *ctx);
+    typedef void		(*ojPopFunc)(void *ctx);
 
     typedef struct _ojReuser {
 	ojVal			head;
@@ -187,26 +189,26 @@ extern "C" {
     extern ojStatus	oj_parse_str_call(ojErr err, const char *json, ojCaller caller);
     extern ojStatus	oj_pp_parse_str(ojErr		err,
 					const char	*json,
-					void		(*push)(ojVal val, void *ctx),
-					void		(*pop)(void * ctx),
+					ojPushFunc	push,
+					ojPopFunc	pop,
 					void		*ctx);
 
     extern ojVal	oj_parse_fd(ojErr err, int fd, ojReuser reuser);
     extern ojStatus	oj_parse_fd_cb(ojErr err, int fd, ojParseCallback cb, void *ctx);
     extern ojStatus	oj_parse_fd_call(ojErr err, int fd, ojCaller caller);
-    extern ojStatus	oj_pp_parse_fd(ojErr	err,
-				       int	fd,
-				       void	(*push)(ojVal val, void *ctx),
-				       void	(*pop)(void * ctx),
-				       void	*ctx);
+    extern ojStatus	oj_pp_parse_fd(ojErr		err,
+				       int		fd,
+				       ojPushFunc	push,
+				       ojPopFunc	pop,
+				       void		*ctx);
 
     extern ojVal	oj_parse_file(ojErr err, const char *filename, ojReuser reuser);
     extern ojStatus	oj_parse_file_cb(ojErr err, const char *filename, ojParseCallback cb, void *ctx);
     extern ojStatus	oj_parse_file_call(ojErr err, const char *filename, ojCaller caller);
     extern ojStatus	oj_pp_parse_file(ojErr		err,
 					 const char	*filepath,
-					 void		(*push)(ojVal val, void *ctx),
-					 void		(*pop)(void * ctx),
+					 ojPushFunc	push,
+					 ojPopFunc	pop,
 					 void		*ctx);
 
     extern ojVal	oj_val_create();

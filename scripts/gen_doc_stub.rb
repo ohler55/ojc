@@ -16,6 +16,28 @@ first = $header.index('"', i + 10)
 last = $header.index('"', first + 1)
 $version = $header[first + 1...last]
 
+class Guide
+  attr_accessor :key
+  attr_accessor :title
+
+  def initialize(key, title)
+    @key = key
+    @title = title
+  end
+end
+
+$guides = [
+  Guide.new('parse-string', 'Parse JSON String'),
+  Guide.new('callback-string', 'Callback Parse String'),
+  Guide.new('caller-string', 'Caller Parse String'),
+  Guide.new('pp-string', 'Push-Pop Parse String'),
+  Guide.new('validate', 'Validate JSON String'),
+  Guide.new('callback-file', 'Callback Parse File'),
+  Guide.new('caller-file', 'Caller Parse File'),
+  Guide.new('pp-file', 'Push-Pop Parse File'),
+  Guide.new('create-write', 'Create and Write'),
+]
+
 class Enum
   attr_accessor :name
   attr_accessor :synopsis
@@ -62,7 +84,13 @@ class Type
       line = line.split(';')[0]
       line.strip!
       parts = line.split("\t")
-      @fields << Param.new(parts[-1], parts[0])
+      type = parts[0]
+      n = parts[-1]
+      while '*' == n[0] do
+	type += '*'
+	n = n[1..-1]
+      end
+      @fields << Param.new(n, type)
     }
   end
 end
@@ -80,11 +108,26 @@ end
 class Func
   attr_accessor :name
   attr_accessor :synopsis
+  attr_accessor :type
   attr_accessor :params
 
   def initialize(s)
     @synopsis = s
-    # TBD
+    tab = s.index("\t", 7)
+    @type = s[7..tab].strip
+    open = s.index("(", tab)
+    @name = s[tab...open].strip
+    @params = []
+    s[open + 1..-3].split(',').each { |arg|
+      sep = arg.rindex(/[ \t]+/)
+      t = arg[0..sep].strip
+      n = arg[sep..-1].strip
+      while '*' == n[0] do
+	t += '*'
+	n = n[1..-1]
+      end
+      @params << Param.new(n, t)
+    }
   end
 end
 
@@ -133,20 +176,37 @@ def gather_types
     $types << Type.new($header[close + 1...semi].strip, $header[i..semi])
     i = semi
   end
+  $header.split("\n").each { |line|
+    next unless line.include?('typedef') && line.include?(';') && line.include?('(')
+    line.strip!
+    star = line.index('(*')
+    close = line.index(')', star + 2)
+    $types << Type.new(line[star + 2...close], line)
+  }
   $types.sort_by! { |e| e.name }
 end
 
 def gather_globals
-  i = 0
   $header.split("\n").each { |line|
     next unless line.include?('extern') && line.include?(';')
     next if line.include?('(')
     line.strip!
     $globals << Global.new(line)
   }
+  $globals.sort_by! { |g| g.name }
 end
 
 def gather_funcs
+  i = 0
+  while (!(i = $header.index('extern', i + 1)).nil?)
+    open = $header.index('(', i)
+    nl = $header.index("\n", i)
+    next if open.nil? || nl < open
+    semi = $header.index(';', i)
+    $funcs << Func.new($header[i..semi])
+    i = semi
+  end
+  $funcs.sort_by! { |f| f.name }
 end
 
 gather_enums
@@ -157,7 +217,7 @@ gather_funcs
 $out = %|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
   <head>
-    <title>OjC Client API</title>
+    <title>OjC API</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" type="text/css" media="screen,print" href="ojc-api.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -169,8 +229,14 @@ $out = %|<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
     <div class="page">
       <div class="index">
         <button class="item level1" onclick="displayDesc(event,'Introduction')">Introduction</button>
-        <button class="item level1" onclick="displayDesc(event,'Guides')">Guides</button>
 |
+
+$out += %|        <span class="cat">Guides</span>
+|
+$guides.each { |g|
+  $out += %|        <button class="item level2" onclick="displayDesc(event,'#{g.key}')">#{g.title}</button>
+|
+}
 
 $out += %|        <span class="cat">Enums</span>
 |
@@ -195,7 +261,10 @@ $globals.each { |g|
 
 $out += %|        <span class="cat">Functions</span>
 |
-# TBD functions
+$funcs.each { |f|
+  $out += %|        <button class="item level2" onclick="displayDesc(event,'#{f.name}')">#{f.name}()</button>
+|
+}
 
 $out += %|      </div>
 
@@ -206,15 +275,23 @@ $out += %|      </div>
 	    TBD
           </p>
         </div>
-
-        <div id="Guides" class="desc">
-          <div class="title">Guides</div>
-          <h3>Simple JSON Parsing Example</h3>
-	  TBD examples
-        </div>
 |
 
 # details
+
+$guides.each { |g|
+  $out += %|
+        <div id="#{g.key}" class="desc">
+          <div class="title">#{g.title}</div>
+          <p class="desc-text">
+	  TBD
+          </p>
+          <div class="synopsis">
+TBD code
+          </div>
+        </div>
+|
+}
 
 $enums.each { |e|
   $out += %|
@@ -227,7 +304,7 @@ $enums.each { |e|
           <table class="params">
 |
   e.values.each { |v|
-    $out += %|            <tr><td><span class="param">#{v}</span></td><td>TBD</td></tr>
+    $out += %|            <tr><td><span class="enum-value">#{v}</span></td><td>TBD</td></tr>
 |
   }
   $out += %|          </table>
@@ -246,7 +323,7 @@ $types.each { |t|
           <table class="params">
 |
   t.fields.each { |f|
-    $out += %|            <tr><td><span class="param">#{f.type}</span></td><td><span class="param">#{f.name}</span></td><td>TBD</td></tr>
+    $out += %|            <tr><td><span class="param-type">#{f.type}</span></td><td><span class="param-name">#{f.name}</span></td><td>TBD</td></tr>
 |
   }
   $out += %|          </table>
@@ -266,7 +343,24 @@ $globals.each { |g|
 |
 }
 
-# TBD functions
+$funcs.each { |f|
+  $out += %|
+        <div id="#{f.name}" class="desc">
+          <div class="title">#{f.name}()</div>
+          <div class="synopsis">#{f.synopsis}</div>
+          <p class="desc-text">
+	  TBD
+          </p>
+          <table class="params">
+|
+  f.params.each { |p|
+    $out += %|            <tr><td><span class="param-type">#{p.type}</span></td><td><span class="param-name">#{p.name}</span> TBD.</td><tr>
+|
+  }
+  $out += %|          </table>
+        </div>
+|
+}
 
 $out += %|
       </div>
