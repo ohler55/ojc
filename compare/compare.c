@@ -8,6 +8,14 @@
 #include "oj/buf.h"
 
 #define MAX_APPS	8
+#define MAX_BAR		96
+
+// Keep the maximum under 114 so it displays in a single github page without
+// horizontal scrolling. Leaving 6 characters for the usec/iteration and 12
+// for the name leaves us with 96. Each char is 3 byte and then on more for
+// the \0 termination for 289.
+static const char	bar[289] = "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓";
+static const char	*bar_frac[] = { "", "▏", "▎", "▍", "▌", "▋", "▊", "▉" };
 
 typedef struct _benchResult {
     const char		*name;
@@ -46,13 +54,13 @@ extern int	genlog(FILE *f, long size);
 static struct _result	results[] = {
     { .mode = "validate", .size = "small", .filename = "files/ca.json", .iter = 10000 },
     { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 10000 },
-    { .mode = "multiple-light", .size = "small", .filename = "files/1G.json", .iter = 1 },
+    { .mode = "multiple-one", .size = "small", .filename = "files/1G.json", .iter = 1 },
     { .mode = "multiple-each", .size = "small", .filename = "files/1G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "small", .filename = "files/1G.json", .iter = 1 },
-    { .mode = "multiple-light", .size = "medium", .filename = "files/4G.json", .iter = 1 },
+    { .mode = "multiple-one", .size = "medium", .filename = "files/4G.json", .iter = 1 },
     { .mode = "multiple-each", .size = "medium", .filename = "files/4G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "medium", .filename = "files/4G.json", .iter = 1 },
-    { .mode = "multiple-light", .size = "large", .filename = "files/8G.json", .iter = 1 },
+    { .mode = "multiple-one", .size = "large", .filename = "files/8G.json", .iter = 1 },
     { .mode = "multiple-each", .size = "large", .filename = "files/8G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "large", .filename = "files/8G.json", .iter = 1 },
     { .mode = "test", .size = "Large exponent (309)", .filename = "files/num-big-exp.json", .expect_err = false},
@@ -65,7 +73,7 @@ static struct _result	results[] = {
 
 static const char	*mode = NULL;
 static const char	*size = NULL;
-static const char	*modes[] = { "validate", "parse", "multiple-light", "multiple-each", "multiple-heavy", "encode", "test", NULL };
+static const char	*modes[] = { "validate", "parse", "multiple-one", "multiple-each", "multiple-heavy", "encode", "test", NULL };
 static const char	*sizes[] = { "small", "medium", "large", "huge", NULL };
 static int		mult = 1;
 static bool		verbose = false;
@@ -86,7 +94,7 @@ usage(const char *appName) {
     printf("  -o operation  (one of the operations), default all\n");
     printf("                test - run validation tests to assure compliance\n");
     printf("                validate - validate the file only\n");
-    printf("                multiple-light - parse and extract a single value\n");
+    printf("                multiple-one - parse and extract a single value\n");
     printf("                multiple-each - parse and check each value\n");
     printf("                multiple-heavy - parse and spend some time processing\n");
     printf("                parse - parse and assure all elements have been parsed\n");
@@ -247,6 +255,48 @@ check_write(const char *filename, size_t size) {
 }
 
 static void
+draw_bars(Result results, const char *prefix) {
+    size_t	plen = strlen(prefix);
+    double	max = 0.0;
+    double	per;
+
+    for (Result r = results; NULL != r->mode; r++) {
+	if (0 != strncmp(prefix, r->mode, plen)/* || 0 == r->app_cnt*/) {
+	    continue;
+	}
+	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
+	    if (max < (per = (double)br->usec / (double)br->cnt)) {
+		max = per;
+	    }
+	}
+    }
+    if (max <= 0.0) {
+	return;
+    }
+    double	scale = (double)MAX_BAR  / max;
+    double	dlen;
+    size_t	blen;
+    int		frac;
+
+    for (Result r = results; NULL != r->mode; r++) {
+	if (0 != strncmp(prefix, r->mode, plen) || 0 == r->app_cnt) {
+	    continue;
+	}
+	printf("\n%s %s (%s) %ld times - %d\n", r->mode, r->filename, r->size, r->iter, r->app_cnt);
+	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
+	    per = (double)br->usec / (double)br->cnt;
+	    dlen = per * scale;
+	    blen = (size_t)dlen;
+	    frac = (int)((dlen - (double)(int)dlen) * 8.0);
+	    printf("%10s ", br->name);
+	    fwrite(bar, 3, blen, stdout);
+	    printf("%s%5.1f\n", bar_frac[frac], per);
+
+	}
+    }
+}
+
+static void
 summary() {
     bool	has = false;
 
@@ -270,14 +320,14 @@ summary() {
 	}
 	printf("| %-32s |", r->size);
 	for (TestResult tr = r->test_results; tr - r->test_results < r->app_cnt; tr++) {
-	    printf("     %s      |", tr->pass ? "✔" : "❌");
+	    printf("     %s     |", tr->pass ? "✅" : "❌");
 	}
 	printf("\n");
     }
-    printf("\n");
+    draw_bars(results, "parse");
+    draw_bars(results, "multiple");
 
-    // TBD benchmarks with bars
-    // longest should 60 (leave 12 for name and ': ', and (%xx??)
+    printf("\n");
 }
 
 int

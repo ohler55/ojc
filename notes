@@ -27,6 +27,9 @@
 
 - examples/readme
 
+- compare
+ - maybe switch to pp for "each" and then drop the pp app
+
 - field events
  - function to use case of doing something to a log file
   - compare time range
@@ -85,3 +88,6 @@
   - team size, participants and support
   - breadth of events
  - maybe event team member match to function(s)
+
+ - races
+  - for validate, disqualify if critical not honored

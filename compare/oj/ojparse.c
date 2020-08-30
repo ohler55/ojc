@@ -62,13 +62,19 @@ parse(const char *filename, long long iter) {
 }
 
 static ojCallbackOp
-light_cb(ojVal val, void *ctx) {
+one_cb(ojVal val, void *ctx) {
+    ojVal	v = oj_object_find(val, "timestamp", 9);
+
+    if (NULL != v && OJ_INT == v->type && v->num.fixnum < 1000000LL) {
+	printf("--- timestamp out of bounds ---\n");
+    }
     *(long long*)ctx = *(long long*)ctx + 1;
+
     return OJ_DESTROY;
 }
 
 static void
-parse_light(const char *filename, long long iter) {
+parse_one(const char *filename, long long iter) {
     int64_t		dt;
     struct _ojErr	err = OJ_ERR_INIT;
 
@@ -76,7 +82,7 @@ parse_light(const char *filename, long long iter) {
 
     int64_t		start = clock_micro();
 
-    oj_parse_file_cb(&err, filename, light_cb, &iter);
+    oj_parse_file_cb(&err, filename, one_cb, &iter);
     dt = clock_micro() - start;
     form_result(iter, dt, &err);
 }
@@ -204,12 +210,12 @@ test(const char *filename, long long iter) {
     }
 }
 
-//static const char	*modes[] = { "validate", "parse", "multiple-light", "multiple-each", "multiple-heavy", "encode", "test", NULL };
+//static const char	*modes[] = { "validate", "parse", "multiple-one", "multiple-each", "multiple-heavy", "encode", "test", NULL };
 
 static struct _mode	mode_map[] = {
     { .key = "validate", .func = validate },
     { .key = "parse", .func = parse },
-    { .key = "multiple-light", .func = parse_light },
+    { .key = "multiple-one", .func = parse_one },
     { .key = "multiple-each", .func = parse_each },
     { .key = "multiple-heavy", .func = parse_heavy },
     { .key = "test", .func = test },
