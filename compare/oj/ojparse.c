@@ -17,7 +17,7 @@ form_result(long long iter, long long usec, ojErr err) {
     if (OJ_OK == err->code) {
 	form_json_results("oj", iter, usec, NULL);
     } else {
-	char	msg[256];
+	char	msg[300];
 
 	snprintf(msg, sizeof(msg), "%s at %d:%d", err->msg, err->line, err->col);
 	form_json_results("oj", iter, usec, msg);

@@ -14,7 +14,7 @@ clean:
 	$(RM) $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $(OBJS) -L$(LIB_DIR) $(LIBS)
+	$(CC) -O3 -o $@ $(OBJS) -L$(LIB_DIR) $(LIBS)
 
 %.o : %.c  $(HEADERS) $(LIB_DIR)/liboj.a
-	$(CC) -O3 -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
+	$(CC) -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
