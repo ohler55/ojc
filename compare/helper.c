@@ -74,7 +74,10 @@ load_file(const char *filename) {
 }
 
 void
-form_json_results(const char *name, long long iter, long long usec, const char *mem, const char *err) {
+form_json_results(const char *name, long long iter, long long usec, const char *err) {
+    char	mem[16];
+
+    mem_use(mem, sizeof(mem));
     if (NULL != err) {
 	printf("{\"name\":\"oj\",\"err\":\"%s\"}\n", err);
     } else {

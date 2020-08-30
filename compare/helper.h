@@ -12,7 +12,7 @@ extern "C" {
     extern uint64_t	clock_micro();
     extern char*	mem_use(char *buf, size_t size);
     extern char*	load_file(const char *filename);
-    extern void		form_json_results(const char *name, long long iter, long long usec, const char *mem, const char *err);
+    extern void		form_json_results(const char *name, long long iter, long long usec, const char *err);
 
 
 #ifdef __cplusplus

@@ -19,6 +19,9 @@
   - return not supported for heavy load or maybe add to buf anyway
   - validate just use no-op funcs
 
+ - oj-push-pop or oj-pp
+  - use oj_pp_parse for all
+
 - tests
 - docs
 

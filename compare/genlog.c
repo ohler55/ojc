@@ -27,8 +27,8 @@ int
 genlog(FILE *f, long size) {
     struct _ojErr	err = OJ_ERR_INIT;
 
-    ojVal		res = oj_parse_file(&err, "files/response.json", NULL, NULL);
-    ojVal		req = oj_parse_str(&err, log_req_str, NULL, NULL);
+    ojVal		res = oj_parse_file(&err, "files/response.json", NULL);
+    ojVal		req = oj_parse_str(&err, log_req_str, NULL);
     ojVal		req_ts = oj_object_find(req, "timestamp", 9);
     ojVal		res_ts = oj_object_find(res, "timestamp", 9);
     struct _ojBuf	buf;

@@ -1328,7 +1328,6 @@ parse(ojParser p, const byte *json) {
 	    }
 	    return p->err.code;
 	default:
-	    printf("*** internal error, unknown mode '%c'\n", p->map[*b]);
 	    break;
 	}
     }
@@ -1595,7 +1594,6 @@ oj_validate_str(ojErr err, const char *json_str) {
 	case CHAR_ERR:
 	    return byteError(err, v.map, b - json, *b);
 	default:
-	    printf("*** internal error, unknown mode '%c'\n", v.map[*b]);
 	    v.err.col = b - json - v.err.col;
 	    return oj_err_set(err, OJ_ERR_PARSE, "internal error, unknown mode");
 	    break;
@@ -1789,6 +1787,7 @@ oj_parse_str_call(ojErr err, const char *json, ojCaller caller) {
     p.err.line = 1;
     p.map = value_map;
     parse(&p, (const byte*)json);
+    oj_caller_push(&p, caller, NULL);
     if (OJ_OK != p.err.code && OJ_ABORT != p.err.code) {
 	if (NULL != err) {
 	    *err = p.err;
@@ -1956,7 +1955,10 @@ oj_parse_fd_call(ojErr err, int fd, ojCaller caller) {
     p.err.line = 1;
     p.map = value_map;
 
-    return parse_fd(&p, err, fd);
+    parse_fd(&p, err, fd);
+    oj_caller_push(&p, caller, NULL);
+
+    return p.err.code;
 }
 
 ojStatus

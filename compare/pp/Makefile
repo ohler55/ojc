@@ -4,8 +4,8 @@ SRC_DIR=.
 LIB_DIR=../../lib
 INC_DIR=../../include
 LIBS=-loj -lm -lpthread
-TARGET=ojparse
-OBJS=ojparse.o ../helper.o
+TARGET=ppparse
+OBJS=ppparse.o ../helper.o
 
 all: $(TARGET)
 
