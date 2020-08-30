@@ -14,7 +14,7 @@
 // horizontal scrolling. Leaving 6 characters for the usec/iteration and 12
 // for the name leaves us with 96. Each char is 3 byte and then on more for
 // the \0 termination for 289.
-static const char	bar[289] = "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓";
+static const char	bar[289] = "████████████████████████████████████████████████████████████████████████████████████████████████";
 static const char	*bar_frac[] = { "", "▏", "▎", "▍", "▌", "▋", "▊", "▉" };
 
 typedef struct _benchResult {
