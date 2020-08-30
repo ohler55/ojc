@@ -78,8 +78,6 @@ simd_parse(const char *str, int64_t iter) {
     long			len = (long)strlen(str);
     int64_t			start = clock_micro();
     simdjson::dom::parser	parser;
-    int64_t			ts;
-    int64_t			mt;
 
     for (int i = iter; 0 < i; i--) {
 	// It seems simdjson accepts some invalid JSON and does not report

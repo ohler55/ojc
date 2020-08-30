@@ -30,6 +30,7 @@
 - compare
  - maybe switch to pp for "each" and then drop the pp app
 
+
 - field events
  - function to use case of doing something to a log file
   - compare time range
