@@ -10,6 +10,10 @@
 
 #include "oj/oj.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 uint64_t
 clock_micro() {
     struct timeval	tv;
@@ -59,7 +63,7 @@ load_file(const char *filename) {
     len = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    if (NULL == (buf = malloc(len + 1))) {
+    if (NULL == (buf = (char*)malloc(len + 1))) {
 	printf("*-*-* not enough memory to load file %s\n", filename);
 	exit(1);
     }
@@ -85,3 +89,6 @@ form_json_results(const char *name, long long iter, long long usec, const char *
 	       name, usec, iter, mem);
     }
 }
+#ifdef __cplusplus
+}
+#endif

@@ -36,8 +36,8 @@ static void
 parse(const char *filename, long long iter) {
     int64_t		dt;
     char		*buf = load_file(filename);
-    int64_t		start = clock_micro();
     struct _ojErr	err = OJ_ERR_INIT;
+    int64_t		start = clock_micro();
 
     for (int i = iter; 0 < i; i--) {
 	oj_pp_parse_str(&err, buf, push_noop, pop_noop, NULL);

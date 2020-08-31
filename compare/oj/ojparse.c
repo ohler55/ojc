@@ -24,69 +24,6 @@ form_result(long long iter, long long usec, ojErr err) {
     }
 }
 
-// Single file parsing after loading into memory.
-static void
-validate(const char *filename, long long iter) {
-    int64_t		dt;
-    char		*buf = load_file(filename);
-    int64_t		start = clock_micro();
-    struct _ojErr	err = OJ_ERR_INIT;
-
-    for (int i = iter; 0 < i; i--) {
-	oj_validate_str(&err, buf);
-    }
-    dt = clock_micro() - start;
-    form_result(iter, dt, &err);
-    if (NULL != buf) {
-	free(buf);
-    }
-}
-
-static void
-parse(const char *filename, long long iter) {
-    int64_t		dt;
-    char		*buf = load_file(filename);
-    int64_t		start = clock_micro();
-    struct _ojReuser	r;
-    struct _ojErr	err = OJ_ERR_INIT;
-
-    for (int i = iter; 0 < i; i--) {
-	oj_parse_str(&err, buf, &r);
-	oj_reuse(&r);
-    }
-    dt = clock_micro() - start;
-    form_result(iter, dt, &err);
-    if (NULL != buf) {
-	free(buf);
-    }
-}
-
-static ojCallbackOp
-one_cb(ojVal val, void *ctx) {
-    ojVal	v = oj_object_find(val, "timestamp", 9);
-
-    if (NULL != v && OJ_INT == v->type && v->num.fixnum < 1000000LL) {
-	printf("--- timestamp out of bounds ---\n");
-    }
-    *(long long*)ctx = *(long long*)ctx + 1;
-
-    return OJ_DESTROY;
-}
-
-static void
-parse_one(const char *filename, long long iter) {
-    int64_t		dt;
-    struct _ojErr	err = OJ_ERR_INIT;
-
-    iter = 0;
-
-    int64_t		start = clock_micro();
-
-    oj_parse_file_cb(&err, filename, one_cb, &iter);
-    dt = clock_micro() - start;
-    form_result(iter, dt, &err);
-}
-
 static int
 walk(ojVal val) {
     int	cnt = 0;
@@ -138,6 +75,73 @@ walk(ojVal val) {
 	break;
     }
     return cnt;
+}
+
+// Single file parsing after loading into memory.
+static void
+validate(const char *filename, long long iter) {
+    int64_t		dt;
+    char		*buf = load_file(filename);
+    int64_t		start = clock_micro();
+    struct _ojErr	err = OJ_ERR_INIT;
+
+    for (int i = iter; 0 < i; i--) {
+	oj_validate_str(&err, buf);
+    }
+    dt = clock_micro() - start;
+    form_result(iter, dt, &err);
+    if (NULL != buf) {
+	free(buf);
+    }
+}
+
+static void
+parse(const char *filename, long long iter) {
+    int64_t		dt;
+    char		*buf = load_file(filename);
+    int64_t		start = clock_micro();
+    ojVal		val;
+    struct _ojReuser	r;
+    struct _ojErr	err = OJ_ERR_INIT;
+
+    for (int i = iter; 0 < i; i--) {
+	oj_parse_str(&err, buf, &r);
+	if (walk(val) < 0) {
+	    printf("--- should never happen\n");
+	}
+	oj_reuse(&r);
+    }
+    dt = clock_micro() - start;
+    form_result(iter, dt, &err);
+    if (NULL != buf) {
+	free(buf);
+    }
+}
+
+static ojCallbackOp
+one_cb(ojVal val, void *ctx) {
+    ojVal	v = oj_object_find(val, "timestamp", 9);
+
+    if (NULL != v && OJ_INT == v->type && v->num.fixnum < 1000000LL) {
+	printf("--- timestamp out of bounds ---\n");
+    }
+    *(long long*)ctx = *(long long*)ctx + 1;
+
+    return OJ_DESTROY;
+}
+
+static void
+parse_one(const char *filename, long long iter) {
+    int64_t		dt;
+    struct _ojErr	err = OJ_ERR_INIT;
+
+    iter = 0;
+
+    int64_t		start = clock_micro();
+
+    oj_parse_file_cb(&err, filename, one_cb, &iter);
+    dt = clock_micro() - start;
+    form_result(iter, dt, &err);
 }
 
 static ojCallbackOp

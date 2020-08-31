@@ -28,8 +28,8 @@
 - examples/readme
 
 - compare
- - maybe switch to pp for "each" and then drop the pp app
-
+ - switch to pp for "each" and then drop the pp app
+ - add mem use to end of bar
 
 - field events
  - function to use case of doing something to a log file

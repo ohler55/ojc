@@ -63,6 +63,9 @@ static struct _result	results[] = {
     { .mode = "multiple-one", .size = "large", .filename = "files/8G.json", .iter = 1 },
     { .mode = "multiple-each", .size = "large", .filename = "files/8G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "large", .filename = "files/8G.json", .iter = 1 },
+    { .mode = "multiple-one", .size = "huge", .filename = "files/16G.json", .iter = 1 },
+    { .mode = "multiple-each", .size = "huge", .filename = "files/16G.json", .iter = 1 },
+    { .mode = "multiple-heavy", .size = "huge", .filename = "files/16G.json", .iter = 1 },
     { .mode = "test", .size = "Large exponent (309)", .filename = "files/num-big-exp.json", .expect_err = false},
     { .mode = "test", .size = "Larger exponent (4000)", .filename = "files/num-bigger-exp.json", .expect_err = false},
     { .mode = "test", .size = "Large integer (20+ digits)", .filename = "files/num-long-int.json", .expect_err = false},
@@ -282,7 +285,7 @@ draw_bars(Result results, const char *prefix) {
 	if (0 != strncmp(prefix, r->mode, plen) || 0 == r->app_cnt) {
 	    continue;
 	}
-	printf("\n%s %s (%s) %ld times - %d\n", r->mode, r->filename, r->size, r->iter, r->app_cnt);
+	printf("\n%s %s (%s) %ld times\n", r->mode, r->filename, r->size, r->iter);
 	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
 	    per = (double)br->usec / (double)br->cnt;
 	    dlen = per * scale;
@@ -290,8 +293,7 @@ draw_bars(Result results, const char *prefix) {
 	    frac = (int)((dlen - (double)(int)dlen) * 8.0);
 	    printf("%10s ", br->name);
 	    fwrite(bar, 3, blen, stdout);
-	    printf("%s%5.1f\n", bar_frac[frac], per);
-
+	    printf("%s%5.1f: %s\n", bar_frac[frac], per, br->mem);
 	}
     }
 }
