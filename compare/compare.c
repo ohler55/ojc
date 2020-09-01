@@ -68,6 +68,8 @@ static struct _result	results[] = {
     { .mode = "test", .size = "Large integer (20+ digits)", .filename = "files/num-long-int.json", .expect_err = false},
     { .mode = "test", .size = "Detect invalid (192.168.10.100)", .filename = "files/num-ip-addr.json", .expect_err = true },
     { .mode = "test", .size = "Detect invalid (1e2e3)", .filename = "files/num-eee.json", .expect_err = true },
+    { .mode = "test", .size = "Detect invalid (-0.0-)", .filename = "files/num-kilroy.json", .expect_err = true},
+    { .mode = "test", .size = "Detect invalid (uuid)", .filename = "files/num-uuid.json", .expect_err = true},
     { .mode = NULL },
 };
 
