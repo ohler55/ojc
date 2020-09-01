@@ -1,7 +1,5 @@
 compare
-files/100K.json
-files/1M.json
 files/1G.json
-files/4G.json
-files/8G.json
-files/16G.json
+files/5G.json
+files/10G.json
+files/20G.json

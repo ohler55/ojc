@@ -3,24 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- display errors correctly
+ - if app crashes
+
 - compare app
  - tests
  - uses
-  - validate
-  - check each (minimal use)
-  - build string (heavier load)
- - string
- - mutiple file (small)
- - mutiple file (4G)
- - mutiple file (large)
- - mutiple indented file (small)
- - write (to string with indent)
- - should ppp be separate app?
-  - return not supported for heavy load or maybe add to buf anyway
-  - validate just use no-op funcs
-
- - oj-push-pop or oj-pp
-  - use oj_pp_parse for all
+  - build
+  - write (to string with indent)
 
 - tests
 - docs

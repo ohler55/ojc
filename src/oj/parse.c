@@ -23,6 +23,8 @@
 // max in the pow_map
 #define MAX_POW			400
 
+#define MIN_SLEEP	(1000000000LL / (double)CLOCKS_PER_SEC)
+
 static void
 one_beat() {
     struct timespec	ts = { .tv_sec = 0, .tv_nsec = 100 };

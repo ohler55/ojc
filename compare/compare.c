@@ -6,6 +6,7 @@
 
 #include "oj/oj.h"
 #include "oj/buf.h"
+#include "helper.h"
 
 #define MAX_APPS	8
 #define MAX_BAR		96
@@ -52,20 +53,16 @@ typedef struct _result {
 extern int	genlog(FILE *f, long size);
 
 static struct _result	results[] = {
-    { .mode = "validate", .size = "small", .filename = "files/ca.json", .iter = 10000 },
-    { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 10000 },
-    { .mode = "multiple-one", .size = "small", .filename = "files/1G.json", .iter = 1 },
-    { .mode = "multiple-each", .size = "small", .filename = "files/1G.json", .iter = 1 },
+    { .mode = "validate", .size = "small", .filename = "files/ca.json", .iter = 30000 },
+    { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 30000 },
+    { .mode = "multiple-light", .size = "small", .filename = "files/1G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "small", .filename = "files/1G.json", .iter = 1 },
-    { .mode = "multiple-one", .size = "medium", .filename = "files/4G.json", .iter = 1 },
-    { .mode = "multiple-each", .size = "medium", .filename = "files/4G.json", .iter = 1 },
-    { .mode = "multiple-heavy", .size = "medium", .filename = "files/4G.json", .iter = 1 },
-    { .mode = "multiple-one", .size = "large", .filename = "files/8G.json", .iter = 1 },
-    { .mode = "multiple-each", .size = "large", .filename = "files/8G.json", .iter = 1 },
-    { .mode = "multiple-heavy", .size = "large", .filename = "files/8G.json", .iter = 1 },
-    { .mode = "multiple-one", .size = "huge", .filename = "files/16G.json", .iter = 1 },
-    { .mode = "multiple-each", .size = "huge", .filename = "files/16G.json", .iter = 1 },
-    { .mode = "multiple-heavy", .size = "huge", .filename = "files/16G.json", .iter = 1 },
+    { .mode = "multiple-light", .size = "medium", .filename = "files/5G.json", .iter = 1 },
+    { .mode = "multiple-heavy", .size = "medium", .filename = "files/5G.json", .iter = 1 },
+    { .mode = "multiple-light", .size = "large", .filename = "files/10G.json", .iter = 1 },
+    { .mode = "multiple-heavy", .size = "large", .filename = "files/10G.json", .iter = 1 },
+    { .mode = "multiple-light", .size = "huge", .filename = "files/20G.json", .iter = 1 },
+    { .mode = "multiple-heavy", .size = "huge", .filename = "files/20G.json", .iter = 1 },
     { .mode = "test", .size = "Large exponent (309)", .filename = "files/num-big-exp.json", .expect_err = false},
     { .mode = "test", .size = "Larger exponent (4000)", .filename = "files/num-bigger-exp.json", .expect_err = false},
     { .mode = "test", .size = "Large integer (20+ digits)", .filename = "files/num-long-int.json", .expect_err = false},
@@ -76,8 +73,8 @@ static struct _result	results[] = {
 
 static const char	*mode = NULL;
 static const char	*size = NULL;
-static const char	*modes[] = { "validate", "parse", "multiple-one", "multiple-each", "multiple-heavy", "encode", "test", NULL };
-static const char	*sizes[] = { "small", "medium", "large", "huge", NULL };
+static const char	*modes[] = { "validate", "parse", "multiple-light", "multiple-heavy", "encode", "test", NULL };
+static const char	*sizes[] = { "small", "large", "huge", NULL };
 static int		mult = 1;
 static bool		verbose = false;
 
@@ -97,16 +94,14 @@ usage(const char *appName) {
     printf("  -o operation  (one of the operations), default all\n");
     printf("                test - run validation tests to assure compliance\n");
     printf("                validate - validate the file only\n");
-    printf("                multiple-one - parse and extract a single value\n");
-    printf("                multiple-each - parse and check each value\n");
-    printf("                multiple-heavy - parse and spend some time processing\n");
     printf("                parse - parse and assure all elements have been parsed\n");
+    printf("                multiple-light - parse and validate\n");
+    printf("                multiple-heavy - parse and spend some time processing\n");
     printf("                encode - create a small set of objects in memory and encode\n");
     printf("\n");
     printf("  -s size       (one of the sizes), default all\n");
-    printf("                small - single JSON entry less than 100KB in memory\n");
-    printf("                medium - multiple JSON entries just under 4GB in size\n");
-    printf("                large - multiple JSON entries about 8GB in size\n");
+    printf("                small - multiple JSON entries about 1GB in size\n");
+    printf("                large - multiple JSON entries about 10GB in size\n");
     printf("                huge - multiple JSON entries with size larger than machine memory\n");
     printf("\n");
     printf("  -m multiplier iteration multiplier\n");
@@ -195,6 +190,14 @@ run(const char **apps) {
 	    printf("\n%s %s (%s) %ld times\n", r->mode, r->filename, r->size, iter);
 	}
 	for (const char **a = apps; NULL != *a; a++) {
+	    if (0 == strncmp("multiple", r->mode, 8)) {
+		// Load some large file not used for benchmarking to flush the
+		// OS file caching and level the field no matter what order
+		// runs are made.
+		char	*buf = load_file("files/5G.json");
+
+		free(buf);
+	    }
 	    BenchResult	br = r->bench_results + (a - apps);
 	    ojVal	val = run_app(*a, r->mode, r->filename, r->iter);
 
@@ -264,7 +267,7 @@ draw_bars(Result results, const char *prefix) {
     double	per;
 
     for (Result r = results; NULL != r->mode; r++) {
-	if (0 != strncmp(prefix, r->mode, plen)/* || 0 == r->app_cnt*/) {
+	if (0 != strncmp(prefix, r->mode, plen) || 0 == r->app_cnt) {
 	    continue;
 	}
 	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
@@ -326,6 +329,7 @@ summary() {
 	}
 	printf("\n");
     }
+    draw_bars(results, "validate");
     draw_bars(results, "parse");
     draw_bars(results, "multiple");
 
@@ -340,11 +344,10 @@ main(int argc, char **argv) {
     int		app_cnt = 0;
 
     check_write("files/100K.json", 100LL * 1024LL);
-    check_write("files/1M.json", 1024LL * 1024LL);
     check_write("files/1G.json", 1024LL * 1024LL * 1024LL);
-    check_write("files/4G.json", 1024LL * 1024LL * 1024LL * 4LL);
-    check_write("files/8G.json", 1024LL * 1024LL * 1024LL * 8LL);
-    check_write("files/16G.json", 1024LL * 1024LL * 1024LL * 16LL);
+    check_write("files/5G.json", 1024LL * 1024LL * 1024LL * 5LL);
+    check_write("files/10G.json", 1024LL * 1024LL * 1024LL * 10LL);
+    check_write("files/20G.json", 1024LL * 1024LL * 1024LL * 20LL);
 
     memset(apps, 0, sizeof(apps));
     argc--;

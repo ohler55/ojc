@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "oj/oj.h"
 #include "../helper.h"
@@ -82,8 +83,8 @@ static void
 validate(const char *filename, long long iter) {
     int64_t		dt;
     char		*buf = load_file(filename);
-    int64_t		start = clock_micro();
     struct _ojErr	err = OJ_ERR_INIT;
+    int64_t		start = clock_micro();
 
     for (int i = iter; 0 < i; i--) {
 	oj_validate_str(&err, buf);
@@ -100,15 +101,11 @@ parse(const char *filename, long long iter) {
     int64_t		dt;
     char		*buf = load_file(filename);
     int64_t		start = clock_micro();
-    ojVal		val;
     struct _ojReuser	r;
     struct _ojErr	err = OJ_ERR_INIT;
 
     for (int i = iter; 0 < i; i--) {
 	oj_parse_str(&err, buf, &r);
-	if (walk(val) < 0) {
-	    printf("--- should never happen\n");
-	}
 	oj_reuse(&r);
     }
     dt = clock_micro() - start;
@@ -118,64 +115,52 @@ parse(const char *filename, long long iter) {
     }
 }
 
-static ojCallbackOp
-one_cb(ojVal val, void *ctx) {
-    ojVal	v = oj_object_find(val, "timestamp", 9);
+typedef struct _cnt {
+    long long	iter;
+    int		depth;
+} *Cnt;
 
-    if (NULL != v && OJ_INT == v->type && v->num.fixnum < 1000000LL) {
-	printf("--- timestamp out of bounds ---\n");
+static void
+push_light(ojVal val, void *ctx) {
+    switch (val->type) {
+    case OJ_OBJECT:
+    case OJ_ARRAY:
+	((Cnt)ctx)->depth++;
+	break;
     }
-    *(long long*)ctx = *(long long*)ctx + 1;
-
-    return OJ_DESTROY;
 }
 
 static void
-parse_one(const char *filename, long long iter) {
+pop_light(void *ctx) {
+    Cnt	c = (Cnt)ctx;
+
+    c->depth--;
+    if (c->depth <= 0) {
+	c->iter++;
+    }
+}
+
+static void
+parse_light(const char *filename, long long iter) {
     int64_t		dt;
     struct _ojErr	err = OJ_ERR_INIT;
-
-    iter = 0;
+    struct _cnt		c = { .depth = 0, .iter = 0 };
 
     int64_t		start = clock_micro();
 
-    oj_parse_file_cb(&err, filename, one_cb, &iter);
+    oj_pp_parse_file(&err, filename, push_light, pop_light, &c);
     dt = clock_micro() - start;
-    form_result(iter, dt, &err);
-}
-
-static ojCallbackOp
-each_cb(ojVal val, void *ctx) {
-    *(long long*)ctx = *(long long*)ctx + 1;
-
-    if (walk(val) < 0) {
-	return OJ_CONTINUE;
-    }
-    return OJ_DESTROY;
-}
-
-static void
-parse_each(const char *filename, long long iter) {
-    int64_t		dt;
-    struct _ojErr	err = OJ_ERR_INIT;
-
-    iter = 0;
-
-    int64_t	start = clock_micro();
-
-    oj_parse_file_cb(&err, filename, each_cb, &iter);
-    dt = clock_micro() - start;
-    form_result(iter, dt, &err);
+    form_result(c.iter, dt, &err);
 }
 
 static ojCallbackOp
 heavy_cb(ojVal val, void *ctx) {
-    int		delay = walk(val) / 100 + 5;
-    int64_t	done = clock_micro() + delay;
+    int64_t	done = clock_micro() + 8;
 
     while (clock_micro() < done) {
 	continue;
     }
+    walk(val);
     *(long long*)ctx = *(long long*)ctx + 1;
 
     return OJ_DESTROY;
@@ -187,10 +172,9 @@ parse_heavy(const char *filename, long long iter) {
     struct _ojErr	err = OJ_ERR_INIT;
     struct _ojCaller	caller;
 
+    oj_caller_start(&err, &caller, heavy_cb, &iter);
     oj_thread_safe = true;
     iter = 0;
-
-    oj_caller_start(&err, &caller, heavy_cb, &iter);
 
     int64_t	start = clock_micro();
 
@@ -214,13 +198,10 @@ test(const char *filename, long long iter) {
     }
 }
 
-//static const char	*modes[] = { "validate", "parse", "multiple-one", "multiple-each", "multiple-heavy", "encode", "test", NULL };
-
 static struct _mode	mode_map[] = {
     { .key = "validate", .func = validate },
     { .key = "parse", .func = parse },
-    { .key = "multiple-one", .func = parse_one },
-    { .key = "multiple-each", .func = parse_each },
+    { .key = "multiple-light", .func = parse_light },
     { .key = "multiple-heavy", .func = parse_heavy },
     { .key = "test", .func = test },
     { .key = NULL },

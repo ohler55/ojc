@@ -76,7 +76,11 @@ validate(const char *filename, long long iter) {
 
     for (int i = iter; 0 < i; i--) {
 	try {
-	    parser.parse(buf, len, true);
+	    simdjson::dom::element	doc = parser.parse(buf, len, true);
+	    // It is necessary to attempt to get each value to detect
+	    // validation failures as numbers are not checked in the first
+	    // pass.
+	    walk(doc);
 	} catch (const std::exception &x) {
 	    err = x.what();
 	    break;
@@ -107,9 +111,7 @@ parse(const char *filename, long long iter) {
     for (int i = iter; 0 < i; i--) {
 	try {
 	    simdjson::dom::element	doc = parser.parse(buf, len, true);
-	    if (walk(doc) < 0) {
-		std::cout << "--- should never happen\n" << std::endl;
-	    }
+	    walk(doc);
 	} catch (const std::exception &x) {
 	    err = x.what();
 	    break;
@@ -123,7 +125,7 @@ parse(const char *filename, long long iter) {
 }
 
 static void
-parse_one(const char *filename, long long iter) {
+parse_light(const char *filename, long long iter) {
     int64_t				dt;
     simdjson::dom::parser		parser;
     simdjson::dom::document_stream	docs;
@@ -135,36 +137,7 @@ parse_one(const char *filename, long long iter) {
 	docs = parser.load_many(filename);
 	for (simdjson::dom::element doc : docs) {
 	    iter++;
-	    if (simdjson::dom::element_type::OBJECT == doc.type()) {
-		auto ts = doc["timestamp"];
-		if (simdjson::dom::element_type::INT64 == ts.type() && int64_t(ts) < 1000000LL) {
-		    std::cout << "--- timestamp out of bounds ---\n" << std::endl;
-		}
-	    }
-	}
-    } catch (const std::exception &x) {
-	err = x.what();
-    }
-    dt = clock_micro() - start;
-    form_json_results("simdjson", iter, dt, err);
-}
-
-static void
-parse_each(const char *filename, long long iter) {
-    int64_t				dt;
-    simdjson::dom::parser		parser;
-    simdjson::dom::document_stream	docs;
-    int64_t				start = clock_micro();
-    const char				*err = NULL;
-
-    iter = 0;
-    try {
-	docs = parser.load_many(filename);
-	for (simdjson::dom::element doc : docs) {
-	    iter++;
-	    if (walk(doc) < 0) {
-		std::cout << "--- should never happen\n" << std::endl;
-	    }
+	    walk(doc);
 	}
     } catch (const std::exception &x) {
 	err = x.what();
@@ -178,18 +151,18 @@ parse_heavy(const char *filename, long long iter) {
     int64_t				dt;
     simdjson::dom::parser		parser;
     simdjson::dom::document_stream	docs;
-    int64_t				start = clock_micro();
+    uint64_t				start = clock_micro();
 
     iter = 0;
     try {
 	docs = parser.load_many(filename);
 	for (simdjson::dom::element doc : docs) {
-	    int		delay = walk(doc) / 100 + 5;
-	    int64_t	done = clock_micro() + delay;
+	    uint64_t	done = clock_micro() + 8;
 
 	    while (clock_micro() < done) {
 		continue;
 	    }
+	    walk(doc);
 	    iter++;
 	}
 	dt = clock_micro() - start;
@@ -207,7 +180,10 @@ test(const char *filename, long long iter) {
     simdjson::dom::parser	parser;
 
     try {
-	parser.parse(buf, len, true);
+	simdjson::dom::element	doc = parser.parse(buf, len, true);
+	// Parsing happens in 2 phases, extracting the value is necessary to
+	// complete the parsing and detect errors.
+	walk(doc);
 	form_json_results("simdjson", 1, 0, NULL);
     } catch (const std::exception &x) {
 	form_json_results("simdjson", 1, 0, x.what());
@@ -220,8 +196,7 @@ test(const char *filename, long long iter) {
 static struct _mode	mode_map[] = {
     { .key = "validate", .func = validate },
     { .key = "parse", .func = parse },
-    { .key = "multiple-one", .func = parse_one },
-    { .key = "multiple-each", .func = parse_each },
+    { .key = "multiple-light", .func = parse_light },
     { .key = "multiple-heavy", .func = parse_heavy },
     { .key = "test", .func = test },
     { .key = NULL },
