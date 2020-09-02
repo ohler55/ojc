@@ -34,11 +34,6 @@ typedef struct _testResult {
     bool		pass;
 } *TestResult;
 
-typedef struct _app {
-    const char	*path;
-
-} *App;
-
 typedef struct _result {
     const char		*mode;
     const char		*filename;
@@ -63,6 +58,9 @@ static struct _result	results[] = {
     { .mode = "multiple-heavy", .size = "large", .filename = "files/10G.json", .iter = 1 },
     { .mode = "multiple-light", .size = "huge", .filename = "files/20G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "huge", .filename = "files/20G.json", .iter = 1 },
+    { .mode = "test", .size = "Valid unicode", .filename = "files/unicode.json", .expect_err = false},
+    { .mode = "test", .size = "Valid UTF-8", .filename = "files/utf-8.json", .expect_err = false},
+    { .mode = "test", .size = "Detect invalid UTF-8", .filename = "files/utf-8-bad.json", .expect_err = true},
     { .mode = "test", .size = "Large exponent (309)", .filename = "files/num-big-exp.json", .expect_err = false},
     { .mode = "test", .size = "Larger exponent (4000)", .filename = "files/num-bigger-exp.json", .expect_err = false},
     { .mode = "test", .size = "Large integer (20+ digits)", .filename = "files/num-long-int.json", .expect_err = false},
@@ -163,8 +161,8 @@ run(const char **apps) {
 		TestResult	tr = r->test_results + (a - apps);
 		ojVal		val = run_app(*a, r->mode, r->filename, r->iter);
 
-		r->app_cnt++;
 		if (NULL != val) {
+		    r->app_cnt++;
 		    if (NULL != (tr->name = oj_str_get(oj_object_get(val, "name", 4)))) {
 			tr->name = strdup(tr->name);
 		    }
@@ -175,6 +173,10 @@ run(const char **apps) {
 		    oj_destroy(val);
 		    if (verbose) {
 			printf("%10s: %s\n", tr->name, tr->pass ? "pass" : "fail");
+		    }
+		} else {
+		    if (verbose) {
+			printf("%10s: fail\n", tr->name);
 		    }
 		}
 	    }
@@ -200,12 +202,12 @@ run(const char **apps) {
 
 		free(buf);
 	    }
-	    BenchResult	br = r->bench_results + (a - apps);
 	    ojVal	val = run_app(*a, r->mode, r->filename, r->iter);
+	    BenchResult	br = r->bench_results + (a - apps);
 
-	    r->app_cnt++;
 	    br->mode = mode;
 	    br->size = size;
+	    r->app_cnt++;
 	    if (NULL != val) {
 		if (NULL != (br->name = oj_str_get(oj_object_get(val, "name", 4)))) {
 		    br->name = strdup(br->name);
@@ -228,6 +230,12 @@ run(const char **apps) {
 			printf("%10s: %10lld entries in %8.3f msecs. (%7.1f usec/iterations) used %s of memory\n",
 			       br->name, (long long)br->cnt, (double)br->usec / 1000.0, per, br->mem);
 		    }
+		}
+	    } else {
+		br->name = *a;
+		br->err = "exited with error";
+		if (verbose) {
+		    printf("%10s: %s\n", br->name, br->err);
 		}
 	    }
 	}
@@ -263,16 +271,21 @@ check_write(const char *filename, size_t size) {
 }
 
 static void
-draw_bars(Result results, const char *prefix) {
+draw_bars(Result results, const char *prefix, const char *prefix2) {
     size_t	plen = strlen(prefix);
     double	max = 0.0;
     double	per;
 
     for (Result r = results; NULL != r->mode; r++) {
-	if (0 != strncmp(prefix, r->mode, plen) || 0 == r->app_cnt) {
+	if (0 == r->app_cnt ||
+	    (0 != strncmp(prefix, r->mode, plen) &&
+	     NULL != prefix2 && 0 != strncmp(prefix2, r->mode, strlen(prefix2)))) {
 	    continue;
 	}
 	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
+	    if (NULL != br->err) {
+		continue;
+	    }
 	    if (max < (per = (double)br->usec / (double)br->cnt)) {
 		max = per;
 	    }
@@ -287,16 +300,22 @@ draw_bars(Result results, const char *prefix) {
     int		frac;
 
     for (Result r = results; NULL != r->mode; r++) {
-	if (0 != strncmp(prefix, r->mode, plen) || 0 == r->app_cnt) {
+	if (0 == r->app_cnt ||
+	    (0 != strncmp(prefix, r->mode, plen) &&
+	     NULL != prefix2 && 0 != strncmp(prefix2, r->mode, strlen(prefix2)))) {
 	    continue;
 	}
 	printf("\n%s %s (%s) %ld times\n", r->mode, r->filename, r->size, r->iter);
 	for (BenchResult br = r->bench_results; br - r->bench_results < r->app_cnt; br++) {
+	    printf("%10s ", br->name);
+	    if (NULL != br->err) {
+		printf("%s\n", br->err);
+		continue;
+	    }
 	    per = (double)br->usec / (double)br->cnt;
 	    dlen = per * scale;
 	    blen = (size_t)dlen;
 	    frac = (int)((dlen - (double)(int)dlen) * 8.0);
-	    printf("%10s ", br->name);
 	    fwrite(bar, 3, blen, stdout);
 	    printf("%s%5.1f: %s\n", bar_frac[frac], per, br->mem);
 	}
@@ -331,9 +350,8 @@ summary() {
 	}
 	printf("\n");
     }
-    draw_bars(results, "validate");
-    draw_bars(results, "parse");
-    draw_bars(results, "multiple");
+    draw_bars(results, "parse", "validate");
+    draw_bars(results, "multiple", "multiple");
 
     printf("\n");
 }

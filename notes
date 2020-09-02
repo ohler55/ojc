@@ -3,23 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- display errors correctly
- - if app crashes
-
-- compare app
- - tests
- - uses
-  - build
-  - write (to string with indent)
-
 - tests
+- examples/readme
 - docs
 
-- examples/readme
+- optimize
+ - validate
+ - parse for multiple
 
-- compare
- - switch to pp for "each" and then drop the pp app
- - add mem use to end of bar
 
 - field events
  - function to use case of doing something to a log file
