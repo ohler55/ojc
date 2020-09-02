@@ -22,13 +22,13 @@ $(TARGET): tests.o ut.o
 	$(CC) -o $@ tests.o ut.o -L$(LIB_DIR) $(LIBS)
 
 $(OJ_TARGET): $(TEST_OBJS)
-	$(CC) -o $@ $(TEST_OBJS) -L$(LIB_DIR) $(LIBS)
+	$(CC) -O3 -o $@ $(TEST_OBJS) -L$(LIB_DIR) $(LIBS)
 
 $(BENCH): benchmark.o
-	$(CC) -o $@ benchmark.o -L$(LIB_DIR)  $(LIBS)
+	$(CC) -O3 -o $@ benchmark.o -L$(LIB_DIR)  $(LIBS)
 
 %.o : %.c  $(HEADERS) $(LIB_DIR)/libojc.a $(LIB_DIR)/liboj.a
-	$(CC) -O3 -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
+	$(CC) -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
 
 test: all
 	./$(TARGET)

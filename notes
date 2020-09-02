@@ -3,26 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- compare app
- - tests
- - uses
-  - validate
-  - check each (minimal use)
-  - build string (heavier load)
- - string
- - mutiple file (small)
- - mutiple file (4G)
- - mutiple file (large)
- - mutiple indented file (small)
- - write (to string with indent)
- - should ppp be separate app?
-  - return not supported for heavy load or maybe add to buf anyway
-  - validate just use no-op funcs
-
 - tests
+- examples/readme
 - docs
 
-- examples/readme
+- optimize
+ - validate
+ - parse for multiple
+
 
 - field events
  - function to use case of doing something to a log file
@@ -82,3 +70,6 @@
   - team size, participants and support
   - breadth of events
  - maybe event team member match to function(s)
+
+ - races
+  - for validate, disqualify if critical not honored

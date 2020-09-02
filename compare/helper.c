@@ -3,12 +3,15 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "oj/oj.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 uint64_t
 clock_micro() {
@@ -48,7 +51,7 @@ mem_use(char *buf, size_t size) {
 char*
 load_file(const char *filename) {
     FILE	*f = fopen(filename, "r");
-    long	len;
+    size_t	len;
     char	*buf;
 
     if (NULL == f) {
@@ -59,7 +62,7 @@ load_file(const char *filename) {
     len = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    if (NULL == (buf = malloc(len + 1))) {
+    if (NULL == (buf = (char*)malloc(len + 1))) {
 	printf("*-*-* not enough memory to load file %s\n", filename);
 	exit(1);
     }
@@ -74,11 +77,17 @@ load_file(const char *filename) {
 }
 
 void
-form_json_results(const char *name, long long iter, long long usec, const char *mem, const char *err) {
+form_json_results(const char *name, long long iter, long long usec, const char *err) {
+    char	mem[16];
+
+    mem_use(mem, sizeof(mem));
     if (NULL != err) {
-	printf("{\"name\":\"oj\",\"err\":\"%s\"}\n", err);
+	printf("{\"name\":\"%s\",\"err\":\"%s\"}\n", name, err);
     } else {
 	printf("{\"name\":\"%s\",\"usec\":%lld,\"iter\":%lld,\"mem\":\"%s\"}\n",
 	       name, usec, iter, mem);
     }
 }
+#ifdef __cplusplus
+}
+#endif
