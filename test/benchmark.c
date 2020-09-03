@@ -142,7 +142,6 @@ bench_parse(const char *filename, int64_t iter) {
     const char		*str = json;
     char		*buf = NULL;
     struct _ojErr	err = OJ_ERR_INIT;
-    ojVal		v;
     int64_t		start;
     struct _ojReuser	reuser = { .head = NULL, .tail = NULL, .dig = NULL };
 
@@ -152,7 +151,7 @@ bench_parse(const char *filename, int64_t iter) {
     }
     start = clock_micro();
     for (int i = iter; 0 < i; i--) {
-	v = oj_parse_str(&err, str, &reuser);
+	oj_parse_str(&err, str, &reuser);
 	oj_reuse(&reuser);
     }
     dt = clock_micro() - start;

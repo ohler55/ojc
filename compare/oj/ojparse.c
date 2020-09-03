@@ -186,12 +186,12 @@ parse_heavy(const char *filename, long long iter) {
 
 static void
 test(const char *filename, long long iter) {
-    ojVal		v;
     char		*buf = load_file(filename);
     struct _ojErr	err = OJ_ERR_INIT;
 
-    v = oj_parse_str(&err, buf, NULL);
-    oj_destroy(v);
+    oj_validate_str(&err, buf);
+    // This also works:
+    //oj_destroy(oj_parse_str(&err, buf, NULL));
     form_result(1, 0, &err);
     if (NULL != buf) {
 	free(buf);
