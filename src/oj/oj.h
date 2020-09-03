@@ -14,9 +14,13 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#define OJ_VERSION	"4.0.0"
-#define OJ_ERR_INIT	{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
-#define OJ_ERR_START	300
+#define OJ_VERSION_MAJOR	4
+#define OJ_VERSION_MINOR	0
+#define OJ_VERSION_PATCH	0
+#define OJ_VERSION		"4.0.0"
+
+#define OJ_ERR_INIT		{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
+#define OJ_ERR_START		300
 
     typedef enum {
 	OJ_OK		= 0,

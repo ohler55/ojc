@@ -3,6 +3,8 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- remove benchmarks.c
+
 - tests
 - examples/readme
 - docs

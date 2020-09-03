@@ -105,7 +105,7 @@ typedef struct _ojValidator {
     int			depth;
     int			ri;
     // TBD change this stack to be expandable
-    char		stack[256];
+    char		stack[1024];
 } *ojValidator;
 
 typedef struct _ojParser {
@@ -119,7 +119,6 @@ typedef struct _ojParser {
     ojVal		all_dig;
     const char		*end;
 
-    // for push-pull parser
     void		(*push)(ojVal val, void *ctx);
     void		(*pop)(void *ctx);
     ojVal		ready;
@@ -142,8 +141,6 @@ typedef struct _ReadBlock {
     ojStatus		status;
     bool		eof;
     byte		buf[16385];
-    //byte		buf[32769];
-    //byte		buf[65537];
 } *ReadBlock;
 
 typedef struct _ReadCtx {
@@ -1365,7 +1362,6 @@ oj_validate_str(ojErr err, const char *json_str) {
     v.err.line = 1;
     v.map = value_map;
     for (const byte *b = json; '\0' != *b; b++) {
-	//printf("*** op: %c  b: %c from %c\n", v->map[*b], *b, v->map[256]);
 	switch (v.map[*b]) {
 	case SKIP_NEWLINE:
 	    v.err.line++;
@@ -1555,7 +1551,6 @@ oj_validate_str(ojErr err, const char *json_str) {
 	    }
 	    break;
 	case VAL_NULL:
-	    //if (*(uint32_t*)b == *(uint32_t*)"null") {
 	    if ('u' == b[1] && 'l' == b[2] && 'l' == b[3]) {
 		b += 3;
 		v.map = (0 == v.depth) ? value_map : after_map;
@@ -1568,7 +1563,6 @@ oj_validate_str(ojErr err, const char *json_str) {
 	    }
 	    break;
 	case VAL_TRUE:
-	    //if (*(uint32_t*)b == *(uint32_t*)"true") {
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
 		v.map = (0 == v.depth) ? value_map : after_map;
@@ -1581,7 +1575,6 @@ oj_validate_str(ojErr err, const char *json_str) {
 	    }
 	    break;
 	case VAL_FALSE:
-	    //if (*(uint32_t*)b == *(uint32_t*)"fals" && 'e' == b[4]) {
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
 		v.map = (0 == v.depth) ? value_map : after_map;

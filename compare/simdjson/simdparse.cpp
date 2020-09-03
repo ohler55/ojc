@@ -60,6 +60,10 @@ walk(simdjson::dom::element doc) {
 }
 
 static void
+dummy(simdjson::dom::element doc) {
+}
+
+static void
 validate(const char *filename, long long iter) {
     int64_t			dt;
     // It's not clear whether calculating the length outside the timing is the
@@ -76,11 +80,9 @@ validate(const char *filename, long long iter) {
 
     for (int i = iter; 0 < i; i--) {
 	try {
-	    simdjson::dom::element	doc = parser.parse(buf, len, true);
-	    // It is necessary to attempt to get each value to detect
-	    // validation failures as numbers are not checked in the first
-	    // pass.
-	    walk(doc);
+	    // It is neccessary to assign or use the output to avoid optimization
+	    // that skips some of the validation of numbers.
+	    dummy(parser.parse(buf, len, true));
 	} catch (const std::exception &x) {
 	    err = x.what();
 	    break;
@@ -110,8 +112,7 @@ parse(const char *filename, long long iter) {
 
     for (int i = iter; 0 < i; i--) {
 	try {
-	    simdjson::dom::element	doc = parser.parse(buf, len, true);
-	    walk(doc);
+	    dummy(parser.parse(buf, len, true));
 	} catch (const std::exception &x) {
 	    err = x.what();
 	    break;
@@ -180,10 +181,9 @@ test(const char *filename, long long iter) {
     simdjson::dom::parser	parser;
 
     try {
-	simdjson::dom::element	doc = parser.parse(buf, len, true);
-	// Parsing happens in 2 phases, extracting the value is necessary to
-	// complete the parsing and detect errors.
-	walk(doc);
+	// It is neccessary to assign or use the output to avoid optimization
+	// that skips some of the validation of numbers.
+	dummy(parser.parse(buf, len, true));
 	form_json_results("simdjson", 1, 0, NULL);
     } catch (const std::exception &x) {
 	form_json_results("simdjson", 1, 0, x.what());
