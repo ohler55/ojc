@@ -1,6 +1,7 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "oj.h"
 #include "buf.h"
@@ -190,7 +191,6 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 		    ojVal	*bucket = val->hash;
 		    ojVal	*bend = bucket + sizeof(val->hash) / sizeof(*val->hash);
 
-		    oj_buf_append(buf, '{');
 		    for (; bucket < bend; bucket++) {
 			for (v = *bucket; NULL != v; v = v->next) {
 			    if (first) {
@@ -205,7 +205,6 @@ oj_buf(ojBuf buf, ojVal val, int indent, int depth) {
 			    oj_buf(buf, v, 0, 0);
 			}
 		    }
-		    oj_buf_append(buf, '}');
 		} else {
 		    for (v = val->list.head; NULL != v; v = v->next) {
 			if (first) {
@@ -306,7 +305,7 @@ oj_write(ojErr err, ojVal val, int indent, int fd) {
 
 size_t
 oj_fwrite(ojErr err, ojVal val, int indent, const char *filepath) {
-    int	fd = open(filepath, O_RDONLY);
+    int	fd = open(filepath, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
     if (fd < 0) {
 	if (NULL != err) {
@@ -317,6 +316,8 @@ oj_fwrite(ojErr err, ojVal val, int indent, const char *filepath) {
     size_t	len = oj_write(err, val, indent, fd);
 
     close(fd);
-
+    if (OJ_OK != err->code) {
+	return -1;
+    }
     return len;
 }

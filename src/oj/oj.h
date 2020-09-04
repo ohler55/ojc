@@ -21,28 +21,19 @@ extern "C" {
 
 #define OJ_ERR_INIT		{ .code = 0, .line = 0, .col = 0, .msg = { '\0' } }
 #define OJ_ERR_START		300
+#define OJ_BUILDER_INIT		{ .top = NULL, .stack = NULL, .err = { .code = 0, .line = 0, .col = 0, .msg = { '\0' } } }
 
     typedef enum {
 	OJ_OK		= 0,
 	OJ_ERR_MEMORY	= ENOMEM,
-	OJ_ERR_DENIED	= EACCES,
-	OJ_ERR_IMPL	= ENOSYS,
 	OJ_ERR_PARSE	= OJ_ERR_START,
 	OJ_ERR_READ,
 	OJ_ERR_WRITE,
 	OJ_ERR_OVERFLOW,
 	OJ_ERR_ARG,
-	OJ_ERR_NOT_FOUND,
-	OJ_ERR_THREAD,
-	OJ_ERR_NETWORK,
-	OJ_ERR_LOCK,
-	OJ_ERR_FREE,
-	OJ_ERR_IN_USE,
 	OJ_ERR_TOO_MANY,
 	OJ_ERR_TYPE,
-	OJ_ERR_EVAL,
-	OJ_ERR_TLS,
-	OJ_ERR_EOF,
+	OJ_ERR_KEY,
 	OJ_ABORT,
 	OJ_ERR_LAST,
     } ojStatus;
@@ -173,6 +164,12 @@ extern "C" {
 	volatile bool		done;
     } *ojCaller;
 
+    typedef struct _ojBuilder {
+	ojVal			top;
+	ojVal			stack;
+	struct _ojErr		err;
+    } *ojBuilder;
+
     // General functions.
     extern const char*	oj_version(void);
     extern void		oj_cleanup(void);
@@ -256,6 +253,17 @@ extern "C" {
     extern size_t	oj_buf(ojBuf buf, ojVal val, int indent, int depth);
     extern size_t	oj_write(ojErr err, ojVal val, int indent, int fd);
     extern size_t	oj_fwrite(ojErr err, ojVal val, int indent, const char *filepath);
+
+    extern ojStatus	oj_build_object(ojBuilder b, const char *key);
+    extern ojStatus	oj_build_array(ojBuilder b, const char *key);
+    extern ojStatus	oj_build_null(ojBuilder b, const char *key);
+    extern ojStatus	oj_build_bool(ojBuilder b, const char *key, bool boo);
+    extern ojStatus	oj_build_int(ojBuilder b, const char *key, int64_t i);
+    extern ojStatus	oj_build_double(ojBuilder b, const char *key, long double d);
+    extern ojStatus	oj_build_string(ojBuilder b, const char *key, const char *s, size_t len);
+    extern ojStatus	oj_build_bignum(ojBuilder b, const char *key, const char *big, size_t len);
+    extern ojStatus	oj_build_pop(ojBuilder b);
+    extern void		oj_build_popall(ojBuilder b);
 
     extern bool		oj_thread_safe;
 

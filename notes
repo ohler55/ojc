@@ -3,11 +3,14 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- remove benchmarks.c
+- compare
+ - option to take any file and iterations
+ - iteration option for multiple if simdjson can't be more consistent
 
 - tests
-- examples/readme - where? examples
- - put files in sub dir
+ - can examples be used as part of testing?
+  - maybe run and collect output or just status of exit
+
 
  - each kind of parse
   - describe reuse model

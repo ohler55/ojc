@@ -261,10 +261,10 @@ static const char	*follow_json2 = "[3,2,1]";
 static bool
 follow_callback(ojcErr err, ojcVal val, void *ctx) {
     ojcVal	*vp = (ojcVal*)ctx;
-    
+
     if (0 == *vp) {
 	FILE		*f = fopen("tmp.json", "a");
-	
+
 	// write string and terminating \0
 	fwrite(follow_json2, 1, strlen(follow_json2) + 1, f);
 	fclose(f);
@@ -1021,6 +1021,7 @@ static struct _Test	tests[] = {
 
     { 0, 0 } };
 
+#if 0
 int
 main(int argc, char **argv) {
     ut_init(argc, argv, "ojc", tests);
@@ -1029,3 +1030,4 @@ main(int argc, char **argv) {
 
     return 0;
 }
+#endif

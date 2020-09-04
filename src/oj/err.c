@@ -65,17 +65,10 @@ oj_status_str(ojStatus code) {
 	case OJ_ERR_READ:	str = "read failed";		break;
 	case OJ_ERR_WRITE:	str = "write failed";		break;
 	case OJ_ERR_ARG:	str = "invalid argument";	break;
-	case OJ_ERR_NOT_FOUND:	str = "not found";		break;
-	case OJ_ERR_THREAD:	str = "thread error";		break;
-	case OJ_ERR_NETWORK:	str = "network error";		break;
-	case OJ_ERR_LOCK:	str = "lock error";		break;
-	case OJ_ERR_FREE:	str = "already freed";		break;
-	case OJ_ERR_IN_USE:	str = "in use";			break;
 	case OJ_ERR_TOO_MANY:	str = "too many";		break;
 	case OJ_ERR_TYPE:	str = "type error";		break;
-	case OJ_ERR_EVAL:	str = "eval error";		break;
-	case OJ_ERR_TLS:	str = "TLS error";		break;
-	case OJ_ERR_EOF:	str = "end of file";		break;
+	case OJ_ERR_KEY:	str = "key error";		break;
+	case OJ_ERR_OVERFLOW:	str = "overflow";		break;
 	default:		str = "unknown error";		break;
 	}
     }

@@ -520,6 +520,7 @@ oj_str_set(ojErr err, ojVal val, const char *s, size_t len) {
 ojStatus
 oj_key_set(ojErr err, ojVal val, const char *s, size_t len) {
     clear_key(val);
+    val->key.len = len;
     if (len < sizeof(val->key.raw)) {
 	memcpy(val->key.raw, s, len);
 	val->key.raw[len] = '\0';
