@@ -137,7 +137,6 @@ extern "C" {
     } *ojVal;
 
     typedef ojCallbackOp	(*ojParseCallback)(ojVal val, void *ctx);
-    typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
     typedef void		(*ojPushFunc)(ojVal val, void *ctx);
     typedef void		(*ojPopFunc)(void *ctx);
 

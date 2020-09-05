@@ -582,6 +582,9 @@ oj_append(ojErr err, ojVal val, ojVal member) {
 	val->list.tail = val;
 	break;
     case OJ_OBJECT:
+	if (0 == member->key.len) {
+	    return oj_err_set(err, OJ_ERR_KEY, "appending to an object requires the member to have a key");
+	}
 	if (OJ_OBJ_HASH == val->mod) {
 	    member->kh = calc_hash(oj_key(member), member->key.len);
 	    member->next = val->hash[member->kh & 0x0000000F];
