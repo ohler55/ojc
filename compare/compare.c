@@ -52,8 +52,6 @@ static struct _result	results[] = {
     { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 30000 },
     { .mode = "multiple-light", .size = "small", .filename = "files/1G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "small", .filename = "files/1G.json", .iter = 1 },
-    { .mode = "multiple-light", .size = "medium", .filename = "files/5G.json", .iter = 1 },
-    { .mode = "multiple-heavy", .size = "medium", .filename = "files/5G.json", .iter = 1 },
     { .mode = "multiple-light", .size = "large", .filename = "files/10G.json", .iter = 1 },
     { .mode = "multiple-heavy", .size = "large", .filename = "files/10G.json", .iter = 1 },
     { .mode = "multiple-light", .size = "huge", .filename = "files/20G.json", .iter = 1 },
