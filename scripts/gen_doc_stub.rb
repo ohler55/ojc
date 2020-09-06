@@ -27,15 +27,15 @@ class Guide
 end
 
 $guides = [
+  Guide.new('validate', 'Validate JSON String'),
   Guide.new('parse-string', 'Parse JSON String'),
+  Guide.new('pp-string', 'Push-Pop Parse String'),
   Guide.new('callback-string', 'Callback Parse String'),
   Guide.new('caller-string', 'Caller Parse String'),
-  Guide.new('pp-string', 'Push-Pop Parse String'),
-  Guide.new('validate', 'Validate JSON String'),
+  Guide.new('pp-file', 'Push-Pop Parse File'),
   Guide.new('callback-file', 'Callback Parse File'),
   Guide.new('caller-file', 'Caller Parse File'),
-  Guide.new('pp-file', 'Push-Pop Parse File'),
-  Guide.new('create-write', 'Create and Write'),
+  Guide.new('build-write', 'Build and Write'),
 ]
 
 class Enum

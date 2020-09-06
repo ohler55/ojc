@@ -518,24 +518,24 @@ oj_str_set(ojErr err, ojVal val, const char *s, size_t len) {
 
 // Setting the key when the val is in an object in hash mode will corrupt the hash.
 ojStatus
-oj_key_set(ojErr err, ojVal val, const char *s, size_t len) {
+oj_key_set(ojErr err, ojVal val, const char *key, size_t len) {
     clear_key(val);
     val->key.len = len;
     if (len < sizeof(val->key.raw)) {
-	memcpy(val->key.raw, s, len);
+	memcpy(val->key.raw, key, len);
 	val->key.raw[len] = '\0';
     } else if (len < sizeof(union _ojS4k)) {
 	ojS4k	s4k = s4k_create();
 
 	val->key.s4k = s4k;
-	memcpy(val->key.s4k->str, s, len);
+	memcpy(val->key.s4k->str, key, len);
 	val->key.s4k->str[len] = '\0';
     } else {
 	if (NULL == (val->key.ptr = (char*)OJ_MALLOC(len + 1))) {
 	    return OJ_ERR_MEM(err, "string");
 	}
 	val->key.cap = len + 1;
-	memcpy(val->key.ptr, s, len);
+	memcpy(val->key.ptr, key, len);
 	val->key.ptr[len] = '\0';
     }
     return OJ_OK;
@@ -582,6 +582,9 @@ oj_append(ojErr err, ojVal val, ojVal member) {
 	val->list.tail = val;
 	break;
     case OJ_OBJECT:
+	if (0 == member->key.len) {
+	    return oj_err_set(err, OJ_ERR_KEY, "appending to an object requires the member to have a key");
+	}
 	if (OJ_OBJ_HASH == val->mod) {
 	    member->kh = calc_hash(oj_key(member), member->key.len);
 	    member->next = val->hash[member->kh & 0x0000000F];

@@ -44,6 +44,7 @@ main(int argc, char **argv) {
 	printf("Parse error: %s at %d:%d\n", err.msg, err.line, err.col);
     }
     oj_reuse(&reuser);
+    oj_cleanup();
 
     return err.code;
 }

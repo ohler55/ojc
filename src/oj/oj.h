@@ -137,7 +137,6 @@ extern "C" {
     } *ojVal;
 
     typedef ojCallbackOp	(*ojParseCallback)(ojVal val, void *ctx);
-    typedef ssize_t		(*ojReadFunc)(void *src, char *buf, size_t size);
     typedef void		(*ojPushFunc)(ojVal val, void *ctx);
     typedef void		(*ojPopFunc)(void *ctx);
 
@@ -221,7 +220,7 @@ extern "C" {
     extern void		oj_int_set(ojVal val, int64_t fixnum);
     extern void		oj_double_set(ojVal val, long double dub);
     extern ojStatus	oj_str_set(ojErr err, ojVal val, const char *s, size_t len);
-    extern ojStatus	oj_key_set(ojErr err, ojVal val, const char *s, size_t len);
+    extern ojStatus	oj_key_set(ojErr err, ojVal val, const char *key, size_t len);
     extern ojStatus	oj_bignum_set(ojErr err, ojVal val, const char *s, size_t len);
     extern ojStatus	oj_append(ojErr err, ojVal val, ojVal member);
     extern ojStatus	oj_object_set(ojErr err, ojVal val, const char *key, ojVal member);

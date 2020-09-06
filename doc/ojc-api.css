@@ -103,7 +103,7 @@ a.selected {
 .synopsis {
     display: block;
     font-family: monospace;
-    font-size: 18px;
+    font-size: 16px;
     white-space: pre;
     margin: 16px 0px 8px 8px;
     padding: 8px;
@@ -138,6 +138,7 @@ table.params {
 .code {
     font-family: monospace;
     font-size: 16px;
+    color: #048;
 }
 .param-type {
     font-family: monospace;
@@ -153,4 +154,15 @@ table.params {
     font-family: monospace;
     font-size: 16px;
     color: purple;
+}
+
+.ojc-red {
+    font-family: monospace;
+    font-size: 16px;
+    color: #e00;
+}
+.ojc-blue {
+    font-family: monospace;
+    font-size: 16px;
+    color: #08f;
 }

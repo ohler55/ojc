@@ -3,6 +3,9 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- examples
+ - add oj_cleanup
+
 - compare
  - option to take any file and iterations
  - iteration option for multiple if simdjson can't be more consistent
