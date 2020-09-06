@@ -48,6 +48,7 @@ typedef struct _result {
 extern int	genlog(FILE *f, long size);
 
 static struct _result	results[] = {
+    //{ .mode = "validate", .size = "small", .filename = "files/mesh.pretty.json", .iter = 1000 },
     { .mode = "validate", .size = "small", .filename = "files/ca.json", .iter = 30000 },
     { .mode = "parse", .size = "small", .filename = "files/ca.json", .iter = 30000 },
     { .mode = "multiple-light", .size = "small", .filename = "files/1G.json", .iter = 1 },

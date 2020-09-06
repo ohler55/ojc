@@ -1,4 +1,4 @@
-# Test executed on 2020-09-06
+## Test executed on 2020-09-06
 
 | Test                             | oj         | simdjson   |
 | -------------------------------- | ---------- | ---------- |
@@ -55,7 +55,8 @@ multiple-heavy files/20G.json (huge) 1 times
 ```
 
  Lower values (shorter bars) are better in all cases. The bar graph
- compares the parsing performance.
+ compares the parsing performance. The parsing time microsecond per
+ line/JSON is listed at the end of the bar along with the memory used.
 
 Tests run on:
 ```
@@ -69,8 +70,8 @@ Tests run on:
 
 ## Side Note
 
-The large file test was run with the files on an external SSD with
-these results that should a similar results.
+The large file benchmark was run with the files on an external SSD
+with these similar results:
 
 ```
 multiple-light /media/ohler/backup/bench-files/10G.json (large) 1 times

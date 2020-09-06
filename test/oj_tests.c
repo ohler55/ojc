@@ -9,6 +9,7 @@ extern void	append_pushpop_tests(Test tests);
 extern void	append_parse_tests(Test tests);
 extern void	append_chunk_tests(Test tests);
 extern void	append_write_tests(Test tests);
+extern void	append_build_tests(Test tests);
 
 extern void	debug_report();
 
@@ -21,6 +22,7 @@ main(int argc, char **argv) {
     append_parse_tests(tests);
     append_chunk_tests(tests);
     append_write_tests(tests);
+    append_build_tests(tests);
 
     bool	display_mem_report = ut_init(argc, argv, "oj", tests);
 
