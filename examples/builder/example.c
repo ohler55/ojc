@@ -36,5 +36,7 @@ main(int argc, char **argv) {
 	printf("Build error: %s at %d:%d\n", err.msg, err.line, err.col);
 	return 1;
     }
+    oj_cleanup();
+
     return 0;
 }

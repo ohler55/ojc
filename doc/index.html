@@ -429,7 +429,7 @@ main(int argc, char **argv) {
 	    Parse a JSON file and return an JSON element as an
 	    <span class="code">ojVal</span>. <span class="code">ojVal</span>
 	    is the type used to represent JSON element in
-	    the <span class="ojc-red">O</span><span class="ojc-blue">j</span><span class="ojc-red">C</span>
+	    the <span class="ojc-red">O</span><span class="ojc-blue">j</span><span class="ojc-red">C</span>z
 	    library.
           </p>
           <div class="synopsis">#include &lt;stdio.h&gt;
@@ -1450,7 +1450,7 @@ main(int argc, char **argv) {
 	    Wait for a <span class="code">ojCaller</span> to finish processing pending callbacks.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td>Caller to wait on.</td><tr>
           </table>
         </div>
 
@@ -1514,13 +1514,12 @@ main(int argc, char **argv) {
           <div class="title">oj_each()</div>
           <div class="synopsis">extern ojVal  oj_each(ojVal val, bool (*cb)(ojVal v, void* ctx), void *ctx);</div>
           <p class="desc-text">
-	    TBD
+	    Iterate over all members of an array or object.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">bool (*cb)(ojVal</span></td><td><span class="param-name">v</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx)</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td>Array or object <span class="code">ojVal</span> to iterate over.</td><tr>
+            <tr><td><span class="param-type">bool (*)(ojVal, void*)</span></td><td><span class="param-name">cb</span></td><td>Callback to be invoked for each member of the array or object.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context to provide to each callback invocation.</td><tr>
           </table>
         </div>
 
@@ -1528,10 +1527,10 @@ main(int argc, char **argv) {
           <div class="title">oj_err_init()</div>
           <div class="synopsis">extern void  oj_err_init(ojErr err);</div>
           <p class="desc-text">
-	  TBD
+	    Initialize a <span class="code">ojErr</span> struct.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
+            <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td><span class="code">ojVal</span> to initialize.</td><tr>
           </table>
         </div>
 
@@ -1539,14 +1538,14 @@ main(int argc, char **argv) {
           <div class="title">oj_fill()</div>
           <div class="synopsis">extern size_t  oj_fill(ojErr err, ojVal val, int indent, char *buf, int max);</div>
           <p class="desc-text">
-	  TBD
+	    Fill a buffer with a <span class="code">ojVal</span> marshalled into JSON.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">char*</span></td><td><span class="param-name">buf</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">max</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to marshal into JSON.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td>Indentation to use for formatting the JSON.</td><tr>
+            <tr><td><span class="param-type">char*</span></td><td><span class="param-name">buf</span></td><td>Buffer to fill with JSON.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">max</span></td><td>Maximum size of encoded JSON.</td><tr>
           </table>
         </div>
 
@@ -1554,13 +1553,13 @@ main(int argc, char **argv) {
           <div class="title">oj_fwrite()</div>
           <div class="synopsis">extern size_t  oj_fwrite(ojErr err, ojVal val, int indent, const char *filepath);</div>
           <p class="desc-text">
-	  TBD
+	    Write a <span class="code">ojVal</span> to a file encoded as JSON.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filepath</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to encode.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td>Indentation to use for formatting the JSON.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filepath</span></td><td>Filename to write to.</td><tr>
           </table>
         </div>
 
@@ -1580,10 +1579,12 @@ main(int argc, char **argv) {
           <div class="title">oj_int_get()</div>
           <div class="synopsis">extern int64_t  oj_int_get(ojVal val);</div>
           <p class="desc-text">
-	  TBD
+	    Return the int64_t value of a <span class="code">ojVal</span>. If
+	    the <span class="code">ojVal</span> is not a int then 0 is
+	    returned.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to get the value from.</td><tr>
           </table>
         </div>
 
@@ -1594,8 +1595,8 @@ main(int argc, char **argv) {
 	    Set the value of a <span class="code">ojVal</span> to a int64_t.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int64_t</span></td><td><span class="param-name">fixnum</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to set the value of.</td><tr>
+            <tr><td><span class="param-type">int64_t</span></td><td><span class="param-name">fixnum</span></td><td>The value to set the <span class="code">ojVal</span> to.</td><tr>
           </table>
         </div>
 
@@ -1603,24 +1604,24 @@ main(int argc, char **argv) {
           <div class="title">oj_key()</div>
           <div class="synopsis">extern const char*  oj_key(ojVal val);</div>
           <p class="desc-text">
-	  TBD
+	    Return the key of a <span class="code">ojVal</span>.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td>The <span class="code">ojVal</span> to get the key from.</td><tr>
           </table>
         </div>
 
         <div id="oj_key_set" class="desc">
           <div class="title">oj_key_set()</div>
-          <div class="synopsis">extern ojStatus  oj_key_set(ojErr err, ojVal val, const char *s, size_t len);</div>
+          <div class="synopsis">extern ojStatus  oj_key_set(ojErr err, ojVal val, const char *key, size_t len);</div>
           <p class="desc-text">
 	    Set the key of a <span class="code">ojVal</span>.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">s</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to set the key of.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td>Key to set the <span class="code">ojVal</span> to.</td><tr>
+            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td>Length of the key.</td><tr>
           </table>
         </div>
 
@@ -1642,7 +1643,7 @@ main(int argc, char **argv) {
 	    Set the value of a <span class="code">ojVal</span> to null.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to set to a null value.</td><tr>
           </table>
         </div>
 
@@ -1661,12 +1662,14 @@ main(int argc, char **argv) {
           <div class="title">oj_object_find()</div>
           <div class="synopsis">extern ojVal  oj_object_find(ojVal val, const char *key, int len);</div>
           <p class="desc-text">
-	  TBD
+	    Find the member of the object that has a matching key if
+	    the <span class="code">ojVal</span> is an object. The mode is not
+	    changed.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">len</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td>Object to get a value from.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td>Key to match.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">len</span></td><td>Length of the key.</td><tr>
           </table>
         </div>
 
@@ -1674,12 +1677,14 @@ main(int argc, char **argv) {
           <div class="title">oj_object_get()</div>
           <div class="synopsis">extern ojVal  oj_object_get(ojVal val, const char *key, int len);</div>
           <p class="desc-text">
-	  TBD
+	    Get the member of the object that has a matching key if
+	    the <span class="code">ojVal</span> is an object. The mode is set
+	    to OJ_OBJ_HASH.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">len</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td>Object to get a value from.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td>Key to match.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">len</span></td><td>Length of the key.</td><tr>
           </table>
         </div>
 
@@ -1687,13 +1692,13 @@ main(int argc, char **argv) {
           <div class="title">oj_object_set()</div>
           <div class="synopsis">extern ojStatus  oj_object_set(ojErr err, ojVal val, const char *key, ojVal member);</div>
           <p class="desc-text">
-	  TBD
+	    Set a member of the object associated with the provided key.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">member</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td>Object to set the member of.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">key</span></td><td>Key for the member.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">member</span></td><td>Member to be set associated with the key.</td><tr>
           </table>
         </div>
 
@@ -1701,12 +1706,15 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_fd()</div>
           <div class="synopsis">extern ojVal  oj_parse_fd(ojErr err, int fd, ojReuser reuser);</div>
           <p class="desc-text">
-	  TBD
+	    Parse JSON read from a file descriptor. Only one JSON document
+	    should be in the stream. The caller is responsible for freeing the
+	    returned value with <span class="code">oj_destroy()</span> or by
+	    using the reuser if provided.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td>Stream parse.</td><tr>
+            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td>Optional reused for freeing the returned value.</td><tr>
           </table>
         </div>
 
@@ -1714,12 +1722,13 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_fd_call()</div>
           <div class="synopsis">extern ojStatus  oj_parse_fd_call(ojErr err, int fd, ojCaller caller);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file descriptor using
+	    callback through the provided caller.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td>Stream to read from.</td><tr>
+            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td>Caller for invoking callbacks.</td><tr>
           </table>
         </div>
 
@@ -1727,13 +1736,14 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_fd_cb()</div>
           <div class="synopsis">extern ojStatus  oj_parse_fd_cb(ojErr err, int fd, ojParseCallback cb, void *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file descriptor using a
+	    callback function.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td>Stream to read from.</td><tr>
+            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td>Callback function.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for the callback.</td><tr>
           </table>
         </div>
 
@@ -1741,12 +1751,15 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_file()</div>
           <div class="synopsis">extern ojVal  oj_parse_file(ojErr err, const char *filename, ojReuser reuser);</div>
           <p class="desc-text">
-	  TBD
+	    Parse JSON read from a file. Only one JSON document should be in
+	    the file. The caller is responsible for freeing the returned value
+	    with <span class="code">oj_destroy()</span> or by using the reuser
+	    if provided.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filename</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filename</span></td><td>File to parse.</td><tr>
+            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td>Optional reused for freeing the returned value.</td><tr>
           </table>
         </div>
 
@@ -1754,12 +1767,13 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_file_call()</div>
           <div class="synopsis">extern ojStatus  oj_parse_file_call(ojErr err, const char *filename, ojCaller caller);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file using callback through
+	    the provided caller.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filename</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">filename</span></td><td>File to read from.</td><tr>
+            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td>Caller for invoking callbacks.</td><tr>
           </table>
         </div>
 
@@ -1767,26 +1781,30 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_file_cb()</div>
           <div class="synopsis">extern ojStatus  oj_parse_file_cb(ojErr err, const char *filename, ojParseCallback cb, void *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file using callback through
+	    the provided callback function.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filename</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filename</span></td><td>File to parse.</td><tr>
+            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td>Callback function.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for the callback.</td><tr>
           </table>
         </div>
 
         <div id="oj_parse_str" class="desc">
           <div class="title">oj_parse_str()</div>
           <div class="synopsis">extern ojVal  oj_parse_str(ojErr err, const char *json, ojReuser reuser);</div>
-          <p class="desc-text">
-	  TBD
+          <p class="desc-text">pp
+	    Parse JSON string. Only one JSON document should be in the
+	    string. The caller is responsible for freeing the returned value
+	    with <span class="code">oj_destroy()</span> or by using the reuser
+	    if provided.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td>String to parse.</td><tr>
+            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td>Optional reused for freeing the returned value.</td><tr>
           </table>
         </div>
 
@@ -1794,12 +1812,13 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_str_call()</div>
           <div class="synopsis">extern ojStatus  oj_parse_str_call(ojErr err, const char *json, ojCaller caller);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a string using callback through
+	    the provided caller.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td>String to parse.</td><tr>
+            <tr><td><span class="param-type">ojCaller</span></td><td><span class="param-name">caller</span></td><td>Caller for invoking callbacks.</td><tr>
           </table>
         </div>
 
@@ -1807,13 +1826,14 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_str_cb()</div>
           <div class="synopsis">extern ojStatus  oj_parse_str_cb(ojErr err, const char *json, ojParseCallback cb, void *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a string using callback through
+	    the provided callback function.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td>String to parse.</td><tr>
+            <tr><td><span class="param-type">ojParseCallback</span></td><td><span class="param-name">cb</span></td><td>Callback function.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for the callback.</td><tr>
           </table>
         </div>
 
@@ -1821,69 +1841,80 @@ main(int argc, char **argv) {
           <div class="title">oj_parse_strp()</div>
           <div class="synopsis">extern ojVal  oj_parse_strp(ojErr err, const char **json, ojReuser reuser);</div>
           <p class="desc-text">
-	  TBD
+	    Parse a JSON string pointed to by the json pointer. Only one
+	    document is parsed and then the json argument is set to point to
+	    just after the parsed string.  The caller is responsible for
+	    freeing the returned value
+	    with <span class="code">oj_destroy()</span> or by using the reuser
+	    if provided.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char**</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char**</span></td><td><span class="param-name">json</span></td><td>Pointer to a string to parse.</td><tr>
+            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td>Optional reused for freeing the returned value.</td><tr>
           </table>
         </div>
 
         <div id="oj_pp_parse_fd" class="desc">
           <div class="title">oj_pp_parse_fd()</div>
-          <div class="synopsis">extern ojStatus  oj_pp_parse_fd(ojErr		err,
-				       int		fd,
-				       ojPushFunc	push,
-				       ojPopFunc	pop,
-				       void		*ctx);</div>
+          <div class="synopsis">extern ojStatus  oj_pp_parse_fd(ojErr       err,
+                                int         fd,
+                                ojPushFunc  push,
+                                ojPopFunc   pop,
+                                void        *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file descriptor using
+	    callbacks for pushing values when they are first encountered and
+	    popping when array or objects are closed.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td>Stream to parse.</td><tr>
+            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td>Push callback.</td><tr>
+            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td>Pop callback.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for both callbacks.</td><tr>
           </table>
         </div>
 
         <div id="oj_pp_parse_file" class="desc">
           <div class="title">oj_pp_parse_file()</div>
-          <div class="synopsis">extern ojStatus  oj_pp_parse_file(ojErr		err,
-					 const char	*filepath,
-					 ojPushFunc	push,
-					 ojPopFunc	pop,
-					 void		*ctx);</div>
+          <div class="synopsis">extern ojStatus  oj_pp_parse_file(ojErr        err,
+                                  const char   *filepath,
+                                  ojPushFunc   push,
+                                  ojPopFunc    pop,
+                                  void         *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a file using callbacks for
+	    pushing values when they are first encountered and popping when
+	    array or objects are closed.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filepath</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">filepath</span></td><td>File to parse.</td><tr>
+            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td>Push callback.</td><tr>
+            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td>Pop callback.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for both callbacks.</td><tr>
           </table>
         </div>
 
         <div id="oj_pp_parse_str" class="desc">
           <div class="title">oj_pp_parse_str()</div>
-          <div class="synopsis">extern ojStatus  oj_pp_parse_str(ojErr		err,
-					const char	*json,
-					ojPushFunc	push,
-					ojPopFunc	pop,
-					void		*ctx);</div>
+          <div class="synopsis">extern ojStatus  oj_pp_parse_str(ojErr       err,
+                                 const char  *json,
+                                 ojPushFunc  push,
+                                 ojPopFunc   pop,
+                                 void        *ctx);</div>
           <p class="desc-text">
-	  TBD
+	    Parse multiple JSON documents from a string using callbacks for
+	    pushing values when they are first encountered and popping when
+	    array or objects are closed.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td>String to parse.</td><tr>
+            <tr><td><span class="param-type">ojPushFunc</span></td><td><span class="param-name">push</span></td><td>Push callback.</td><tr>
+            <tr><td><span class="param-type">ojPopFunc</span></td><td><span class="param-name">pop</span></td><td>Pop callback.</td><tr>
+            <tr><td><span class="param-type">void*</span></td><td><span class="param-name">ctx</span></td><td>Context for both callbacks.</td><tr>
           </table>
         </div>
 
@@ -1891,10 +1922,10 @@ main(int argc, char **argv) {
           <div class="title">oj_reuse()</div>
           <div class="synopsis">extern void  oj_reuse(ojReuser reuser);</div>
           <p class="desc-text">
-	  TBD
+	    Return <span class="code">ojVal</span> instance collected during parsing.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojReuser</span></td><td><span class="param-name">reuser</span></td><td>Reuser that collected <span class="code">ojVal</span> instances.</td><tr>
           </table>
         </div>
 
@@ -1902,10 +1933,11 @@ main(int argc, char **argv) {
           <div class="title">oj_status_str()</div>
           <div class="synopsis">extern const char*  oj_status_str(ojStatus code);</div>
           <p class="desc-text">
-	  TBD
+	    Return a string representation of
+	    the <span class="code">ojStatus</span> provided.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojStatus</span></td><td><span class="param-name">code</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojStatus</span></td><td><span class="param-name">code</span></td><td><span class="code">ojStatus</span> to return a string from.</td><tr>
           </table>
         </div>
 
@@ -1917,8 +1949,8 @@ main(int argc, char **argv) {
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">s</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">s</span></td><td>String value for the new <span class="code">ojVal</span>.</td><tr>
+            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td>Length of string.</td><tr>
           </table>
         </div>
 
@@ -1926,10 +1958,12 @@ main(int argc, char **argv) {
           <div class="title">oj_str_get()</div>
           <div class="synopsis">extern const char*  oj_str_get(ojVal val);</div>
           <p class="desc-text">
-	  TBD
+	    Return the string value of a <span class="code">ojVal</span>. If
+	    the <span class="code">ojVal</span> is not a string then NULL is
+	    returned.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to get the value from.</td><tr>
           </table>
         </div>
 
@@ -1941,9 +1975,9 @@ main(int argc, char **argv) {
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">s</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to set the value on.</td><tr>
+            <tr><td><span class="param-type">int64_t</span></td><td><span class="param-name">s</span></td><td>The value to set the <span class="code">ojVal</span> to.</td><tr>
+            <tr><td><span class="param-type">size_t</span></td><td><span class="param-name">len</span></td><td>Length of string.</td><tr>
           </table>
         </div>
 
@@ -1951,11 +1985,13 @@ main(int argc, char **argv) {
           <div class="title">oj_to_str()</div>
           <div class="synopsis">extern char*  oj_to_str(ojVal val, int indent);</div>
           <p class="desc-text">
-	  TBD
+	    Return a JSON string represented by
+	    the <span class="code">ojVal</span> provided. The returned JSON
+	    string should be freed when no longer needed.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to encode.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td>Indentation for the JSON string.</td><tr>
           </table>
         </div>
 
@@ -1963,10 +1999,10 @@ main(int argc, char **argv) {
           <div class="title">oj_type_str()</div>
           <div class="synopsis">extern const char*  oj_type_str(ojType type);</div>
           <p class="desc-text">
-	  TBD
+	    Return a string representation of the provided type.
           </p>
           <table class="params">
-            <tr><td><span class="param-type">ojType</span></td><td><span class="param-name">type</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojType</span></td><td><span class="param-name">type</span></td><td>Type to return a string represenation of.</td><tr>
           </table>
         </div>
 
@@ -1984,11 +2020,11 @@ main(int argc, char **argv) {
           <div class="title">oj_validate_str()</div>
           <div class="synopsis">extern ojStatus  oj_validate_str(ojErr err, const char *json);</div>
           <p class="desc-text">
-	  TBD
+	    Validate a JSON string.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">const char*</span></td><td><span class="param-name">json</span></td><td>JSON string to validate.</td><tr>
           </table>
         </div>
 
@@ -1996,24 +2032,23 @@ main(int argc, char **argv) {
           <div class="title">oj_version()</div>
           <div class="synopsis">extern const char*  oj_version(void);</div>
           <p class="desc-text">
-	  TBD
+	    Return
+	    the <span class="ojc-red">O</span><span class="ojc-blue">j</span><span class="ojc-red">C</span>
+	    version.
           </p>
-          <table class="params">
-            <tr><td><span class="param-type">void</span></td><td><span class="param-name">void</span></td><td> TBD.</td><tr>
-          </table>
         </div>
 
         <div id="oj_write" class="desc">
           <div class="title">oj_write()</div>
           <div class="synopsis">extern size_t  oj_write(ojErr err, ojVal val, int indent, int fd);</div>
           <p class="desc-text">
-	  TBD
+	    Write a <span class="code">ojVal</span> to a stream in JSON format.
           </p>
           <table class="params">
             <tr><td><span class="param-type">ojErr</span></td><td><span class="param-name">err</span></td><td>Used for error reporting.</td><tr>
-            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td> TBD.</td><tr>
-            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td> TBD.</td><tr>
+            <tr><td><span class="param-type">ojVal</span></td><td><span class="param-name">val</span></td><td><span class="code">ojVal</span> to encode.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">indent</span></td><td>Indentation for the JSON output.</td><tr>
+            <tr><td><span class="param-type">int</span></td><td><span class="param-name">fd</span></td><td>Stream to write to.</td><tr>
           </table>
         </div>
 
