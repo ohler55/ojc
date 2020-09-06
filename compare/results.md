@@ -13,6 +13,7 @@
 | Detect invalid (-0.0-)           |     ✅     |     ✅     |
 | Detect invalid (uuid)            |     ✅     |     ✅     |
 
+```
 validate files/ca.json (small) 30000 times
         oj █████████████████████████████████████████████████████▍ 36.3: 1.2MB
   simdjson ███████████████████████████████████████▎ 26.7: 3.5MB
@@ -44,6 +45,7 @@ multiple-light files/20G.json (huge) 1 times
 multiple-heavy files/20G.json (huge) 1 times
         oj ████████████████████████████████████████████████████████████████████████████████████▌ 14.2: 16MB
   simdjson Error allocating memory, we're most likely out of memory
+```
 
  Lower values (shorter bars) are better in all cases. The bar graph
  compares the parsing performance.
@@ -61,6 +63,7 @@ Tests run on:
 The large file test was run with the files on an external SSD with
 these results that should a similar results.
 
+```
 multiple-light /media/ohler/backup/bench-files/10G.json (large) 1 times
         oj █████████████████████████████████████████████████████████████▉ 18.0: 2.1MB
   simdjson █████████████████████████████████████████████████████████████████████▍ 20.2: 10GB
@@ -68,3 +71,4 @@ multiple-light /media/ohler/backup/bench-files/10G.json (large) 1 times
 multiple-heavy /media/ohler/backup/bench-files/10G.json (large) 1 times
         oj █████████████████████████████████████████████████████████████▊ 18.0: 8.2MB
   simdjson ████████████████████████████████████████████████████████████████████████████████████████████████ 27.9: 10GB
+```
