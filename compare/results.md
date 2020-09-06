@@ -51,12 +51,14 @@ multiple-heavy files/20G.json (huge) 1 times
  compares the parsing performance.
 
 Tests run on:
+```
  OS:              Ubuntu 18.04.5 LTS
  Processor:       Intel(R) Core(TM) i7-8700 CPU
  Cores:           12
  Processor Speed: 3.20GHz
  Memory:          16 GB
  Disk:            KINGSTON SA400S37240G (240 GB SSD)
+```
 
 ## Side Note
 
