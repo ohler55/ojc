@@ -13,6 +13,13 @@
 | Detect invalid (-0.0-)           |     ✅     |     ✅     |
 | Detect invalid (uuid)            |     ✅     |     ✅     |
 
+| Feature                          | oj         | simdjson   |
+| -------------------------------- | ---------- | ---------- |
+| Multiple JSON (one per line)     |     ✅     |     ✅     |
+| Multiple JSON (any format)       |     ✅     |     ❌     |
+| Build JSON object                |     ✅     |     ❌     |
+| Formatted write                  |     ✅     |     ❌     |
+
 ```
 validate files/ca.json (small) 30000 times
         oj █████████████████████████████████████████████████████▍ 36.3: 1.2MB

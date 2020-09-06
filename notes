@@ -3,76 +3,15 @@
 ^c^d hide subtree
 ^c^s show subtree
 
-- examples
- - add oj_cleanup
-
 - compare
  - option to take any file and iterations
- - iteration option for multiple if simdjson can't be more consistent
 
 - tests
- - can examples be used as part of testing?
-  - maybe run and collect output or just status of exit
-
-
- - each kind of parse
-  - describe reuse model
-  - describe caller and callback and push-pop
  - build
  - write
-- docs
-
-- optimize
- - validate
- - parse for multiple
-
-
-- field events
- - function to use case of doing something to a log file
-  - compare time range
-  - walk to touch everything as if reformatting to display
-  - regex on something like the msg
-
- - single app for benchmark results
-   - app <parse|file|validate|write> <filename> <iter>
-   - output is json {name, duration, mem-use, error}
-  - bench app takes list of apps to run
-
-
- - val parse tests
+ - more parse for errors
 
 - compare other libs
- - :question: for not exactly follow by a number for comment/note
- - :x: for not supported
- - :white_check_mark: for supported or maybe :ok:
- - validate (test for these)
-  - structure comma
-  - structure close
-  - string chars (\t in string)
-  - numbers (multiple . e -)
-  - big numbers accepted? (1.2e310 or int with more than 20 digits)
-   - maybe show max digits and exp (16 vs 19 vs no limit)
-  - display error location?
- - can get complete values as native types (array and object should be iteratable)
- - big numbers
- - long double or maybe precision (80 bit vs 64)
- - save for later (how to do with others?)
- - multiple json in one file (any allowable format)
- - multiple with one json per line
- - small file (under 4G)
- - medium file (over 4G)
- - large file (larger than memory)
- - docs
- - examples
-- performance (speed and memory use)
- - validate (no checking that values were extracted) (mark as not really validated if compare shows invalid are not detected)
- - single file as string (patient)
- - mutiple file (small)
- - mutiple file (4G)
- - mutiple file (large)
- - build/modify
- - to string
- - write
 
 - TBD stream write functions someday
 
