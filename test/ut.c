@@ -576,19 +576,6 @@ ut_toCodeStr(const unsigned char *data, int len) {
 }
 
 bool
-ut_handle_error(ojcErr err) {
-    if (OJC_OK != err->code) {
-	ut_print("[%d] %s\n", err->code, err->msg);
-	ut_fail();
-	return true;
-    }
-    if (0 != currentTest->pass) {	// don't replace failed status
-	currentTest->pass = 1;
-    }
-    return false;
-}
-
-bool
 ut_handle_oj_error(ojErr err) {
     if (OJ_OK != err->code) {
 	ut_print("[%d] %s\n", err->code, err->msg);

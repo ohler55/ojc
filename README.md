@@ -1,4 +1,4 @@
-# [![{}j](http://www.ohler.com/dev/images/ojc.svg)](http://www.ohler.com/ojc)
+# [![{}j](http://www.ohler.com/ojc/doc/ojc_64.svg)](http://www.ohler.com/ojc)
 
 [![Build Status](https://img.shields.io/travis/ohler55/ojc/master.svg?logo=travis)](http://travis-ci.org/ohler55/ojc?branch=master)
 
