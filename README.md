@@ -1,4 +1,4 @@
-# OjC
+# [![{}j](http://www.ohler.com/dev/images/ojc.svg)](http://www.ohler.com/ojc)
 
 [![Build Status](https://img.shields.io/travis/ohler55/ojc/master.svg?logo=travis)](http://travis-ci.org/ohler55/ojc?branch=master)
 
@@ -8,9 +8,10 @@ Optimized JSON in C
 
 Optimized JSON in C (OjC), as the name implies, was written to provide
 optimized JSON handling. It is derived from the underlying C parser in
-[Oj](http://www.ohler.com/oj). The intended use is for applications
-that need the maximum performance when reading large JSON document
-from a file or socket.
+[Oj](http://www.ohler.com/oj) and more recently
+[OjG](https://github.com/ohler55/ojg). The intended use is for
+applications that need the maximum performance when reading large JSON
+document from a file or socket.
 
 Besides being a true streaming parser OjC produces a structure that handles all
 JSON constructs. It does not use a Hash or Map to represent the JSON object type
@@ -23,62 +24,31 @@ JSON stream.
 ## Simple JSON Parsing Example
 
 ```c
-include "ojc/ojc.h"
+#include <stdio.h>
+#include "oj/oj.h"
 
-void
-sample() {
-    char                buf[256];
-    ojcVal              val;
-    struct _ojcErr      err;
-    const char          *json = "[null,true,\"word\",{\"a\":1234}";
+int
+main(int argc, char **argv) {
+    const char      *str ="{\"num\": 12.34e567}"
+    struct _ojErr   err = OJ_ERR_INIT;
+    ojVal           val;
 
-    ojc_err_init(&err);
-    // no callback
-    val = ojc_parse_str(&err, json, 0, 0);
-    ojc_fill(&err, val, 0, buf, sizeof(buf));
-    if (OJC_OK != err) {
-        printf("error: %s\n", err.msg);
-        return;
-    }
-    printf("parsed json '%s'\n", buf);
-    ojc_destroy(val);
-}
-
-```
-
-## Simple Callback JSON Parsing Example
-
-```c
-include "ojc/ojc.h"
-
-static bool
-each__callback(ojcVal val, void *ctx) {
-    char                buf[64];
-    struct _ojcErr      err;
-
-    ojc_err_init(&err);
-    ojc_fill(&err, val, 0, buf, sizeof(buf));
-    if (OJC_OK != err) {
-        printf("error: %s\n", err.msg);
+    if (NULL == (val = oj_parse_str(&err, str, NULL))) {
+        printf("Parse error: %s at %d:%d\n", err.msg, err.line, err.col);
     } else {
-        printf("parsed json '%s'\n", buf);
+        oj_destroy(val);
     }
-    return true;
+    oj_cleanup();
+    return err.code;
 }
-
-void
-sample() {
-    struct _ojcErr      err;
-    const char          *json = "{\"a\":111} {\"b\":222} {\"c\":333}";
-
-    ojc_err_init(&err);
-    ojc_parse_str(&err, json, each_callback, 0);
-    if (OJC_OK != err) {
-        printf("error: %s\n", err.msg);
-    }
-}
-
 ```
+
+More example can be be found in the [examples](examples) directory.
+
+## Benchmarks and Comparisons
+
+A comparison of OjC and simdjson is in the [compare](compare)
+directory with results in the [results.md](compare/results.md) file.
 
 ## Documentation
 
@@ -90,7 +60,4 @@ sample() {
 
 ## Releases
 
-See [{file:CHANGELOG.md}](CHANGELOG.md)
-
-
-Follow [@peterohler on Twitter](http://twitter.com/#!/peterohler) for announcements and news about the OjC.
+See [CHANGELOG](CHANGELOG.md)

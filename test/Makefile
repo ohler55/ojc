@@ -18,7 +18,7 @@ clean:
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) -L$(LIB_DIR) $(LIBS)
 
-%.o : %.c  $(HEADERS) $(LIB_DIR)/libojc.a $(LIB_DIR)/liboj.a
+%.o : %.c  $(HEADERS) $(LIB_DIR)/liboj.a
 	$(CC) -I. -I$(INC_DIR) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
 
 test: all

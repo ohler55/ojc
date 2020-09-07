@@ -1,5 +1,9 @@
 ## Test executed on 2020-09-06
 
+First some basic tests were run to make sure both parsers were able to
+detect errors that some parsers (such as the earlier release of
+simdjosn) miss. Some features are also listed for comparison.
+
 | Test                             | oj         | simdjson   |
 | -------------------------------- | ---------- | ---------- |
 | Valid unicode                    |     ✅     |     ✅     |
@@ -19,15 +23,33 @@
 | Multiple JSON (any format)       |     ✅     |     ❌     |
 | Build JSON object                |     ✅     |     ❌     |
 | Formatted write                  |     ✅     |     ❌     |
+| Parse file larger than memory    |     ✅     |     ❌     |
+
+
+Next are some benchmarks. Starting simple validation then on to
+parsing a single JSON string. Note a file is listed but time on the
+parsing does not start until the file has been loaded into
+memory. Next is parsing files that contain multiple JSON
+documents. Since simdjson does not support reading general multiple
+JSON files the benchmarks were limited to file that have exactly one
+JSON document per line. Benchmarks were done on mock log files
+mimicking a server that logs GraphQL requests and responses. Three file sizes were used;
+
+ - 1GB file representing a relatively small log file
+ - 10GB file for a larger task and to check memory use
+ - 20GB file to represent a file too large to fit into memory (the benchmark machine had 16GB)
+
+To make the test more interesting both a light and heavy load
+benchmarks were run. The light load consisted of just counting the
+number of documents so pretty much no load at all. The heavy load spun
+for 8 microseconds to simulate some processing on the parsed
+document. That seemed like a reasonable, if not a light representation
+of what a real application might do.
 
 ```
 validate files/ca.json (small) 30000 times
         oj █████████████████████████████████████████████████████▍ 36.3: 1.2MB
   simdjson ███████████████████████████████████████▎ 26.7: 3.5MB
-
-validate files/mesh.pretty.json (small) 1000 times
-        oj ███████████████████████████████████████████████████████████████████████████████████████████▌1024.4: 3.1MB
-  simdjson ████████████████████████████████████████████████████████████████████████████████████████████████1074.7: 7.9MB
 
 parse files/ca.json (small) 30000 times
         oj ████████████████████████████████████████████████████████████████████████████████████████████████ 65.3: 2.5MB
@@ -72,7 +94,7 @@ Tests run on:
  Disk:            KINGSTON SA400S37240G (240 GB SSD)
 ```
 
-## Side Note
+## Side Notes
 
 The large file benchmark was run with the files on an external SSD
 with these similar results:
@@ -85,4 +107,15 @@ multiple-light /media/ohler/backup/bench-files/10G.json (large) 1 times
 multiple-heavy /media/ohler/backup/bench-files/10G.json (large) 1 times
         oj █████████████████████████████████████████████████████████████▊ 18.0: 8.2MB
   simdjson ████████████████████████████████████████████████████████████████████████████████████████████████ 27.9: 10GB
+```
+
+One of the simdjson benchmarks files was use to rerun the
+validation. OjC performed better than simdjson but since the file is
+mostly number and not a mix of different types it was not used in the
+comparison.
+
+```
+validate files/mesh.pretty.json (small) 1000 times
+        oj ███████████████████████████████████████████████████████████████████████████████████████████▌1024.4: 3.1MB
+  simdjson ████████████████████████████████████████████████████████████████████████████████████████████████1074.7: 7.9MB
 ```
