@@ -185,7 +185,7 @@ ut_done(void) {
 	fclose(ut_out);
     }
     // exit((cnt << 16) | fail);
-    exit(0);
+    //exit(0);
 }
 
 int

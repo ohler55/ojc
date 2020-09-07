@@ -311,6 +311,9 @@ oj_reuse(ojReuser reuser) {
 	}
 	v->free = reuser->head;
 	reuser->head = v;
+	if (NULL == reuser->tail) {
+	    reuser->tail = v;
+	}
     }
     if (oj_thread_safe) {
 	while (atomic_flag_test_and_set(&val_busy)) {

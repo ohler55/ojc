@@ -6,6 +6,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -546,7 +547,7 @@ unicodeToUtf8(uint32_t code, byte *buf) {
 }
 
 static ojStatus
-byteError(ojErr err, const char *map, int off, byte b) {
+byte_error(ojErr err, const char *map, int off, byte b) {
     err->col = off - err->col + 1;
     switch (map[256]) {
     case 'N': // null_map
@@ -566,6 +567,56 @@ byteError(ojErr err, const char *map, int off, byte b) {
 	break;
     }
     return err->code;
+}
+
+static void
+parse_free_stack(ojParser p) {
+    ojVal	v;
+
+    while (NULL != (v = p->stack)) {
+	bool	found = false;
+
+	p->stack = v->next;
+	for (ojVal a = p->all_head; NULL != a; a = a->free) {
+	    if (a == v) {
+		found = true;
+		break;
+	    }
+	}
+	for (ojVal a = p->all_dig; NULL != a; a = a->free) {
+	    if (a == v) {
+		found = true;
+		break;
+	    }
+	}
+	if (!found) {
+	    if ((OJ_STRING == v->type && sizeof(v->str.raw) <= v->str.len) ||
+		(OJ_BIG == v->type && sizeof(v->num.raw) <= v->num.len) ||
+		sizeof(v->key.raw) <= v->key.len) {
+		v->free = p->all_dig;
+		p->all_dig = v;
+	    } else {
+		v->free = p->all_head;
+		if (NULL == p->all_head) {
+		    p->all_tail = v;
+		}
+		p->all_head = v;
+	    }
+	}
+    }
+}
+
+static ojStatus
+parse_error(ojParser p, const char *fmt, ...) {
+    va_list	ap;
+
+    va_start(ap, fmt);
+    vsnprintf(p->err.msg, sizeof(p->err.msg), fmt, ap);
+    va_end(ap);
+    p->err.code = OJ_ERR_PARSE;
+    parse_free_stack(p);
+
+    return p->err.code;
 }
 
 static ojVal
@@ -800,9 +851,7 @@ parse(ojParser p, const byte *json) {
     ojVal	v;
     const byte	*b = json;
 
-    //printf("*** parse '%s' mode %c\n", json, p->map[256]);
     for (; '\0' != *b; b++) {
-	//printf("*** op: %c  b: %c from %c\n", p->map[*b], *b, p->map[256]);
 	//print_stack(p, "loop");
 	switch (p->map[*b]) {
 	case SKIP_NEWLINE:
@@ -879,7 +928,7 @@ parse(ojParser p, const byte *json) {
 	case CLOSE_OBJECT:
 	    if (OJ_OBJECT != p->stack->type) {
 		p->err.col = b - json - p->err.col + 1;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected object close");
+		return parse_error(p, "unexpected object close");
 	    }
 	    if (pop_val(p)) {
 		return OJ_ABORT;
@@ -900,7 +949,7 @@ parse(ojParser p, const byte *json) {
 	case CLOSE_ARRAY:
 	    if (OJ_ARRAY != p->stack->type) {
 		p->err.col = b - json - p->err.col + 1;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "unexpected array close");
+		return parse_error(p, "unexpected array close");
 	    }
 	    if (pop_val(p)) {
 		return OJ_ABORT;
@@ -1150,7 +1199,7 @@ parse(ojParser p, const byte *json) {
 			_oj_append_str(&p->err, &p->stack->str, utf8, ulen);
 		    }
 		} else {
-		    return oj_err_set(&p->err, OJ_ERR_PARSE, "invalid unicode");
+		    return parse_error(p, "invalid unicode");
 		}
 		p->map = string_map;
 	    }
@@ -1225,7 +1274,7 @@ parse(ojParser p, const byte *json) {
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
-	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
+	    return parse_error(p, "expected null");
 	case VAL_TRUE:
 	    if ('r' == b[1] && 'u' == b[2] && 'e' == b[3]) {
 		b += 3;
@@ -1250,7 +1299,7 @@ parse(ojParser p, const byte *json) {
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
-	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
+	    return parse_error(p, "expected true");
 	case VAL_FALSE:
 	    if ('a' == b[1] && 'l' == b[2] && 's' == b[3] && 'e' == b[4]) {
 		b += 4;
@@ -1275,7 +1324,7 @@ parse(ojParser p, const byte *json) {
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
-	    return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
+	    return parse_error(p, "expected false");
 	case TOKEN_OK:
 	    p->token[p->ri] = *b;
 	    p->ri++;
@@ -1284,7 +1333,7 @@ parse(ojParser p, const byte *json) {
 		if (4 == p->ri) {
 		    if (0 != strncmp("null", p->token, 4)) {
 			p->err.col = b - json - p->err.col;
-			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected null");
+			return parse_error(p, "expected null");
 		    }
 		    push_val(p, OJ_NULL, 0);
 		    if (pop_val(p)) {
@@ -1296,7 +1345,7 @@ parse(ojParser p, const byte *json) {
 		if (5 == p->ri) {
 		    if (0 != strncmp("false", p->token, 5)) {
 			p->err.col = b - json - p->err.col;
-			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected false");
+			return parse_error(p, "expected false");
 		    }
 		    push_val(p, OJ_FALSE, 0);
 		    if (pop_val(p)) {
@@ -1308,7 +1357,7 @@ parse(ojParser p, const byte *json) {
 		if (4 == p->ri) {
 		    if (0 != strncmp("true", p->token, 4)) {
 			p->err.col = b - json - p->err.col;
-			return oj_err_set(&p->err, OJ_ERR_PARSE, "expected true");
+			return parse_error(p, "expected true");
 		    }
 		    push_val(p, OJ_TRUE, 0);
 		    if (pop_val(p)) {
@@ -1318,12 +1367,13 @@ parse(ojParser p, const byte *json) {
 		break;
 	    default:
 		p->err.col = b - json - p->err.col;
-		return oj_err_set(&p->err, OJ_ERR_PARSE, "parse error");
+		return parse_error(p, "parse error");
 	    }
 	    break;
 	case CHAR_ERR:
 	    if (OJ_OK == p->err.code) {
-		byteError(&p->err, p->map, b - json, *b);
+		byte_error(&p->err, p->map, b - json, *b);
+		parse_free_stack(p);
 	    }
 	    return p->err.code;
 	default:
@@ -1587,7 +1637,7 @@ oj_validate_str(ojErr err, const char *json_str) {
 	    }
 	    break;
 	case CHAR_ERR:
-	    return byteError(err, v.map, b - json, *b);
+	    return byte_error(err, v.map, b - json, *b);
 	default:
 	    v.err.col = b - json - v.err.col;
 	    return oj_err_set(err, OJ_ERR_PARSE, "internal error, unknown mode");

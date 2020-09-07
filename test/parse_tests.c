@@ -18,12 +18,13 @@ parse_jsons(struct _data *dp) {
     struct _ojErr	err = OJ_ERR_INIT;
     ojVal		val;
     struct _ojBuf	buf;
+    struct _ojReuser	reuser;
 
     if (ut_verbose) {
 	ut_print("%s\n", ut_name());
     }
     for (; NULL != dp->json; dp++) {
-	val = oj_parse_str(&err, dp->json, NULL);
+	val = oj_parse_str(&err, dp->json, &reuser);
 	if (OJ_OK == dp->status) {
 	    bool	ok;
 
@@ -60,7 +61,6 @@ parse_jsons(struct _data *dp) {
 		}
 	    }
 	    oj_buf_cleanup(&buf);
-	    oj_destroy(val);
 	} else {
 	    ut_same_int(dp->status, err.code, "error code");
 	    ut_same_int(dp->err.line, err.line, "error line");
@@ -72,6 +72,7 @@ parse_jsons(struct _data *dp) {
 	    }
 	    oj_err_init(&err);
 	}
+	oj_reuse(&reuser);
     }
 }
 
