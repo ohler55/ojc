@@ -3,23 +3,53 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- compare enhancement
+ - option to take any file and iterations
 
 
-- make sure follow works
-- allow catchup on stream parser if with callbacks
- - make error callbacks but also ojcVal callbacks, maybe the same if start is bad
- - if invalid character keep reading until the start of something
-  - best effort if not sure, worse case is bogus results
-  - catchup mode function
-   - read until an close - white space - open is hit
-    - } {    ][    }[   ] {
+- article
+ - x vs OjC
+ - cast as a set of field events
+  - start as boxing but then nix that idea as too confrontational
+  - start with goodwill that it is a competition but friendly
+ - explain the competitors
+  - team size, participants and support
+   - oj
+    - support 1
+    - several competitors
+     - some sitting idle due to no competition in write and building events
+     - validator
+     - string parser
+     - 2 callback parsers
+   - simdjson
+    - huge support team of 63
+    - two competitors
+     - parser
+     - multiple file
 
+  - events
+   - validate
+    - ca
+    - mesh (borrowed from simdjson site, not used but shows how close the runners are)
+   - parse string
+   - multi json file parsing
+    - large file are more often multiple json
+    - normally no restrictions on entries but simdjson is not able to handle anything but one per line
+     - want the games to continue so rules were changed to allow limited or restricted file format
+    - 3 level of size/length
+     - 1GB for small files (1 mile, 1500)
+     - 10 for still fit in memory (stadium, cross country, 10K)
+     - 20 for too much for memory but not crazy long (marathon or maybe half, not an ultra)
+    - two types (straight run vs hurdles or steeple chase)
+     - light is pretty much flat out with only counting entries
+     - heavy is additional load for handling processing of each entry
+      - simple busy loop for 8 usec (rough average parse time)
+   - files are all generated log files (graphql query and response)
+   - build - cancelled but explain
+   - write/format - cancelled but explain
 
-- reader_next_non_white(ojcErr err, Reader reader) 
- - ignore ANSI/VT100 escape sequences
-  - will need to parse each code to determine length
+ - maybe event team member match to function(s)
 
-- multiple threads
- - could have free thread to put nodes back in cache
-
-- TBD stream write functions someday
+ - anouncers
+  - pat and chris (gender neutral)
+ -

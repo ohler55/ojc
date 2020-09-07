@@ -103,7 +103,7 @@ a.selected {
 .synopsis {
     display: block;
     font-family: monospace;
-    font-size: 18px;
+    font-size: 16px;
     white-space: pre;
     margin: 16px 0px 8px 8px;
     padding: 8px;
@@ -113,9 +113,11 @@ a.selected {
 .desc-text {
     margin: 16px 0px 8px 8px;
     padding: 8px;
+    font-family: 'HelveticaNeue', 'Helvetica Neue', 'Arial', sans-serif;
 }
 table.params {
     margin: 0px 0px 0px 16px;
+    font-family: 'HelveticaNeue', 'Helvetica Neue', 'Arial', sans-serif;
 }
 .params td {
     padding: 4px;
@@ -136,4 +138,31 @@ table.params {
 .code {
     font-family: monospace;
     font-size: 16px;
+    color: #048;
+}
+.param-type {
+    font-family: monospace;
+    font-size: 16px;
+    color: green;
+}
+.param-name {
+    font-family: monospace;
+    font-size: 16px;
+    color: blue;
+}
+.enum-value {
+    font-family: monospace;
+    font-size: 16px;
+    color: purple;
+}
+
+.ojc-red {
+    font-family: monospace;
+    font-size: 16px;
+    color: #e00;
+}
+.ojc-blue {
+    font-family: monospace;
+    font-size: 16px;
+    color: #08f;
 }

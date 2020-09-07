@@ -1,162 +1,168 @@
-# CHANGELOG
-
-### Release 3.1.1 - November 19, 2017
-
-	- Reverted len arg to in from size_t for create string.
-
-### Release 3.1.0 - November 11, 2017
-
-	- Removed wire format which is now in the `ohler55/opo-c` github repository.
-	- Added functions to support the external wire format.
-
-### Release 3.0.0 - November 8, 2017
-
-	- Reorganized files and directory structure.
-	- Added wire format for faster transmission of and stream handling.
-	- Renamed parse functions to match argument better.
-
-### Release 2.1.0 - August 14, 2017
-
-	- Updated buffer (buf.h) support.
-	- Added check for double free.
-
-### Release 2.0.1 - April 26, 2017
-
-	- Multiple fixes and minor changes to the API.
-
-### Release 1.13.0 - September 21, 2015
-
-	- Added functions to remove elements by path.
-
-### Release 1.12.0 - September 3, 2015
-
-	- Added support for opaque elements that can be set but do not get
-	written. They do not show up in string output unless the new ojc_write_opaque
-	is set to true.
-
-### Release 1.11.0 - August 15, 2015
-
-	- Fixed bug in ocj_get() that missed keys of a medium size range.
-
-	- Added an option for case insensitive searches. By setting the
-	ojc_case_insensitive flag to true search and replace functions become case
-	insensitive.
-
-### Release 1.10.0 - May 17, 2015
-
-	- Added support for arrays in ojc_replace().
-
-	- Added ojc_array_remove(), ojc_array_replace(), ojc_array_insert().
-
-	- Changed ojc_object_remove_by_pos() to ojc_remove_by_pos() which now supports
-	arrays.
-
-	- Aliased ojc_set() to ojc_replace() and ojc_aset() to ojc_areplace().
-
-### Release 1.9.0 - April 14, 2015
-
-	- Changed ojc_object_replace to return a boolean.
-
-	- Added ojc_append() and ojc_aappend() for appending to a tree with a path.
-
-	- Added ojc_replace() and ojc_areplace() for replacing or append to a tree with a path.
-
-### Release 1.8.0 - April 7, 2015
-
-	- Added ojc_cmp() function that compares two ojcVal values.
-
-	- Fixed follow parser to remain open as expected.
-
-### Release 1.7.0 - January 1, 2015
-
-	- Added ojc_duplicate() function that make a deep copy of an element (ojcVal).
-
-### Release 1.6.0 - December 12, 2014
-
-	- Added option to parse decimal numbers as strings instead of doubles.
-
-	- Added ojc_number() function.
-
-### Release 1.5.0 - October 23, 2014
-
-	- Added parse function where the caller provides a read function. Planned for
-	use with external libraries such as zlib.
-
-### Release 1.4.6 - October 7, 2014
-
-	- Cleaned up ubuntu/g++ errors.
-
-### Release 1.4.5 - September 26, 2014
-
-	- Fixed memory leak with number strings.
-
-### Release 1.4.4 - September 22, 2014
-
-	- Added an unbuffered parse function to work with tail -f.
-
-### Release 1.4.3 - August 29, 2014
-
-	- Attempting to extract from a NULL val no longer crashes.
-
-### Release 1.4.2 - August 28, 2014
-
-	- Fixed bug in parse destroy during callback parsing.
-
-### Release 1.4.1 - August 21, 2014
-
-	- Added cleanup function to free memory used in re-use pools.
-
-### Release 1.4.0 - August 15, 2014
-
-	- Added functions to get members of an object and an array.
-
-### Release 1.3.0 -July 31, 2014
-
-	- Added support for non quoted words as values if a flag is set to allow the
-	non-standard feature. Functions create and get values from word values also
-	added.
-
-### Release 1.2.5 -July 21, 2014
-
-	- Added object functions for changing the members of the object.
-
-### Release 1.2.4 -July 6, 2014
-
-	- Added function to set the key of a value.
-
-### Release 1.2.3 -June 26, 2014
-
-	- Fixed buffer overflow by 1 error.
-
-### Release 1.2.2 -June 25, 2014
-
-	- Allow raw \n in output when ojc newline ok is true.
-
-### Release 1.2.1 -June 20, 2014
-
-	- Allow raw \n in output.
-
-### Release 1.2.0 -June 10, 2014
-
-	- Added push and pop to array values.
-
-### Release 1.1.0 - May 28, 2014
-
-	- Fixed ubuntu compilation.
-
-	- Changed callback for parsing to allow the parsing to be aborted by the callback.
-
-### Release 1.0.2 - May 28, 2014
-
-	- Added static initializer for ojcErr.
-
-	- Added ojc_str().
-
-### Release 1.0.1 - May 27, 2014
-
-	- Corrected compile errors with clang and made ojc.h C++ compatible.
-
-### Release 1.0.0 - May 26, 2014
-
-	- Initial release.
-
+# Changelog
+
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+The structure and content of this file follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [4.0.0] - [2020-09-07]
+### Changed
+- Almost everything has changed. Same approach but different
+  implemenation. A `oj_` prefix is used instead of `ojc_` to make the
+  change over easier.
+
+## [3.1.1] - [2017-11-19]
+### Changed
+- Reverted len arg to int from size_t for create string.
+
+## [3.1.0] - [2017-11-11]
+### Added
+- Added functions to support the external wire format.
+### Removed
+- Removed wire format which is now in the `ohler55/opo-c` github repository.
+
+## [3.0.0] - [2017-11-8]
+### Changed
+- Reorganized files and directory structure.
+- Renamed parse functions to match argument better.
+### Added
+- Added wire format for faster transmission of and stream handling.
+
+## [2.1.0] - [2017-08-14]
+### Fixed
+- Updated buffer (buf.h) support.
+- Added check for double free.
+
+## [2.0.1] - [2017-04-26]
+### Fixed
+- Multiple fixes and minor changes to the API.
+
+## [1.13.0] - [2015-09-21]
+### Added
+- Added functions to remove elements by path.
+
+## [1.12.0] - [2015-09-3]
+### Added
+- Added support for opaque elements that can be set but do not get
+  written. They do not show up in string output unless the new
+  ojc_write_opaque is set to true.
+
+## [1.11.0] - [2015-08-15]
+### Fixed
+- Fixed bug in ocj_get() that missed keys of a medium size range.
+### Added
+- Added an option for case insensitive searches. By setting the
+  ojc_case_insensitive flag to true search and replace functions
+  become case insensitive.
+
+## [1.10.0] - [2015-05-17]
+### Added
+- Added support for arrays in ojc_replace().
+- Added ojc_array_remove(), ojc_array_replace(), ojc_array_insert().
+- Aliased ojc_set() to ojc_replace() and ojc_aset() to ojc_areplace().
+### Changed
+- Changed ojc_object_remove_by_pos() to ojc_remove_by_pos() which now
+  supports arrays.
+
+## [1.9.0] - [2015-04-14]
+### Changed
+- Changed ojc_object_replace to return a boolean.
+### Added
+- Added ojc_append() and ojc_aappend() for appending to a tree with a path.
+- Added ojc_replace() and ojc_areplace() for replacing or append to a tree with a path.
+
+## [1.8.0] - [2015-04-7]
+### Added
+- Added ojc_cmp() function that compares two ojcVal values.
+### Fixed
+- Fixed follow parser to remain open as expected.
+
+## [1.7.0] - [2015-January-1]
+### Added
+- Added ojc_duplicate() function that make a deep copy of an element (ojcVal).
+
+## [1.6.0] - [2014-12-12]
+### Added
+- Added option to parse decimal numbers as strings instead of doubles.
+- Added ojc_number() function.
+
+## [1.5.0] - [2014-10-23]
+### Added
+- Added parse function where the caller provides a read
+  function. Planned for use with external libraries such as zlib.
+
+## [1.4.6] - [2014-10-7]
+### Fixed
+- Cleaned up ubuntu/g++ errors.
+
+## [1.4.5] - [2014-09-26]
+### Fixed
+- Fixed memory leak with number strings.
+
+## [1.4.4] - [2014-09-22]
+### Added
+- Added an unbuffered parse function to work with tail -f.
+
+## [1.4.3] - [2014-08-29]
+### Fixed
+- Attempting to extract from a NULL val no longer crashes.
+
+## [1.4.2] - [2014-08-28]
+### Fixed
+- Fixed bug in parse destroy during callback parsing.
+
+## [1.4.1] - [2014-08-21]
+### Added
+- Added cleanup function to free memory used in re-use pools.
+
+## [1.4.0] - [2014-08-15]
+### Added
+- Added functions to get members of an object and an array.
+
+## [1.3.0] -[2014-07-31]
+### Added
+- Added support for non quoted words as values if a flag is set to
+  allow the non-standard feature. Functions create and get values from
+  word values also added.
+
+## [1.2.5] -[2014-07-21]
+### Added
+- Added object functions for changing the members of the object.
+
+## [1.2.4] -[2014-07-6]
+### Added
+- Added function to set the key of a value.
+
+## [1.2.3] -[2014-06-26]
+### Fixed
+- Fixed buffer overflow by 1 error.
+
+## [1.2.2] -[2014-06-25]
+### Added
+- Allow raw \n in output when ojc newline ok is true.
+
+## [1.2.1] -[2014-06-20]
+### Added
+- Allow raw \n in output.
+
+## [1.2.0] -[2014-06-10]
+### Added
+- Added push and pop to array values.
+
+## [1.1.0] - [2014-05-28]
+### Fixed
+- Fixed ubuntu compilation.
+### Changed
+- Changed callback for parsing to allow the parsing to be aborted by the callback.
+
+## [1.0.2] - [2014-05-28]
+### Added
+- Added static initializer for ojcErr.
+- Added ojc_str().
+
+## [1.0.1] - [2014-05-27]
+### Fixed
+- Corrected compile errors with clang and made ojc.h C++ compatible.
+
+## [1.0.0] - [2014-05-26]
+### Added
+- Initial release.

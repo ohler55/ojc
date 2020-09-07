@@ -3,6 +3,7 @@
  * ALL RIGHTS RESERVED
  */
 
+#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -14,12 +15,20 @@
 static void	usage(const char *appName);
 static Test	findTest(const char *name);
 
-FILE		*ut_out = 0;
-int		ut_verbose = 0;
+FILE			*ut_out = NULL;
+int			ut_verbose = 0;
 
-static const char	*group = 0;
-static Test		tests = 0;
-static Test		currentTest = 0;
+static const char	*group = NULL;
+static Test		tests = NULL;
+static Test		currentTest = NULL;
+
+const char*
+ut_name() {
+    if (NULL == currentTest) {
+	return "none";
+    }
+    return currentTest->name;
+}
 
 void
 ut_print(const char *format, ...) {
@@ -30,19 +39,35 @@ ut_print(const char *format, ...) {
     va_end(ap);
 }
 
-void
+Test
+ut_append(Test tests, const char *name, void (*func)(void)) {
+    for (; NULL != tests->name; tests++) {
+    }
+    tests->name = name;
+    tests->func = func;
+    tests->pass = -1;
+    tests->run = true;
+    tests++;
+    tests->name = NULL;
+    tests->func = NULL;
+
+    return tests - 1;
+}
+
+bool
 ut_init(int argc, char **argv, const char *groupName, Test allTests) {
     Test	t;
     char	*appName = *argv;
     char	*a;
-    int		runAll = 1;
+    bool	runAll = true;
+    bool	display_mem_report = false;
 
     ut_out = stdout;
     tests = allTests;
     group = groupName;
     for (t = tests; t->name != 0; t++) {
 	t->pass = -1;
-	t->run = 0;
+	t->run = false;
     }
     argc--;
     argv++;
@@ -55,7 +80,7 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
 		printf("Failed to open %s\n", *argv);
 		usage(appName);
 	    }
-	} else if (0 == strcmp("-c", a)) {
+	} else if (0 == strcmp("-o", a)) {
 	    argc--;
 	    argv++;
 	    if (0 == (ut_out = fopen(*argv, "w"))) {
@@ -64,17 +89,27 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
 	    }
 	} else if (0 == strcmp("-v", a)) {
 	    ut_verbose += 1;
+	} else if (0 == strcmp("-m", a)) {
+	    display_mem_report = true;
 	} else {
-	    if (0 == (t = findTest(a))) {
+	    size_t	alen = strlen(a);
+	    bool	found = false;
+
+	    for (t = tests; NULL != t->name; t++) {
+		if (0 == strncmp(t->name, a, alen)) {
+		    t->run = true;
+		    found = true;
+		}
+	    }
+	    if (!found) {
 		printf("%s does not contain test %s\n", group, a);
 		usage(appName);
 	    }
-	    t->run = 1;
-	    runAll = 0;
+	    runAll = false;
 	}
     }
     if (runAll) {
-	for (t = tests; t->name != 0; t++) {
+	for (t = tests; NULL != t->name; t++) {
 	    t->run = 1;
 	}
     }
@@ -83,14 +118,15 @@ ut_init(int argc, char **argv, const char *groupName, Test allTests) {
     for (currentTest = tests; currentTest->name != 0; currentTest++) {
 	if (currentTest->run) {
 	    if (2 <= ut_verbose) {
-		printf(">>> %s\n", currentTest->name);
+		ut_print(">>> %s\n", currentTest->name);
 	    }
 	    currentTest->func();
 	    if (2 <= ut_verbose) {
-		printf("<<< %s\n", currentTest->name);
+		ut_print("<<< %s\n", currentTest->name);
 	    }
 	}
     }
+    return display_mem_report;
 }
 
 void
@@ -103,7 +139,7 @@ ut_done(void) {
     int		fail = 0;
     int		skip = 0;
     int		len, maxLen = 1;
-    
+
     for (t = tests; t->name != 0; t++) {
 	len = strlen(t->name);
 	if (maxLen < len) {
@@ -119,12 +155,12 @@ ut_done(void) {
 	    skip++;
 	    break;
 	case 0:
-	    result = "FAILED";
+	    result = "\033[91mFAILED\033[0m";
 	    fail++;
 	    break;
 	case 1:
 	default:
-	    result = "Passed";
+	    result = "\033[92mPassed\033[0m";
 	    break;
 	}
 	cnt++;
@@ -149,7 +185,7 @@ ut_done(void) {
 	fclose(ut_out);
     }
     // exit((cnt << 16) | fail);
-    exit(0);
+    //exit(0);
 }
 
 int
@@ -166,7 +202,7 @@ ut_same(const char *expected, const char *actual) {
 	}
 	return 1;
     }
-    if (0 == actual || 0 == expected) {
+    if (NULL == actual || NULL == expected) {
 	currentTest->pass = 0;
 	return 0;
     }
@@ -218,14 +254,14 @@ ut_same(const char *expected, const char *actual) {
     }
     if ('\0' != *a) {
 	if ('\0' == *e) {
-	    ut_print("%s.%s Failed: Actual result longer than expected\n", group, currentTest->name);
+	    ut_print("%s.%s \033[91mFailed: Actual result longer than expected\033[0m\n", group, currentTest->name);
 	    pass = 0;
 	    if (ut_verbose) {
 		ut_print("expected: '%s'\n", expected);
 		ut_print("  actual: '%s'\n\n", actual);
 	    }
 	} else {
-	    ut_print("%s.%s Failed: Mismatch at line %d, column %d\n", group, currentTest->name, line, col);
+	    ut_print("%s.%s \033[91mFailed: Mismatch at line %d, column %d\033[0m\n", group, currentTest->name, line, col);
 	    if (ut_verbose) {
 		ut_print("expected: '%s'\n", expected);
 		ut_print("  actual: '%s'\n\n", actual);
@@ -233,7 +269,7 @@ ut_same(const char *expected, const char *actual) {
 	    pass = 0;
 	}
     } else if ('\0' != *e) {
-	ut_print("%s.%s Failed: Actual result shorter than expected\n", group, currentTest->name);
+	ut_print("%s.%s \033[91mFailed: Actual result shorter than expected\033[0m\n", group, currentTest->name);
 	pass = 0;
 	if (ut_verbose) {
 	    ut_print("expected: '%s'\n", expected);
@@ -249,7 +285,7 @@ ut_same(const char *expected, const char *actual) {
 int
 ut_same_int(int64_t expected, int64_t actual, const char *format, ...) {
     int	pass = 0;
-    
+
     if (expected == actual) {
 	pass = 1;
     } else {
@@ -259,7 +295,29 @@ ut_same_int(int64_t expected, int64_t actual, const char *format, ...) {
 	va_start(ap, format);
 	vsnprintf(buf, sizeof(buf), format, ap);
 	va_end(ap);
-	ut_print("%s.%s Failed: %s\n  expected: %lld\n  actual: %lld\n",
+	ut_print("%s.%s \033[91mFailed\033[0m: %s\n  expected: %lld\n  actual: %lld\n",
+		 group, currentTest->name, buf, expected, actual);
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = pass;
+    }
+    return pass;
+}
+
+int
+ut_same_double(long double expected, long double actual, long double prec, const char *format, ...) {
+    int	pass = 0;
+
+    if (expected - prec < actual && actual < expected + prec) {
+	pass = 1;
+    } else {
+	va_list	ap;
+	char	buf[256];
+
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
+	ut_print("%s.%s \033[91mFailed\033[0m: %s\n  expected: %Lg\n  actual: %Lg\n",
 		 group, currentTest->name, buf, expected, actual);
     }
     if (0 != currentTest->pass) {	// don't replace failed status
@@ -348,11 +406,11 @@ ut_reportTest(const char *testName) {
 	result = "Skipped";
 	break;
     case 0:
-	result = "FAILED";
+	result = "\033[91mFAILED\033[0m";
 	break;
     case 1:
     default:
-	result = "Passed";
+	result = "\033[92mPassed\033[0m";
 	break;
     }
     ut_print("%s: %s", t->name, result);
@@ -377,8 +435,10 @@ ut_resetTest(const char *testName) {
 static void
 usage(const char *appName) {
     printf("%s [-m] [-o file] [-c file]\n", appName);
-    printf("  -o file  name of output file to append to\n");
-    printf("  -c file  name of output file to create and write to\n");
+    printf("  -v       increase verbosity\n");
+    printf("  -m       show memory report (must be compiled with -DMEM_DEBUG)");
+    printf("  -a file  name of output file to append to\n");
+    printf("  -o file  name of output file to create and write to\n");
     exit(0);
 }
 
@@ -483,7 +543,7 @@ ut_toCodeStr(const unsigned char *data, int len) {
     int			clen = 0;
     char		*str;
     char		*s;
-    
+
     for (d = data; d < end; d++) {
 	if (*d < ' ' || 127 <= *d) {
 	    clen += 4;
@@ -511,16 +571,32 @@ ut_toCodeStr(const unsigned char *data, int len) {
 	}
     }
     *s = '\0';
-    
+
     return str;
 }
 
 bool
-ut_handle_error(ojcErr err) {
-    if (OJC_OK != err->code) {
+ut_handle_oj_error(ojErr err) {
+    if (OJ_OK != err->code) {
 	ut_print("[%d] %s\n", err->code, err->msg);
 	ut_fail();
 	return true;
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = 1;
+    }
+    return false;
+}
+
+bool
+ut_handle_errno() {
+    if (0 != errno) {
+	ut_print("[%d] %s\n", errno, strerror(errno));
+	ut_fail();
+	return true;
+    }
+    if (0 != currentTest->pass) {	// don't replace failed status
+	currentTest->pass = 1;
     }
     return false;
 }
@@ -547,4 +623,3 @@ ut_benchmark(const char *label, int64_t iter, void (*func)(int64_t iter, void *c
     printf("%s: %lld iterations in %0.3f msecs. (%g iterations/msec)\n",
 	   label, (long long)iter, (double)dt / 1000.0, (double)iter * 1000.0 / (double)dt);
 }
-
