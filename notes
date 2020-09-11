@@ -53,3 +53,6 @@
  - anouncers
   - pat and chris (gender neutral)
  -
+
+- testing
+ CFLAGS="-fsanitize=leak -fsanitize=address -fsanitize=undefined" make -j 6 test
