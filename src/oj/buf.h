@@ -38,7 +38,7 @@ oj_buf_reset(ojBuf buf) {
 
 inline static void
 oj_buf_cleanup(ojBuf buf) {
-    if (buf->base != buf->head && !buf->realloc_ok) {
+    if (buf->base != buf->head && buf->realloc_ok) {
         free(buf->head);
     }
 }

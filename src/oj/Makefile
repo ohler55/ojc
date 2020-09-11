@@ -1,5 +1,5 @@
-#CFLAGS=-c -Wall -O3 -pedantic -DMEM_DEBUG
-CFLAGS=-c -Wall -O3 -pedantic
+#CFLAGS+=-c -Wall -O3 -pedantic -DMEM_DEBUG
+CFLAGS+=-c -Wall -O3 -pedantic
 
 SRC_DIR=.
 LIB_DIR=../../lib

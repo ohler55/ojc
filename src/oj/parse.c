@@ -999,7 +999,7 @@ parse(ojParser p, const byte *json) {
 	    v->num.len = 0;
 	    p->map = digit_map;
 	    for (; NUM_DIGIT == digit_map[*b]; b++) {
-		uint64_t	x = v->num.fixnum * 10 + (uint64_t)(*b - '0');
+		uint64_t	x = (uint64_t)v->num.fixnum * 10 + (uint64_t)(*b - '0');
 
 		// Tried just checking for an int less than zero but that
 		// fails when optimization is on for some reason with the

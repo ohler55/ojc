@@ -41,10 +41,10 @@ mimicking a server that logs GraphQL requests and responses. Three file sizes we
 
 To make the test more interesting both a light and heavy load
 benchmarks were run. The light load consisted of just counting the
-number of documents so pretty much no load at all. The heavy load spun
-for 8 microseconds to simulate some processing on the parsed
-document. That seemed like a reasonable, if not a light representation
-of what a real application might do.
+number of documents and touching each JSON element so pretty much no
+load at all. The heavy load spun for 8 microseconds to simulate some
+processing on the parsed document. That seemed like a reasonable, if
+not a light representation of what a real application might do.
 
 ```
 validate files/ca.json (small) 30000 times
