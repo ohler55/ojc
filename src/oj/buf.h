@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "debug.h"
+
 inline static void
 oj_buf_init(ojBuf buf, int fd) {
     buf->head = buf->base;
@@ -39,7 +41,7 @@ oj_buf_reset(ojBuf buf) {
 inline static void
 oj_buf_cleanup(ojBuf buf) {
     if (buf->base != buf->head && buf->realloc_ok) {
-        free(buf->head);
+        OJ_FREE(buf->head);
     }
 }
 
@@ -68,10 +70,10 @@ oj_buf_append_string(ojBuf buf, const char *s, size_t slen) {
 	    //size_t	new_len = len + slen + len / 2;
 
 	    if (buf->base == buf->head) {
-		buf->head = (char*)malloc(new_len);
+		buf->head = (char*)OJ_MALLOC(new_len);
 		memcpy(buf->head, buf->base, len);
 	    } else {
-		buf->head = (char*)realloc(buf->head, new_len);
+		buf->head = (char*)OJ_REALLOC(buf->head, new_len);
 	    }
 	    buf->tail = buf->head + toff;
 	    buf->end = buf->head + new_len - 2;
@@ -107,10 +109,10 @@ oj_buf_append(ojBuf buf, char c) {
 	    size_t	new_len = len + len / 2;
 
 	    if (buf->base == buf->head) {
-		buf->head = (char*)malloc(new_len);
+		buf->head = (char*)OJ_MALLOC(new_len);
 		memcpy(buf->head, buf->base, len);
 	    } else {
-		buf->head = (char*)realloc(buf->head, new_len);
+		buf->head = (char*)OJ_REALLOC(buf->head, new_len);
 	    }
 	    buf->tail = buf->head + toff;
 	    buf->end = buf->head + new_len - 2;
@@ -148,7 +150,7 @@ oj_buf_take_string(ojBuf buf) {
 	buf->head = NULL;
     } else {
 	int	len = buf->tail - buf->head;
-	char	*dup = (char*)malloc(len + 1);
+	char	*dup = (char*)OJ_MALLOC(len + 1);
 
 	str = memcpy(dup, buf->head, len);
 	str[len] = '\0';

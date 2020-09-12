@@ -3,6 +3,9 @@
 ^c^d hide subtree
 ^c^s show subtree
 
+- move alloc part of buf.h to buf.c
+ - don't expose debug.h
+
 - compare enhancement
  - option to take any file and iterations
 
