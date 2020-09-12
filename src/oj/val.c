@@ -956,7 +956,6 @@ oj_object_find(ojVal val, const char *key, int len) {
     return v;
 }
 
-// TBD candidates for common function
 void
 _oj_val_set_key(ojVal val, const char *s, size_t len) {
     if (len < sizeof(val->key.raw)) {

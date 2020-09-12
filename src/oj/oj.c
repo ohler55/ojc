@@ -1,7 +1,9 @@
 // Copyright (c) 2020, Peter Ohler, All rights reserved.
 
 #include <fcntl.h>
+#include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "oj.h"
 #include "buf.h"
