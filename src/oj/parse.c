@@ -33,18 +33,6 @@ one_beat() {
     pselect(0, NULL, NULL, NULL, &ts, 0);
 }
 
-#if DEBUG
-static void
-print_stack(ojParser p, const char *label) {
-    printf("*** %s\n", label);
-    for (ojVal v = p->stack; NULL != v; v = v->next) {
-	char	*s = oj_to_str(v, 0);
-	printf("  %s\n", s);
-	free(s);
-    }
-}
-#endif
-
 // Give better performance with indented JSON but worse with unindented.
 //#define SPACE_JUMP
 
@@ -509,6 +497,18 @@ static long double	pow_map[401] = {
 
 static void	oj_caller_push(ojParser p, ojCaller caller, ojVal val);
 
+#if DEBUG
+static void
+print_stack(ojParser p, const char *label) {
+    printf("*** %s\n", label);
+    for (ojVal v = p->stack; NULL != v; v = v->next) {
+	char	*s = oj_to_str(v, 0);
+	printf("  %s\n", s);
+	free(s);
+    }
+}
+#endif
+
 // Works with extended unicode as well. \Uffffffff if support is desired in
 // the future.
 static size_t
@@ -851,8 +851,13 @@ parse(ojParser p, const byte *json) {
     ojVal	v;
     const byte	*b = json;
 
+#if DEBUG
+    printf("*** parse - mode: %c %s\n", p->map[256], (const char*)json);
+#endif
     for (; '\0' != *b; b++) {
-	//print_stack(p, "loop");
+#if DEBUG
+	print_stack(p, "loop");
+#endif
 	switch (p->map[*b]) {
 	case SKIP_NEWLINE:
 	    p->err.line++;
@@ -1271,6 +1276,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if (0 < p->ri) {
 		p->map = null_map;
+		b--;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
@@ -1296,6 +1302,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if (0 < p->ri) {
 		p->map = true_map;
+		b--;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
@@ -1321,6 +1328,7 @@ parse(ojParser p, const byte *json) {
 	    }
 	    if (0 < p->ri) {
 		p->map = false_map;
+		b--;
 		break;
 	    }
 	    p->err.col = b - json - p->err.col;
@@ -1649,7 +1657,7 @@ oj_validate_str(ojErr err, const char *json_str) {
 
 static void
 read_block(int fd, ReadBlock b) {
-    size_t	rcnt = read(fd, b->buf, sizeof(b->buf) - 1);
+    ssize_t	rcnt = read(fd, b->buf, sizeof(b->buf) - 1);
 
     if (0 < rcnt) {
 	b->buf[rcnt] = '\0';

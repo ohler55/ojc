@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 The structure and content of this file follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [4.0.1] - [unreleased]
+### Fixed
+- Chunked reads were off by one on tokens. Now fixed.
+
 ## [4.0.0] - 2020-09-07
 ### Changed
 - Almost everything has changed. Same approach but different
