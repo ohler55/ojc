@@ -26,4 +26,4 @@ $(TARGET): $(OBJS)
 	ar -rcs $@ $(OBJS)
 
 %.o : %.c  $(HEADERS)
-	$(CC) -I. -I$(SRC_DIR) $(CFLAGS) -o $@ $<
+	$(CC) -I$(SRC_DIR) $(CFLAGS) -o $@ $<
