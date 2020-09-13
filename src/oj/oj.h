@@ -69,7 +69,7 @@ extern "C" {
 	int		fd;
 	bool		realloc_ok;
 	ojStatus	err;
-	char		base[4096];
+	char		base[16384];
     } *ojBuf;
 
     typedef struct _ojErr {
