@@ -1,10 +1,10 @@
 
 all:
-	make -C src
+	$(MAKE) -C src
 
 clean:
-	make -C src clean
-	make -C test clean
+	$(MAKE) -C src clean
+	$(MAKE) -C test clean
 
 test: all
-	make -C test test
+	$(MAKE) -C test test

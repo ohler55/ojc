@@ -1,6 +1,6 @@
 
 all:
-	make -C oj
+	$(MAKE) -C oj
 
 clean:
-	make -C oj clean
+	$(MAKE) -C oj clean
