@@ -39,8 +39,8 @@ have here today?
 
 Sure Pat, with pleasure.
 
-Lets look at team OjC first since this is their home town. Team OjC
-has quite a few atheletes here today. They are supported by Pete
+Lets look at team OjC v4.0.1 first since this is their home town. Team
+OjC has quite a few atheletes here today. They are supported by Pete
 Ohler, the coach and a recent contributor for a rather small team. The
 athletes is heavy on longer distance runners or rather parsers but
 Vicky validator will be running the validation benchmarks while Pamela
@@ -52,11 +52,11 @@ loaded races. Bob the builder and Whitney the writer will be taking
 the day off since team Simdjson is not fielding a builder or writer
 today. That pretty much rounds out the OjC team for today.
 
-On the other side of the stadium we have team Simdjson. They enter the
-field with two parsers, Milly, an in memory parser that will compete
-against Vicky and Triple-P in the sprints and Manny who will take on
-the OjC long distance parsers. Backing up the parsers are two head
-coaches and a huge support team of another 61 members. They are
+On the other side of the stadium we have team Simdjson v0.5.0. They
+enter the field with two parsers, Milly, an in memory parser that will
+compete against Vicky and Triple-P in the sprints and Manny who will
+take on the OjC long distance parsers. Backing up the parsers are two
+head coaches and a huge support team of another 61 members. They are
 confident with their earlier sprint results. It will be interesting to
 see how the claims of more than 2GB per second holds up on different
 courses.
