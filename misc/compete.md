@@ -2,8 +2,9 @@
 
 It's a lovely cool day here are Benchmark stadium. I'm Pat and next to
 me is Chris. We will be covering the exciting competition between the
-OjC JSON library and the Simdjson JSON parsers as they challenge each
-other in multiple events.
+[OjC](https://github.com/ohler55/ojc) JSON library and the
+[Simdjson](https://github.com/simdjson/simdjson) JSON parsers as they
+challenge each other in multiple events.
 
 ### The Venue
 
@@ -51,7 +52,8 @@ challengers for the lightly loaded courses and Porter Parser will take
 up the torch for the heavier loaded races. Bob the builder and Whitney
 the writer will be taking the day off since team Simdjson is not
 fielding a builder or writer today. That pretty much rounds out the
-OjC team for today.
+OjC team for today. For further reading about team OjC take a look at
+the [API documenation](http://www.ohler.com/ojc/).
 
 On the other side of the stadium we have team Simdjson v0.5.0. They
 enter the field with two parsers, Milly, an in memory parser that will
