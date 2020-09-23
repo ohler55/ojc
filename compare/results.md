@@ -33,7 +33,8 @@ memory. Next is parsing files that contain multiple JSON
 documents. Since simdjson does not support reading general multiple
 JSON files the benchmarks were limited to file that have exactly one
 JSON document per line. Benchmarks were done on mock log files
-mimicking a server that logs GraphQL requests and responses. Three file sizes were used;
+mimicking a server that logs GraphQL requests and responses. Three
+file sizes were used;
 
  - 1GB file representing a relatively small log file
  - 10GB file for a larger task and to check memory use
@@ -76,7 +77,7 @@ multiple-light files/20G.json (huge) 1 times
   simdjson Error allocating memory, we're most likely out of memory
 
 multiple-heavy files/20G.json (huge) 1 times
-        oj ████████████████████████████████████████████████████████████████████████████████████▌ 14.2: 16MB
+        oj ████████████████████████████████████████████████████████████████████████████████████████████████ 12.8: 4.3MB
   simdjson Error allocating memory, we're most likely out of memory
 ```
 
