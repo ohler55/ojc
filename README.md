@@ -47,6 +47,7 @@ More example can be be found in the [examples](examples) directory.
 
 A comparison of OjC and simdjson is in the [compare](compare)
 directory with results in the [results.md](compare/results.md) file.
+For a more entertaining comparison take a look at [OjC and Simdjson racing](misc/compete.md).
 
 ## Documentation
 
