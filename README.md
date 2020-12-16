@@ -1,4 +1,4 @@
-# [![{}j](http://www.ohler.com/ojc/doc/ojc_128.svg)](http://www.ohler.com/ojc) [![Build Status](https://img.shields.io/travis/ohler55/ojc/master.svg?logo=travis)](http://travis-ci.org/ohler55/ojc?branch=master)
+# [![{}j](misc/ojc_comet.svg)](http://www.ohler.com/ojc) [![Build Status](https://img.shields.io/travis/ohler55/ojc/master.svg?logo=travis)](http://travis-ci.org/ohler55/ojc?branch=master)
 
 Optimized JSON in C
 
