@@ -989,6 +989,7 @@ _oj_val_set_str(ojVal val, const char *s, size_t len) {
 	val->str.s4k->str[len] = '\0';
     } else {
 	val->str.ptr = (char*)OJ_MALLOC(len + 1);
+	val->str.cap = len + 1;
 	memcpy(val->str.ptr, s, len);
 	val->str.ptr[len] = '\0';
     }
